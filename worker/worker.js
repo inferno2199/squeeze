@@ -99,6 +99,8 @@ export class SqueezeState {
       runStep: Number(e.RUN_STEP) || 0.3,
       cooldownMs: (Number(e.RING_COOLDOWN_S) || 30) * 1000,
       inkUsd: Number(e.INK_USD) || 250,
+      droughtMs: (Number(e.DROUGHT_MIN) || 15) * 60000,
+      sampleMs: 60000,
     }, Date.now());
     this.s.live = true;
     this.s.updatedAt = Date.now();
@@ -113,9 +115,10 @@ function fresh() {
   return {
     launchAt: 0, firstSeenAt: 0, ath: 0, graceHigh: 0, graceDone: false,
     lastRingPrice: 0, lastRingAt: 0, dipped: false, rings: 0, history: [],
-    combo: 0, prevPrice: 0, prevBuysH1: null, prevVolH1: null,
-    priceInput: 0, h24: null, source: "",
-    athSeq: 0, inkSeq: 0, live: false, updatedAt: 0, savedAt: 0,
+    combo: 0, prevPrice: 0, prevBuysH1: null, prevVolH1: null, prevBuysM5: null,
+    lastBuyAt: 0, lastBuys: 0, drought: false,
+    priceInput: 0, h24: null, source: "", mcap: null, hist: [],
+    athSeq: 0, inkSeq: 0, buySeq: 0, wakeSeq: 0, live: false, updatedAt: 0, savedAt: 0,
   };
 }
 
@@ -123,8 +126,20 @@ function view(s) {
   return {
     live: s.live, priceInput: s.priceInput, combo: s.combo, rings: s.rings,
     h24: s.h24, athSeq: s.athSeq, inkSeq: s.inkSeq, launchAt: s.launchAt || s.firstSeenAt,
+    buySeq: s.buySeq, lastBuys: s.lastBuys, wakeSeq: s.wakeSeq, drought: s.drought,
+    mcap: s.mcap, hist: thin(s.hist, 240),
     history: s.history.slice(-100), updatedAt: s.updatedAt, source: s.source,
   };
+}
+
+// Max n punten voor de mini-chart (laatste punt altijd mee)
+function thin(arr, n) {
+  if (!arr || arr.length <= n) return arr || [];
+  const step = arr.length / n;
+  const out = [];
+  for (let i = 0; i < n - 1; i++) out.push(arr[Math.floor(i * step)]);
+  out.push(arr[arr.length - 1]);
+  return out;
 }
 
 // Zelfde regels als app.js in de site
@@ -132,6 +147,7 @@ function step(s, snap, rules, now) {
   if (s.source && snap.source !== s.source) {
     s.prevBuysH1 = null;
     s.prevVolH1 = null;
+    s.prevBuysM5 = null;
   }
   s.source = snap.source;
   if (!s.firstSeenAt) s.firstSeenAt = now;
@@ -153,6 +169,23 @@ function step(s, snap, rules, now) {
   else if (delta < -0.3) s.combo = 0;
   if (dVol >= rules.inkUsd && newBuys > 0 && delta >= 0) s.inkSeq++;
 
+  // buys: knijpjes, droogte (15 min geen buy) en wakker worden
+  const m5Up =
+    s.prevBuysM5 != null && snap.buysM5 != null ? Math.max(0, snap.buysM5 - s.prevBuysM5) : 0;
+  const buysNow = Math.max(newBuys, m5Up);
+  const hasBuyData = snap.buysM5 != null && snap.source !== "jupiter";
+  if (!s.lastBuyAt) s.lastBuyAt = now;
+  if (buysNow > 0) s.lastBuyAt = now;
+  else if ((snap.buysM5 || 0) > 0) s.lastBuyAt = Math.max(s.lastBuyAt, now - 5 * 60000);
+  s.lastBuys = buysNow;
+  if (buysNow > 0) s.buySeq++;
+  if (s.drought && buysNow > 0) {
+    s.drought = false;
+    s.wakeSeq++;
+  } else if (!s.drought && hasBuyData && now - s.lastBuyAt >= rules.droughtMs) {
+    s.drought = true;
+  }
+
   // ringen
   if (now - launch < rules.graceMs) {
     s.graceHigh = Math.max(s.graceHigh, p);
@@ -173,18 +206,26 @@ function step(s, snap, rules, now) {
         s.lastRingPrice = p;
         s.lastRingAt = now;
         s.dipped = false;
-        s.history.push({ n: s.rings, kind, t: now - launch, mcap: snap.mcap || null });
+        s.history.push({ n: s.rings, kind, t: now - launch, mcap: snap.mcap || null, p });
         if (s.history.length > 100) s.history.shift();
       }
       s.ath = p;
     }
   }
 
+  // prijsgeschiedenis voor de mini-chart (1 punt per minuut, max 24 uur)
+  if (snap.mcap > 0) s.mcap = snap.mcap;
+  const lastH = s.hist[s.hist.length - 1];
+  if (!lastH || now - lastH[0] >= rules.sampleMs) s.hist.push([now, p]);
+  else if (p > 0) lastH[1] = p;
+  while (s.hist.length > 2 && now - s.hist[0][0] > 24 * 3600000) s.hist.shift();
+
   s.priceInput = clamp(0.65 * Math.tanh(m5 / 6) + 0.35 * Math.tanh(delta / 1.5), -1, 1);
   s.h24 = Number.isFinite(snap.h24) ? snap.h24 : null;
   s.prevPrice = p;
   s.prevBuysH1 = snap.buysH1 ?? null;
   s.prevVolH1 = snap.volH1 ?? null;
+  s.prevBuysM5 = snap.buysM5 ?? null;
 }
 
 async function getJSON(url, headers = {}) {
