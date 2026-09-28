@@ -50,8 +50,9 @@
     wild: { a: 0.62, b: [0.45, 0.7, 1.1] },
   };
 
-  // Hoepel om zijn middel (signature-pose)
-  const HOOP = { y: 70, rx: 292, ry: 58, lw: 20 };
+  // Speelring: klein, hij speelt ermee met zijn tentakels
+  const TOY = { r: 72, lw: 15 };
+  const UPPER = [0, 1, 2, 3]; // bovenste armen (even = links, oneven = rechts)
   const RING_CY = -40;
   const FLY_T = 0.75;
 
@@ -96,7 +97,19 @@
       this.turn = new Spring(0, 60, 10);
       this.euph = new Spring(0, 30, 9);
       this.drowsy = new Spring(0, 3, 3.5);
-      this.hoopScale = new Spring(1, 140, 9);
+      this.toyScale = new Spring(1, 140, 9);
+      this.tips = new Array(8).fill(null).map(() => ({ x: 0, y: 0, th: 0 }));
+      this.hold = new Array(8).fill(0);
+      this.toy = {
+        holder: 0,
+        x: -300, y: -120,
+        spin: 0,
+        toss: null,        // { t, T, x0, y0, to, h }
+        tossTimer: 3,
+        drop: 0,
+        hang: 0,
+        swing: 0,
+      };
 
       this.look = { x: 0, y: 0, tx: 0, ty: 0 };
       this.rings = 0;
@@ -179,6 +192,7 @@
       this.drowsy.v = Math.min(this.drowsy.v, 0.5);
       this.drowsy.vel = -2;
       this.wakeT = 1.3;
+      if (!this.reduced) this._toss(this._pickCatcher(), 300);
       this.sy.vel -= this.reduced ? 1.5 : 5;
       this.sx.vel += this.reduced ? 1 : 3;
       this.flinch = 1;
@@ -234,6 +248,7 @@
       if (this.taps.length >= 5) {
         this.taps = [];
         this.annoyed = 2.6;
+        if (!this.toy.toss) this.toy.drop = 0.6;
         this.turnDir = Math.random() < 0.5 ? -1 : 1;
         return "annoyed";
       }
@@ -248,6 +263,7 @@
     }
 
     lookAt(nx, ny) {
+      if (this.toy && this.toy.toss) return;
       this.look.tx = clamp(nx, -1, 1);
       this.look.ty = clamp(ny, -1, 1);
     }
@@ -297,6 +313,7 @@
       this.turn.step(dt);
       for (let i = 0; i < 8; i++) this.armPulse[i] *= Math.exp(-dt * 3.5);
 
+      this._updateToy(dt);
       this.look.x = lerp(this.look.x, this.look.tx, 1 - Math.exp(-dt * 4));
       this.look.y = lerp(this.look.y, this.look.ty, 1 - Math.exp(-dt * 4));
 
@@ -311,10 +328,12 @@
           this.pop = 1;
           this.rings++;
           this.ringBorn = this.t;
-          this.fly = { t: 0 };
+          this.fly = { t: 0, x: this.toy.x, y: this.toy.y };
           this.shock = { t: 0 };
-          this.hoopScale.v = 0.15;
-          this.hoopScale.vel = 0;
+          this.toy.toss = null;
+          this.toyScale.v = 0;
+          this.toyScale.vel = 0;
+          this.toy.tossTimer = 2.2;
           this.sx.vel -= 4;
           this.sy.vel += 5;
           if (!this.reduced) this._sparkBurst();
@@ -331,7 +350,7 @@
         this.fly.t += dt;
         if (this.fly.t > FLY_T) this.fly = null;
       }
-      this.hoopScale.step(dt);
+      this.toyScale.step(dt);
 
       // lijf: plat bij het knijpen, trillen, ademen
       const d = this.drowsy.v;
@@ -468,14 +487,13 @@
       ctx.translate(0, -240);
 
       const pose = this._pose();
-      this._drawHoop("back");
       for (let i = 0; i < ARMS.length; i++) {
         this._drawArm(ARMS[i], 1, pose, i * 2);
         this._drawArm(ARMS[i], -1, pose, i * 2 + 1);
       }
       ctx.drawImage(this.img.body, -BODY_W / 2, -OY, BODY_W, BODY_H);
       this._drawFace(pose.m, Math.abs(this.turn.v));
-      this._drawHoop("front");
+      this._drawToy();
       ctx.restore();
 
       this._drawFly();
@@ -497,16 +515,19 @@
       const speed = (lerp(1.1, 1.8, pose.m) + f * 2.6 + e * 4) * (1 - 0.6 * d);
       const ph = def.ph + (side < 0 ? 0.8 : 0);
       const pulse = this.armPulse[k];
+      const hold = this.hold[k];
 
       const L = img.height * def.len;
       const W = img.width * def.len;
       const A =
         def.a + pose.a + this.charge * 0.55 - this.pop * 0.35 + this.flinch * 0.3 + pulse * 0.25 +
+        hold * (0.32 + (this.reduced ? 0 : Math.sin(this.t * 3 + k) * 0.07)) +
         amp * 0.35 * Math.sin(this.t * speed * 0.6 + ph);
       const b = [0, 1, 2].map(
         (i) =>
           pose.b[i] + this.charge * 0.95 - this.pop * 0.6 +
-          this.flinch * 0.7 + Math.abs(this.turn.v) * 0.35 + pulse * 0.9 +
+          this.flinch * 0.7 + Math.abs(this.turn.v) * 0.35 + pulse * 0.9 -
+          hold * (i === 2 ? 0.45 : 0.1) +
           amp * Math.sin(this.t * speed + ph - i * 0.95)
       );
 
@@ -519,6 +540,7 @@
       const srcH = img.height / N;
       let x = 0;
       let y = 0;
+      const grip = Math.floor(N * 0.8);
       for (let j = 0; j < N; j++) {
         const s = (j + 0.5) * ds;
         let th = A;
@@ -530,63 +552,150 @@
         ctx.restore();
         x += -Math.sin(th) * ds;
         y += Math.cos(th) * ds;
+        if (j === grip) {
+          // grijppunt in lichaamscoördinaten (voor de speelring)
+          const tip = this.tips[k];
+          tip.x = side * (def.x + x);
+          tip.y = def.y + y;
+          tip.th = side > 0 ? th : -th;
+        }
       }
       ctx.restore();
     }
 
-    // Hoepel om zijn middel: achterste helft vóór de armen, voorste helft over zijn buik
-    _drawHoop(part) {
-      const { ctx } = this;
-      const c = this.charge;
-      const s = clamp(this.hoopScale.v, 0.05, 1.4);
+    // ---------- speelring ----------
+    _pickCatcher() {
+      const h = this.toy.holder;
+      const other = UPPER.filter((k) => k !== h && (k % 2) !== (h % 2));
+      const pool = other.length ? other : UPPER.filter((k) => k !== h);
+      return pool[(Math.random() * pool.length) | 0];
+    }
+
+    _toss(to, height) {
+      const t = this.toy;
+      t.toss = { t: 0, T: 0.5 + height / 700, x0: t.x, y0: t.y, to, h: height };
+    }
+
+    _updateToy(dt) {
+      const t = this.toy;
+      const m = this._moodEff();
+      const f = this.frenzy.v;
       const d = this.drowsy.v;
-      const rx = HOOP.rx * (1 - 0.24 * c) * s;
-      const ry = HOOP.ry * (1 - 0.22 * c) * s;
-      const lw = HOOP.lw * (1 + 0.35 * c) * clamp(s, 0.4, 1.2);
-      const cy = HOOP.y + d * 34 + c * 10;
-      const tilt = this.reduced ? 0 : Math.sin(this.t * 1.1) * 0.035 + this.turn.v * 0.1 + d * 0.06;
-      const front = part === "front";
-      const a0 = front ? 0 : Math.PI;
-      const a1 = front ? Math.PI : Math.PI * 2;
+      t.spin += dt * (t.toss ? 14 : lerp(2.2, 6, clamp(m + f, 0, 1)) * (1 - 0.8 * d));
+      t.swing = Math.sin(this.t * 1.8) * 0.35;
+      t.hang += (sstep(0.42, 0.24, m) * (1 - d) - t.hang) * (1 - Math.exp(-dt * 4));
+      t.drop = Math.max(0, t.drop - dt);
+
+      // wie houdt de ring vast (armen tillen hem een beetje op)
+      for (let k = 0; k < 8; k++) {
+        let target = 0;
+        if (!t.toss && k === t.holder) target = (1 - t.hang) * (1 - d) * (1 - this.charge);
+        if (t.toss && k === t.toss.to) target = 0.8;
+        this.hold[k] += (target - this.hold[k]) * (1 - Math.exp(-dt * 6));
+      }
+
+      // gooien en vangen
+      if (t.toss) {
+        t.toss.t += dt;
+        const u = clamp(t.toss.t / t.toss.T, 0, 1);
+        const tip = this.tips[t.toss.to];
+        t.x = lerp(t.toss.x0, tip.x, u);
+        t.y = lerp(t.toss.y0, tip.y, u) - 4 * t.toss.h * u * (1 - u);
+        // ogen volgen de ring
+        this.look.tx = clamp(t.x / 320, -1, 1);
+        this.look.ty = clamp((t.y + 150) / 320, -1, 1);
+        if (u >= 1) {
+          t.holder = t.toss.to;
+          t.toss = null;
+          this.armPulse[t.holder] = Math.max(this.armPulse[t.holder], 0.6);
+        }
+        return;
+      }
+
+      // volgende worp plannen (alleen als hij wakker, niet verdrietig en niet aan het knijpen is)
+      t.tossTimer -= dt;
+      if (t.tossTimer <= 0) {
+        const canPlay = !this.reduced && !this.athPhase && d < 0.3 && t.hang < 0.4 && this.annoyed <= 0;
+        if (canPlay) {
+          const happy = m > 0.58 || f > 0.3;
+          const height = happy ? lerp(170, 400, clamp(f + (m - 0.58) * 1.5, 0, 1)) : 70 + Math.random() * 50;
+          this._toss(this._pickCatcher(), height);
+          t.tossTimer = happy ? lerp(4.5, 1.2, f) + Math.random() : 6 + Math.random() * 4;
+        } else {
+          t.tossTimer = 1.5;
+        }
+        return;
+      }
+
+      // doelpositie: aan zijn tentakel, hangend, knuffelend of samengeknepen
+      const tip = this.tips[t.holder];
+      let tx = tip.x;
+      let ty = tip.y;
+      // hangend (verdrietig): ring bungelt onder het puntje
+      tx = lerp(tx, tip.x + Math.sin(t.swing) * TOY.r * 0.9, t.hang);
+      ty = lerp(ty, tip.y + Math.cos(t.swing) * TOY.r * 0.9, t.hang);
+      // knuffelen (slaap): tegen zijn buik
+      tx = lerp(tx, -40, d);
+      ty = lerp(ty, 60, d);
+      // squeeze-moment: vooraan, samengeknepen
+      tx = lerp(tx, 0, this.charge);
+      ty = lerp(ty, 40, this.charge);
+      // laten vallen (geïrriteerd) en net op tijd vangen
+      if (t.drop > 0) ty += Math.sin((1 - t.drop / 0.6) * Math.PI) * 170;
+      const k = 1 - Math.exp(-dt * 14);
+      t.x += (tx - t.x) * k;
+      t.y += (ty - t.y) * k;
+      if (this.charge <= 0) {
+        this.look.tx = lerp(this.look.tx, clamp(t.x / 500, -1, 1), 0.02);
+      }
+    }
+
+    _drawToy() {
+      const { ctx } = this;
+      const t = this.toy;
+      const sc = clamp(this.toyScale.v, 0, 1.3);
+      if (sc < 0.03) return;
+      const c = this.charge;
+      const d = this.drowsy.v;
+      const tip = this.tips[t.holder];
+      const r = TOY.r * sc;
+      const trem = this.reduced ? 0 : Math.sin(this.t * 70) * 4 * c;
+
+      // vorm: tollend om de arm, bungelend, knuffel, samengeknepen
+      const twirlRy = r * Math.max(0.22, Math.abs(Math.cos(t.spin)));
+      let rx = r;
+      let ry = lerp(twirlRy, r * 0.9, Math.max(t.hang, d));
+      let rot = t.toss ? t.spin * 0.5 : lerp(tip.th, t.swing * 0.4, t.hang);
+      rot = lerp(rot, -0.3, d);
+      rx = lerp(rx, r * 0.45, c);
+      ry = lerp(ry, r * 1.15, c);
+      rot = lerp(rot, 0, c);
 
       ctx.save();
-      ctx.translate(0, cy);
-      ctx.rotate(tilt);
+      ctx.translate(t.x + trem, t.y);
+      ctx.rotate(rot);
       ctx.lineCap = "round";
-
-      if (front) {
-        // zachte schaduw op zijn buik
-        ctx.beginPath();
-        ctx.ellipse(0, 10, rx, ry, 0, a0 + 0.12, a1 - 0.12);
-        ctx.strokeStyle = "rgba(0,0,0,0.12)";
-        ctx.lineWidth = lw * 1.2;
-        ctx.stroke();
-      }
+      const lw = TOY.lw * (1 + 0.3 * c) * clamp(sc, 0.4, 1.2);
       ctx.beginPath();
-      ctx.ellipse(0, 0, rx, ry, 0, a0, a1);
+      ctx.ellipse(0, 0, rx, ry, 0, 0, Math.PI * 2);
       ctx.strokeStyle = GREEN_DARK;
-      ctx.lineWidth = lw * 1.15;
+      ctx.lineWidth = lw * 1.2;
       ctx.stroke();
-
       ctx.beginPath();
-      ctx.ellipse(0, -2, rx, ry, 0, a0, a1);
-      ctx.strokeStyle = front ? GREEN_MID : "#5fd452";
-      ctx.lineWidth = lw * 0.78;
-      if (front && (c > 0.05 || this.euph.v > 0.1)) {
-        ctx.shadowColor = `rgba(${GREEN},0.8)`;
-        ctx.shadowBlur = (18 + 30 * c) * this._sc * 2;
+      ctx.ellipse(0, -1, rx, ry, 0, 0, Math.PI * 2);
+      ctx.strokeStyle = GREEN_MID;
+      ctx.lineWidth = lw * 0.8;
+      if (c > 0.05 || this.euph.v > 0.1 || t.toss) {
+        ctx.shadowColor = `rgba(${GREEN},0.85)`;
+        ctx.shadowBlur = (14 + 30 * c) * this._sc * 2;
       }
       ctx.stroke();
       ctx.shadowBlur = 0;
-
-      if (front) {
-        // glans
-        ctx.beginPath();
-        ctx.ellipse(0, -lw * 0.22, rx, ry, 0, 0.5, Math.PI - 0.5);
-        ctx.strokeStyle = "rgba(255,255,255,0.55)";
-        ctx.lineWidth = lw * 0.18;
-        ctx.stroke();
-      }
+      ctx.beginPath();
+      ctx.ellipse(0, -lw * 0.2, rx, ry, 0, Math.PI + 0.5, Math.PI * 2 - 0.5);
+      ctx.strokeStyle = "rgba(255,255,255,0.6)";
+      ctx.lineWidth = lw * 0.2;
+      ctx.stroke();
       ctx.restore();
     }
 
@@ -596,13 +705,13 @@
       const { ctx } = this;
       const t = easeOutCubic(clamp(this.fly.t / FLY_T, 0, 1));
       const target = this._ringRadius(this.rings - 1);
-      const rx = lerp(HOOP.rx * 0.8, target, t);
-      const ry = lerp(HOOP.ry * 0.8, target, t);
-      const cy = lerp(HOOP.y, RING_CY, t);
+      const r = lerp(TOY.r, target, t);
+      const cx = lerp(this.fly.x, 0, t);
+      const cy = lerp(this.fly.y, RING_CY, t);
       ctx.save();
       ctx.beginPath();
-      ctx.ellipse(0, cy, rx, ry, 0, 0, Math.PI * 2);
-      ctx.lineWidth = lerp(22, 9, t);
+      ctx.arc(cx, cy, r, 0, Math.PI * 2);
+      ctx.lineWidth = lerp(18, 9, t);
       ctx.strokeStyle = `rgba(${GREEN},1)`;
       ctx.shadowColor = `rgba(${GREEN},0.8)`;
       ctx.shadowBlur = 30 * this._sc * 2;
