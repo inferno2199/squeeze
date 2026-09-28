@@ -36,18 +36,29 @@
     </div>
 
     <div class="side">
+      <div class="hero">
+        <span class="hero-label">Market cap</span>
+        <span id="stat-mcap" class="hero-value">–</span>
+      </div>
+
       <dl class="stats">
         <div><dt>24h</dt><dd id="stat-change">–</dd></div>
         <div><dt>Combo</dt><dd id="stat-combo">x0</dd></div>
         <div><dt>Rings</dt><dd id="stat-rings">0</dd></div>
       </dl>
 
-      <section id="timeline" class="timeline" aria-label="Ring history" hidden>
-        <ol id="timeline-list"></ol>
-        <button id="timeline-more" class="more" type="button" hidden></button>
+      <section id="chart" class="chart" aria-label="Price chart with rings" hidden>
+        <canvas id="spark"></canvas>
+        <div class="chart-foot">
+          <span id="chart-range">Since launch</span>
+          <span class="chart-key"><i class="dot-ring"></i>Ring <i class="dot-reclaim"></i>Reclaim</span>
+          <a id="full-chart" href="#" target="_blank" rel="noopener" hidden>Full chart ↗</a>
+        </div>
       </section>
 
       <p class="line">Buys feed Squeeze. ATHs give him rings.</p>
+
+      <p class="perk">Paired with <b>$PUMP</b> · <b>3%</b> rewards to holders</p>
 
       <a id="buy" class="buy" href="#" target="_blank" rel="noopener">Buy on Pump.fun</a>
 
@@ -61,18 +72,30 @@
 
       <nav id="links" class="links" hidden></nav>
 
+      <section id="timeline" class="timeline" aria-label="Ring history" hidden>
+        <ol id="timeline-list"></ol>
+        <button id="timeline-more" class="more" type="button" hidden></button>
+      </section>
+
       <section id="dev" class="dev" hidden>
         <label>Chart <input id="dev-price" type="range" min="-1" max="1" step="0.01" value="0" /></label>
         <div class="dev-btns">
+          <button type="button" data-act="buy">Buy</button>
           <button type="button" data-act="combo">Combo +1</button>
           <button type="button" data-act="reset">Dump</button>
           <button type="button" data-act="ink">Big buy</button>
           <button type="button" data-act="ath">New ATH</button>
           <button type="button" data-act="reclaim">Reclaim</button>
+          <button type="button" data-act="sleep">Sleep</button>
+          <button type="button" data-act="wake">Wake</button>
         </div>
       </section>
     </div>
   </main>
+
+  <footer class="legal">
+    <p>$SQUEEZE is a meme coin made for fun. It has no intrinsic value, no roadmap and no promise of profit. Nothing on this site is financial advice. Crypto is extremely volatile and you can lose everything you put in. Only use money you can afford to lose and always do your own research. Holder rewards come from trading fees, so the amount depends on volume. By buying you accept that the creator is not responsible for any losses.</p>
+  </footer>
 
   <script src="config.js"></script>
   <script src="squeeze.js"></script>
