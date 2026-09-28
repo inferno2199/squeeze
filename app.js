@@ -136,6 +136,7 @@
 
   // Aangeroepen door Squeeze op het moment van de knal
   function onRing(n) {
+    if (typeof sea !== "undefined" && sea) sea.wave();
     const r = history.find((x) => x.n === n);
     pop(ui.ringChip, r && r.kind === "reclaim" ? "Reclaim!" : "Ring " + n);
     setRingsShown(n);
@@ -382,6 +383,12 @@
     return ev;
   }
 
+  // ---------- zee ----------
+  const sea = window.Sea
+    ? new window.Sea($("sea"), { reducedMotion: reduced, anchor: $("stage") })
+    : null;
+  if (sea) sea.start();
+
   // ---------- octopus ----------
   const sq = new window.Squeeze($("stage"), { reducedMotion: reduced, onRing });
 
@@ -393,6 +400,12 @@
     if (s.combo >= 10 && lastCombo < 10 && !instant) sq.euphoria(3);
     lastCombo = s.combo;
     sq.setDrought(!!s.drought);
+    if (sea) {
+      sea.setPrice(s.priceInput || 0);
+      sea.setDrought(!!s.drought);
+      sea.setCombo(s.combo || 0);
+      if (events.includes("buy")) sea.puff(s.lastBuys || 1);
+    }
     if (events.includes("wake")) {
       sq.wake();
       pop(ui.ringChip, "He's awake!");
@@ -414,6 +427,10 @@
   function idle() {
     sq.setPrice(0);
     sq.setCombo(0);
+    if (sea) {
+      sea.setPrice(0);
+      sea.setCombo(0);
+    }
   }
 
   // Aantikken
