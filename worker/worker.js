@@ -118,7 +118,7 @@ function fresh() {
     combo: 0, prevPrice: 0, prevBuysH1: null, prevVolH1: null, prevBuysM5: null,
     lastBuyAt: 0, lastBuys: 0, drought: false,
     priceInput: 0, h24: null, source: "", mcap: null, hist: [],
-    athSeq: 0, inkSeq: 0, buySeq: 0, wakeSeq: 0, live: false, updatedAt: 0, savedAt: 0,
+    athSeq: 0, inkSeq: 0, buySeq: 0, wakeSeq: 0, milestone: 0, milestoneSeq: 0, msInit: false, live: false, updatedAt: 0, savedAt: 0,
   };
 }
 
@@ -127,10 +127,12 @@ function view(s) {
     live: s.live, priceInput: s.priceInput, combo: s.combo, rings: s.rings,
     h24: s.h24, athSeq: s.athSeq, inkSeq: s.inkSeq, launchAt: s.launchAt || s.firstSeenAt,
     buySeq: s.buySeq, lastBuys: s.lastBuys, wakeSeq: s.wakeSeq, drought: s.drought,
-    mcap: s.mcap, hist: thin(s.hist, 240),
+    mcap: s.mcap, hist: thin(s.hist, 240), milestone: s.milestone, milestoneSeq: s.milestoneSeq,
     history: s.history.slice(-100), updatedAt: s.updatedAt, source: s.source,
   };
 }
+
+const MILESTONES = [1e5, 2.5e5, 5e5, 1e6, 2.5e6, 5e6, 1e7, 2.5e7, 5e7, 1e8];
 
 // Max n punten voor de mini-chart (laatste punt altijd mee)
 function thin(arr, n) {
@@ -219,6 +221,17 @@ function step(s, snap, rules, now) {
   if (!lastH || now - lastH[0] >= rules.sampleMs) s.hist.push([now, p]);
   else if (p > 0) lastH[1] = p;
   while (s.hist.length > 2 && now - s.hist[0][0] > 24 * 3600000) s.hist.shift();
+
+  // mijlpalen voor de kwal (marketcap)
+  if (snap.mcap > 0) {
+    let hit = 0;
+    for (const v of MILESTONES) if (snap.mcap >= v && v > (s.milestone || 0)) hit = v;
+    if (hit) {
+      if (s.msInit) s.milestoneSeq++;
+      s.milestone = hit;
+    }
+    s.msInit = true;
+  }
 
   s.priceInput = clamp(0.65 * Math.tanh(m5 / 6) + 0.35 * Math.tanh(delta / 1.5), -1, 1);
   s.h24 = Number.isFinite(snap.h24) ? snap.h24 : null;
