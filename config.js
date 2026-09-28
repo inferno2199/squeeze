@@ -8,13 +8,12 @@ window.SQUEEZE_CONFIG = {
   // Leeg laten = automatisch https://pump.fun/coin/<MINT>
   BUY_URL: "",
 
-  // Cloudflare Worker (map /worker) voor dezelfde ringen/combo bij iedereen.
-  // Leeg = site haalt DexScreener zelf op (werkt, maar ringen per bezoeker).
-  WORKER_URL: "",
+  // Cloudflare Worker: dezelfde ringen/combo bij iedereen.
+  WORKER_URL: "https://squeeze-state.inferno2199.workers.dev",
 
   // Socials (leeg = niet tonen)
-  X_URL: "",
-  TELEGRAM_URL: "",
+  X_URL: "https://x.com/JOUW-ACCOUNT",
+  TELEGRAM_URL: "https://t.me/JOUW-GROEP",
 
   POLL_MS: 10000,       // prijs ophalen, elke 10 sec
 
@@ -25,4 +24,5 @@ window.SQUEEZE_CONFIG = {
   RING_COOLDOWN_S: 30,  // minimaal 30 sec tussen twee ringen
 
   INK_USD: 250,         // buy vanaf $250 geeft inkt
+  DROUGHT_MIN: 15,      // 15 min geen buy = Squeeze valt in slaap
 };
