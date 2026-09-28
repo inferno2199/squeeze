@@ -36,10 +36,10 @@
 
   // Linkerarmen (rechts = gespiegeld). a = richting (0 omlaag, π/2 links).
   const ARMS = [
-    { x: -170, y: 150, a: 1.95, len: 0.56, ph: 0.0 },
-    { x: -140, y: 200, a: 1.38, len: 0.6, ph: 1.4 },
-    { x: -85, y: 225, a: 0.92, len: 0.58, ph: 2.6 },
-    { x: -30, y: 235, a: 0.48, len: 0.54, ph: 3.9 },
+    { x: -200, y: 85, a: 1.95, len: 0.56, ph: 0.0 },
+    { x: -178, y: 150, a: 1.38, len: 0.6, ph: 1.4 },
+    { x: -122, y: 200, a: 0.92, len: 0.58, ph: 2.6 },
+    { x: -64, y: 95, a: 0.46, len: 0.66, ph: 3.9, front: true },
   ];
 
   const POSE = {
@@ -148,8 +148,38 @@
         Object.entries(ASSETS).map(async ([k, src]) => [k, await loadImage(src)])
       );
       for (const [k, img] of entries) this.img[k] = img;
+      this._cover = this._makeCover();
       this.resize();
       window.addEventListener("resize", () => this.resize());
+    }
+
+    // Onderste stuk van het lijf, zacht uitlopend: ligt over de voorste armen
+    _makeCover() {
+      const c = document.createElement("canvas");
+      c.width = BODY_W;
+      c.height = BODY_H;
+      const x = c.getContext("2d");
+      x.drawImage(this.img.body, 0, 0);
+      x.globalCompositeOperation = "destination-in";
+      // verticaal: vol tot iets onder de buik, dan zacht weg
+      const gy = x.createLinearGradient(0, OY + 150, 0, OY + 228);
+      gy.addColorStop(0, "rgba(0,0,0,1)");
+      gy.addColorStop(1, "rgba(0,0,0,0)");
+      x.fillStyle = gy;
+      x.fillRect(0, 0, BODY_W, BODY_H);
+      // alleen het midden (waar de voorste armen zitten)
+      x.globalCompositeOperation = "destination-in";
+      const gx = x.createLinearGradient(0, 0, BODY_W, 0);
+      gx.addColorStop(0, "rgba(0,0,0,0)");
+      gx.addColorStop(0.18, "rgba(0,0,0,1)");
+      gx.addColorStop(0.82, "rgba(0,0,0,1)");
+      gx.addColorStop(1, "rgba(0,0,0,0)");
+      x.fillStyle = gx;
+      x.fillRect(0, 0, BODY_W, BODY_H);
+      // bovenkant hoeft niet (daar zit het gezicht): wissen
+      x.globalCompositeOperation = "destination-out";
+      x.fillRect(0, 0, BODY_W, OY + 40);
+      return c;
     }
 
     // ---------- publieke API ----------
@@ -487,11 +517,30 @@
       ctx.translate(0, -240);
 
       const pose = this._pose();
+      // achterste armen, dan zachte schaduw onder het lijf, dan lijf, dan voorste armen
       for (let i = 0; i < ARMS.length; i++) {
+        if (ARMS[i].front) continue;
         this._drawArm(ARMS[i], 1, pose, i * 2);
         this._drawArm(ARMS[i], -1, pose, i * 2 + 1);
       }
+      const ao = ctx.createRadialGradient(0, 225, 20, 0, 225, 270);
+      ao.addColorStop(0, "rgba(0,0,0,0.3)");
+      ao.addColorStop(1, "rgba(0,0,0,0)");
+      ctx.save();
+      ctx.translate(0, 225);
+      ctx.scale(1, 0.32);
+      ctx.translate(0, -225);
+      ctx.fillStyle = ao;
+      ctx.fillRect(-300, 140, 600, 170);
+      ctx.restore();
       ctx.drawImage(this.img.body, -BODY_W / 2, -OY, BODY_W, BODY_H);
+      for (let i = 0; i < ARMS.length; i++) {
+        if (!ARMS[i].front) continue;
+        this._drawArm(ARMS[i], 1, pose, i * 2);
+        this._drawArm(ARMS[i], -1, pose, i * 2 + 1);
+      }
+      // lijf loopt zacht over de aanzet van de voorste armen heen: één geheel
+      if (this._cover) ctx.drawImage(this._cover, -BODY_W / 2, -OY, BODY_W, BODY_H);
       this._drawFace(pose.m, Math.abs(this.turn.v));
       this._drawToy();
       ctx.restore();
@@ -535,7 +584,7 @@
       ctx.scale(side, 1);
       ctx.translate(def.x, def.y);
 
-      const N = 34;
+      const N = 48;
       const ds = L / N;
       const srcH = img.height / N;
       let x = 0;
@@ -548,7 +597,9 @@
         ctx.save();
         ctx.translate(x, y);
         ctx.rotate(th);
-        ctx.drawImage(img, 0, j * srcH, img.width, srcH + 2, -W / 2, 0, W, ds + 2 * def.len + 1);
+        // dik aan de basis, smal naar het puntje; voorste armen komen zacht uit de buik
+        const wm = lerp(1.38, 1, sstep(0, L * 0.4, s));
+          ctx.drawImage(img, 0, j * srcH, img.width, srcH + 2, (-W * wm) / 2, 0, W * wm, ds + 2 * def.len + 1);
         ctx.restore();
         x += -Math.sin(th) * ds;
         y += Math.cos(th) * ds;
@@ -642,6 +693,10 @@
       ty = lerp(ty, 40, this.charge);
       // laten vallen (geïrriteerd) en net op tijd vangen
       if (t.drop > 0) ty += Math.sin((1 - t.drop / 0.6) * Math.PI) * 170;
+      // nooit vóór zijn gezicht: opzij duwen
+      if (this.charge < 0.3 && ty > -340 && ty < 10 && Math.abs(tx) < 240) {
+        tx = (tx < 0 ? -1 : 1) * 240;
+      }
       const k = 1 - Math.exp(-dt * 14);
       t.x += (tx - t.x) * k;
       t.y += (ty - t.y) * k;
