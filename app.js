@@ -5,7 +5,7 @@
   const C = Object.assign(
     {
       TICKER: "$SQUEEZE", MINT: "", BUY_URL: "", WORKER_URL: "", X_URL: "", TELEGRAM_URL: "",
-      POLL_MS: 10000, GRACE_MIN: 5, RECLAIM_DIP: 0.15, RUN_STEP: 0.3, RING_COOLDOWN_S: 30, INK_USD: 250,
+      POLL_MS: 10000, DROUGHT_MIN: 15, GRACE_MIN: 5, RECLAIM_DIP: 0.15, RUN_STEP: 0.3, RING_COOLDOWN_S: 30, INK_USD: 250,
     },
     window.SQUEEZE_CONFIG || {}
   );
@@ -21,6 +21,8 @@
     runStep: C.RUN_STEP,
     cooldownMs: C.RING_COOLDOWN_S * 1000,
     inkUsd: C.INK_USD,
+    droughtMs: C.DROUGHT_MIN * 60000,
+    sampleMs: 60000,
   };
 
   const $ = (id) => document.getElementById(id);
@@ -55,6 +57,10 @@
     timeline: $("timeline"),
     list: $("timeline-list"),
     more: $("timeline-more"),
+    mcap: $("stat-mcap"),
+    chart: $("chart"),
+    spark: $("spark"),
+    range: $("chart-range"),
   };
 
   function pop(el, text) {
@@ -135,6 +141,104 @@
     setRingsShown(n);
   }
 
+  // ---------- marketcap + mini-chart ----------
+  function setMcap(v) {
+    ui.mcap.textContent = v > 0 ? fmtUsd(v) : "–";
+  }
+
+  let chartData = { hist: [], rings: [], launchAt: 0 };
+  function drawChart() {
+    const h = chartData.hist;
+    ui.chart.hidden = !h || h.length < 3;
+    if (ui.chart.hidden) return;
+    const cv = ui.spark;
+    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    const W = cv.clientWidth;
+    const H = cv.clientHeight;
+    if (!W || !H) return;
+    cv.width = Math.round(W * dpr);
+    cv.height = Math.round(H * dpr);
+    const ctx = cv.getContext("2d");
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    ctx.clearRect(0, 0, W, H);
+
+    const t0 = h[0][0];
+    const t1 = h[h.length - 1][0];
+    const span = Math.max(1, t1 - t0);
+    // log-schaal: een x10 ziet er even groot uit bij $10k als bij $1M
+    const logs = h.map((d) => Math.log(d[1]));
+    let lo = Math.min(...logs);
+    let hi = Math.max(...logs);
+    if (hi - lo < 0.02) { hi += 0.01; lo -= 0.01; }
+    const pad = 8;
+    const X = (t) => pad + ((t - t0) / span) * (W - pad * 2);
+    const Y = (p) => pad + (1 - (Math.log(p) - lo) / (hi - lo)) * (H - pad * 2);
+
+    // vlak
+    const g = ctx.createLinearGradient(0, 0, 0, H);
+    g.addColorStop(0, "rgba(124,255,107,0.22)");
+    g.addColorStop(1, "rgba(124,255,107,0)");
+    ctx.beginPath();
+    h.forEach((d, i) => (i ? ctx.lineTo(X(d[0]), Y(d[1])) : ctx.moveTo(X(d[0]), Y(d[1]))));
+    ctx.lineTo(X(t1), H);
+    ctx.lineTo(X(t0), H);
+    ctx.closePath();
+    ctx.fillStyle = g;
+    ctx.fill();
+
+    // lijn
+    ctx.beginPath();
+    h.forEach((d, i) => (i ? ctx.lineTo(X(d[0]), Y(d[1])) : ctx.moveTo(X(d[0]), Y(d[1]))));
+    ctx.strokeStyle = "#7cff6b";
+    ctx.lineWidth = 2;
+    ctx.lineJoin = "round";
+    ctx.stroke();
+
+    // ringen als stipjes op de lijn (reclaim = witte rand)
+    const priceAt = (t) => {
+      for (let i = 1; i < h.length; i++) {
+        if (h[i][0] >= t) {
+          const a = h[i - 1];
+          const b = h[i];
+          const k = (t - a[0]) / Math.max(1, b[0] - a[0]);
+          return a[1] + (b[1] - a[1]) * k;
+        }
+      }
+      return h[h.length - 1][1];
+    };
+    for (const r of chartData.rings) {
+      if (r.n > shownRings) continue;
+      const t = chartData.launchAt + r.t;
+      if (t < t0 || t > t1 + 60000) continue;
+      const x = X(Math.min(t, t1));
+      const y = Y(r.p > 0 ? r.p : priceAt(t));
+      ctx.beginPath();
+      ctx.arc(x, y, 4.5, 0, Math.PI * 2);
+      ctx.fillStyle = "#7cff6b";
+      ctx.fill();
+      ctx.lineWidth = 2;
+      ctx.strokeStyle = r.kind === "reclaim" ? "#f3f7f2" : "#030604";
+      ctx.stroke();
+    }
+
+    // nu
+    const last = h[h.length - 1];
+    ctx.beginPath();
+    ctx.arc(X(last[0]), Y(last[1]), 3.5, 0, Math.PI * 2);
+    ctx.fillStyle = "#f3f7f2";
+    ctx.fill();
+
+    ui.range.textContent = span >= 23 * 3600000 ? "Last 24h" : "Since launch";
+  }
+  window.addEventListener("resize", drawChart);
+
+  // Full chart-link
+  if (MINT) {
+    const fc = $("full-chart");
+    fc.href = "https://dexscreener.com/solana/" + MINT;
+    fc.hidden = false;
+  }
+
   function setStatus(kind, text) {
     ui.status.dataset.kind = kind;
     ui.statusText.textContent = text;
@@ -184,8 +288,9 @@
     return {
       launchAt: 0, firstSeenAt: 0, ath: 0, graceHigh: 0, graceDone: false,
       lastRingPrice: 0, lastRingAt: 0, dipped: false, rings: 0, history: [],
-      combo: 0, prevPrice: 0, prevBuysH1: null, prevVolH1: null,
-      priceInput: 0, h24: null, source: "",
+      combo: 0, prevPrice: 0, prevBuysH1: null, prevVolH1: null, prevBuysM5: null,
+      lastBuyAt: 0, lastBuys: 0, drought: false,
+      priceInput: 0, h24: null, source: "", mcap: null, hist: [],
     };
   }
 
@@ -194,6 +299,7 @@
     if (s.source && snap.source !== s.source) {
       s.prevBuysH1 = null;
       s.prevVolH1 = null;
+      s.prevBuysM5 = null;
     }
     s.source = snap.source;
     if (!s.firstSeenAt) s.firstSeenAt = now;
@@ -215,6 +321,23 @@
     else if (delta < -0.3) s.combo = 0;
     if (dVol >= rules.inkUsd && newBuys > 0 && delta >= 0) ev.push("ink");
 
+    // buys: knijpjes, droogte (15 min geen buy) en wakker worden
+    const m5Up =
+      s.prevBuysM5 != null && snap.buysM5 != null ? Math.max(0, snap.buysM5 - s.prevBuysM5) : 0;
+    const buysNow = Math.max(newBuys, m5Up);
+    const hasBuyData = snap.buysM5 != null && snap.source !== "jupiter";
+    if (!s.lastBuyAt) s.lastBuyAt = now;
+    if (buysNow > 0) s.lastBuyAt = now;
+    else if ((snap.buysM5 || 0) > 0) s.lastBuyAt = Math.max(s.lastBuyAt, now - 5 * 60000);
+    s.lastBuys = buysNow;
+    if (buysNow > 0) ev.push("buy");
+    if (s.drought && buysNow > 0) {
+      s.drought = false;
+      ev.push("wake");
+    } else if (!s.drought && hasBuyData && now - s.lastBuyAt >= rules.droughtMs) {
+      s.drought = true;
+    }
+
     // ringen
     if (now - launch < rules.graceMs) {
       // eerste minuten: alleen de high onthouden, geen ringen
@@ -235,7 +358,7 @@
           s.lastRingPrice = p;
           s.lastRingAt = now;
           s.dipped = false;
-          s.history.push({ n: s.rings, kind, t: now - launch, mcap: snap.mcap || null });
+          s.history.push({ n: s.rings, kind, t: now - launch, mcap: snap.mcap || null, p });
           if (s.history.length > 100) s.history.shift();
           ev.push("ath");
         }
@@ -243,21 +366,41 @@
       }
     }
 
+    // prijsgeschiedenis voor de mini-chart (1 punt per minuut, max 24 uur)
+    if (snap.mcap > 0) s.mcap = snap.mcap;
+    const lastH = s.hist[s.hist.length - 1];
+    if (!lastH || now - lastH[0] >= rules.sampleMs) s.hist.push([now, p]);
+    else if (p > 0) lastH[1] = p;
+    while (s.hist.length > 2 && now - s.hist[0][0] > 24 * 3600000) s.hist.shift();
+
     s.priceInput = clamp(0.65 * Math.tanh(m5 / 6) + 0.35 * Math.tanh(delta / 1.5), -1, 1);
     s.h24 = isFinite(snap.h24) ? snap.h24 : null;
     s.prevPrice = p;
     s.prevBuysH1 = snap.buysH1 ?? null;
     s.prevVolH1 = snap.volH1 ?? null;
+    s.prevBuysM5 = snap.buysM5 ?? null;
     return ev;
   }
 
   // ---------- octopus ----------
   const sq = new window.Squeeze($("stage"), { reducedMotion: reduced, onRing });
 
+  let lastCombo = 0;
   function apply(s, events, instant = false) {
     sq.setPrice(s.priceInput);
     sq.setCombo(s.combo);
     setCombo(s.combo);
+    if (s.combo >= 10 && lastCombo < 10 && !instant) sq.euphoria(3);
+    lastCombo = s.combo;
+    sq.setDrought(!!s.drought);
+    if (events.includes("wake")) {
+      sq.wake();
+      pop(ui.ringChip, "He's awake!");
+    }
+    if (events.includes("buy")) sq.buyPulse(Math.min(1, (s.lastBuys || 1) / 5));
+    setMcap(s.mcap);
+    chartData = { hist: s.hist || [], rings: s.history || [], launchAt: s.launchAt || s.firstSeenAt || 0 };
+    drawChart();
     setChange(s.h24);
     history = s.history || [];
     if (instant) {
@@ -385,7 +528,11 @@
         const d = await fetchJSON(base + "/state");
         if (!d || !d.live) throw new Error("not live");
         fails = 0;
-        const s = { priceInput: d.priceInput, combo: d.combo, h24: d.h24, rings: d.rings, history: d.history || [] };
+        const s = {
+          priceInput: d.priceInput, combo: d.combo, h24: d.h24, rings: d.rings,
+          history: d.history || [], drought: d.drought, lastBuys: d.lastBuys,
+          mcap: d.mcap, hist: d.hist || [], launchAt: d.launchAt,
+        };
         if (!seen) {
           apply(s, [], true);
         } else {
@@ -397,9 +544,11 @@
             for (let i = 0; i < anim; i++) ev.push("ath");
           }
           if (d.inkSeq > seen.inkSeq) ev.push("ink");
+          if (d.buySeq > seen.buySeq) ev.push("buy");
+          if (d.wakeSeq > seen.wakeSeq) ev.push("wake");
           apply(s, ev);
         }
-        seen = { athSeq: d.athSeq, inkSeq: d.inkSeq };
+        seen = { athSeq: d.athSeq, inkSeq: d.inkSeq, buySeq: d.buySeq || 0, wakeSeq: d.wakeSeq || 0 };
         setStatus("live", "Live");
       } catch {
         if (++fails < 2) return;
@@ -458,28 +607,34 @@
     const hist = [];
     let buysH1 = 0;
     let volH1 = 0;
+    const buyWin = [];
     let regime = "chop";
     let left = 4;
     const tick = () => {
       if (--left <= 0) {
         const r = Math.random();
-        if (regime !== "pump" && r < 0.5) { regime = "pump"; left = 10 + ((Math.random() * 8) | 0); }
+        if (regime === "chop" && r < 0.14) { regime = "dead"; left = 38 + ((Math.random() * 6) | 0); }
+        else if (regime !== "pump" && r < 0.5) { regime = "pump"; left = 10 + ((Math.random() * 8) | 0); }
         else if (regime === "pump" && r < 0.45) { regime = "dump"; left = 4 + ((Math.random() * 4) | 0); }
         else { regime = "chop"; left = 4 + ((Math.random() * 5) | 0); }
       }
       const drift = regime === "pump" ? 0.024 : regime === "dump" ? -0.04 : 0;
-      const noise = (Math.random() - 0.5) * (regime === "chop" ? 0.012 : 0.01);
+      const noise = (Math.random() - 0.5) * (regime === "chop" ? 0.012 : regime === "dead" ? 0.003 : 0.01);
       price *= Math.exp(drift + noise);
       hist.push(price);
       if (hist.length > 12) hist.shift();
+      buyWin.push(0);
       const buys = regime === "pump" ? 3 + ((Math.random() * 5) | 0) : regime === "chop" ? (Math.random() * 3) | 0 : 0;
-      const sells = regime === "dump" ? 3 + ((Math.random() * 4) | 0) : (Math.random() * 2) | 0;
+      const sells = regime === "dump" ? 3 + ((Math.random() * 4) | 0) : regime === "dead" ? 0 : (Math.random() * 2) | 0;
       buysH1 += buys;
+      buyWin[buyWin.length - 1] = buys;
+      if (buyWin.length > 10) buyWin.shift();
+      const buysM5 = buyWin.reduce((a, b) => a + b, 0);
       volH1 += buys * (30 + Math.random() * 60);
       if (regime === "pump" && Math.random() < 0.12) volH1 += 260 + Math.random() * 400;
       const snap = {
         price, m5: (price / hist[0] - 1) * 100, h24: (price / start - 1) * 100,
-        buysM5: buys * 4, sellsM5: sells * 4, buysH1, volH1,
+        buysM5, sellsM5: sells * 4, buysH1, volH1,
         mcap: price * 1e9, createdAt: t0, source: "demo",
       };
       // demo-tijd loopt 20x sneller, zodat de tijdlijn realistisch oogt
@@ -509,14 +664,30 @@
       if (!act) return;
       if (act === "ath" || act === "reclaim") {
         s.rings++;
-        mcap *= act === "ath" ? 1.3 : 1.15;
-        s.history.push({ n: s.rings, kind: act === "ath" ? "run" : "reclaim", t: (Date.now() - t0) * 20 + 5 * 60000, mcap });
+        const last = s.hist[s.hist.length - 1];
+        const np = last[1] * (act === "ath" ? 1.3 : 1.15);
+        const tNow = last[0] + 60000;
+        s.hist.push([tNow, np]);
+        s.mcap = np * 1e9;
+        s.history.push({ n: s.rings, kind: act === "ath" ? "run" : "reclaim", t: tNow - s.launchAt, mcap: s.mcap, p: np });
         apply(s, ["ath"]);
       }
       if (act === "ink") apply(s, ["ink"]);
-      if (act === "combo") { s.combo++; apply(s, []); }
+      if (act === "combo") { s.combo++; s.lastBuys = 2; apply(s, ["buy"]); }
+      if (act === "buy") { s.lastBuys = 3; apply(s, ["buy"]); }
+      if (act === "sleep") { s.drought = true; apply(s, []); }
+      if (act === "wake") { if (s.drought) { s.drought = false; apply(s, ["wake"]); } }
       if (act === "reset") { s.combo = 0; apply(s, []); }
     });
+    // nep-geschiedenis zodat de mini-chart in clips al gevuld is
+    const now0 = Date.now();
+    let pr = 0.000012;
+    for (let i = 60; i >= 0; i--) {
+      pr *= Math.exp((Math.random() - 0.42) * 0.06);
+      s.hist.push([now0 - i * 60000, pr]);
+    }
+    s.mcap = pr * 1e9;
+    s.launchAt = now0 - 60 * 60000;
     setStatus("demo", "Dev mode");
     apply(s, [], true);
   }
