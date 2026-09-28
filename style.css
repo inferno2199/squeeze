@@ -18,12 +18,22 @@ body {
   min-height: 100%;
   font-family: var(--font);
   color: var(--white);
-  background:
-    radial-gradient(60% 45% at 50% 38%, var(--water) 0%, rgba(11, 31, 18, 0) 70%),
-    var(--deep);
+  background: var(--deep);
   padding: env(safe-area-inset-top, 0px) 0 env(safe-area-inset-bottom, 0px);
   -webkit-font-smoothing: antialiased;
 }
+
+/* De zee: vast achter alles */
+#sea {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 0;
+  pointer-events: none;
+  display: block;
+}
+.top, main, .legal { position: relative; z-index: 1; }
 
 .top {
   display: flex;
