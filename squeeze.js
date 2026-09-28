@@ -98,6 +98,9 @@
       this.euph = new Spring(0, 30, 9);
       this.drowsy = new Spring(0, 3, 3.5);
       this.toyScale = new Spring(1, 140, 9);
+      this.friends = null;   // zie friends.js
+      this.focus = null;     // punt waar hij naar kijkt (een vriendje)
+      this.scare = new Spring(0, 20, 8);
       this.tips = new Array(8).fill(null).map(() => ({ x: 0, y: 0, th: 0 }));
       this.hold = new Array(8).fill(0);
       this.toy = {
@@ -255,6 +258,12 @@
       return "poke";
     }
 
+    // zichtbaar gebied in wereld-eenheden (voor de vriendjes)
+    bounds() {
+      const sc = this._sc || 1;
+      return { hw: this.w / 2 / sc, top: (-this.h * 0.47) / sc, bot: (this.h * 0.53) / sc };
+    }
+
     hitTest(clientX, clientY) {
       const r = this.canvas.getBoundingClientRect();
       const x = (clientX - r.left - this.w / 2) / this._sc;
@@ -314,6 +323,12 @@
       for (let i = 0; i < 8; i++) this.armPulse[i] *= Math.exp(-dt * 3.5);
 
       this._updateToy(dt);
+      this.scare.step(dt);
+      if (this.friends) this.friends.update(dt);
+      if (this.focus && !(this.toy && this.toy.toss)) {
+        this.look.tx = clamp(this.focus.x / 450, -1, 1);
+        this.look.ty = clamp((this.focus.y + 150) / 400, -1, 1);
+      }
       this.look.x = lerp(this.look.x, this.look.tx, 1 - Math.exp(-dt * 4));
       this.look.y = lerp(this.look.y, this.look.ty, 1 - Math.exp(-dt * 4));
 
@@ -360,7 +375,7 @@
       const trem = this.reduced ? 0 : Math.sin(this.t * 70) * 0.012 * this.charge;
       const m = this.mood.v;
       this.sx.target = 1 + 0.12 * this.charge - breathe * 0.5 + trem + 0.03 * d;
-      this.sy.target = 1 - 0.15 * this.charge + breathe - (1 - m) * 0.02 - 0.04 * d - trem;
+      this.sy.target = 1 - 0.15 * this.charge + breathe - (1 - m) * 0.02 - 0.04 * d - trem - 0.05 * this.scare.v;
       this.sx.step(dt);
       this.sy.step(dt);
 
@@ -452,6 +467,10 @@
       const d = this.drowsy.v;
       a = lerp(lerp(a, POSE.wild.a, e), POSE.sleep.a, d);
       b = b.map((v, i) => lerp(lerp(v, POSE.wild.b[i], e), POSE.sleep.b[i], d));
+      // bang (haai): armen dicht tegen zich aan
+      const fear = this.scare.v;
+      a += fear * 0.35;
+      b = b.map((v) => v + fear * 0.7);
       return { a, b, m };
     }
 
@@ -470,6 +489,7 @@
 
       this._drawRings();
       this._drawInk();
+      if (this.friends) this.friends.draw(ctx, "back");
 
       const d = this.drowsy.v;
       const e = this.euph.v;
@@ -498,6 +518,7 @@
 
       this._drawFly();
       this._drawZ(bob);
+      if (this.friends) this.friends.draw(ctx, "front");
       this._drawSparks();
       ctx.restore();
     }
@@ -578,6 +599,7 @@
 
     _updateToy(dt) {
       const t = this.toy;
+      if (t.stolen) return; // de krab heeft hem
       const m = this._moodEff();
       const f = this.frenzy.v;
       const d = this.drowsy.v;
@@ -653,6 +675,7 @@
     _drawToy() {
       const { ctx } = this;
       const t = this.toy;
+      if (t.stolen) return;
       const sc = clamp(this.toyScale.v, 0, 1.3);
       if (sc < 0.03) return;
       const c = this.charge;
