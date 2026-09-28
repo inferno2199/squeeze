@@ -26,6 +26,7 @@
   };
 
   const $ = (id) => document.getElementById(id);
+  const MILESTONES = [1e5, 2.5e5, 5e5, 1e6, 2.5e6, 5e6, 1e7, 2.5e7, 5e7, 1e8];
   const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 
   // ---------- opmaak ----------
@@ -137,6 +138,7 @@
   // Aangeroepen door Squeeze op het moment van de knal
   function onRing(n) {
     if (typeof sea !== "undefined" && sea) sea.wave();
+    if (typeof friends !== "undefined" && friends) friends.onRing();
     const r = history.find((x) => x.n === n);
     pop(ui.ringChip, r && r.kind === "reclaim" ? "Reclaim!" : "Ring " + n);
     setRingsShown(n);
@@ -374,6 +376,17 @@
     else if (p > 0) lastH[1] = p;
     while (s.hist.length > 2 && now - s.hist[0][0] > 24 * 3600000) s.hist.shift();
 
+    // mijlpalen voor de kwal (marketcap)
+    if (snap.mcap > 0) {
+      let hit = 0;
+      for (const v of MILESTONES) if (snap.mcap >= v && v > (s.milestone || 0)) hit = v;
+      if (hit) {
+        if (s.msInit) ev.push("milestone");
+        s.milestone = hit;
+      }
+      s.msInit = true;
+    }
+
     s.priceInput = clamp(0.65 * Math.tanh(m5 / 6) + 0.35 * Math.tanh(delta / 1.5), -1, 1);
     s.h24 = isFinite(snap.h24) ? snap.h24 : null;
     s.prevPrice = p;
@@ -391,6 +404,17 @@
 
   // ---------- octopus ----------
   const sq = new window.Squeeze($("stage"), { reducedMotion: reduced, onRing });
+  const friends = window.Friends
+    ? new window.Friends(sq, {
+        reducedMotion: reduced,
+        onChip: (t) => {
+          // kwal zweeft bovenaan: chipje onderaan tonen
+          ui.ringChip.classList.add("low");
+          pop(ui.ringChip, t);
+          setTimeout(() => ui.ringChip.classList.remove("low"), 1500);
+        },
+      })
+    : null;
 
   let lastCombo = 0;
   function apply(s, events, instant = false) {
@@ -400,6 +424,11 @@
     if (s.combo >= 10 && lastCombo < 10 && !instant) sq.euphoria(3);
     lastCombo = s.combo;
     sq.setDrought(!!s.drought);
+    if (friends) {
+      friends.onState({ priceInput: s.priceInput || 0, combo: s.combo || 0, drought: !!s.drought });
+      if (events.includes("buy")) friends.onBuy(s.lastBuys || 1);
+      if (events.includes("milestone")) friends.onMilestone(s.milestone);
+    }
     if (sea) {
       sea.setPrice(s.priceInput || 0);
       sea.setDrought(!!s.drought);
@@ -436,6 +465,7 @@
   // Aantikken
   const stage = $("stage");
   stage.addEventListener("pointerdown", (e) => {
+    if (friends && friends.hit(e.clientX, e.clientY)) return;
     if (!sq.hitTest(e.clientX, e.clientY)) return;
     const r = sq.poke();
     if (r === "poke" && navigator.vibrate) navigator.vibrate(12);
@@ -548,7 +578,7 @@
         const s = {
           priceInput: d.priceInput, combo: d.combo, h24: d.h24, rings: d.rings,
           history: d.history || [], drought: d.drought, lastBuys: d.lastBuys,
-          mcap: d.mcap, hist: d.hist || [], launchAt: d.launchAt,
+          mcap: d.mcap, hist: d.hist || [], launchAt: d.launchAt, milestone: d.milestone,
         };
         if (!seen) {
           apply(s, [], true);
@@ -563,9 +593,13 @@
           if (d.inkSeq > seen.inkSeq) ev.push("ink");
           if (d.buySeq > seen.buySeq) ev.push("buy");
           if (d.wakeSeq > seen.wakeSeq) ev.push("wake");
+          if ((d.milestoneSeq || 0) > seen.milestoneSeq) ev.push("milestone");
           apply(s, ev);
         }
-        seen = { athSeq: d.athSeq, inkSeq: d.inkSeq, buySeq: d.buySeq || 0, wakeSeq: d.wakeSeq || 0 };
+        seen = {
+          athSeq: d.athSeq, inkSeq: d.inkSeq, buySeq: d.buySeq || 0,
+          wakeSeq: d.wakeSeq || 0, milestoneSeq: d.milestoneSeq || 0,
+        };
         setStatus("live", "Live");
       } catch {
         if (++fails < 2) return;
@@ -692,6 +726,12 @@
       if (act === "ink") apply(s, ["ink"]);
       if (act === "combo") { s.combo++; s.lastBuys = 2; apply(s, ["buy"]); }
       if (act === "buy") { s.lastBuys = 3; apply(s, ["buy"]); }
+      if (act.startsWith("f-") && friends) {
+        const kind = act.slice(2);
+        if (kind === "crab-steal") friends.force("crab", { steal: true });
+        else if (kind === "jelly") friends.force("jelly", { value: 1e6 });
+        else friends.force(kind);
+      }
       if (act === "sleep") { s.drought = true; apply(s, []); }
       if (act === "wake") { if (s.drought) { s.drought = false; apply(s, ["wake"]); } }
       if (act === "reset") { s.combo = 0; apply(s, []); }
@@ -718,6 +758,7 @@
   // ---------- start ----------
   sq.load()
     .then(() => {
+      if (friends) friends.load();
       sq.start();
       document.body.classList.add("ready");
       if (DEV) startDev();
