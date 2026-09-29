@@ -8,11 +8,11 @@
   const ease = (t) => t * t * (3 - 2 * t);
   const rnd = (a, b) => a + Math.random() * (b - a);
 
-  const KINDS = ["fish", "minnow", "shrimp", "crab", "lobster", "dolphin", "shark", "seal", "jelly"];
+  const KINDS = ["fish", "minnow", "shrimp", "crab", "lobster", "dolphin", "shark", "seal", "jelly", "whale"];
   // breedte in wereld-eenheden (Squeeze zelf is ~500 breed)
   const SIZE = {
     fish: 250, minnow: 105, shrimp: 150, crab: 250, lobster: 215,
-    dolphin: 380, shark: 480, seal: 360, jelly: 230,
+    dolphin: 380, shark: 480, seal: 360, jelly: 230, whale: 1000,
   };
   // dieren die "een moment" zijn: er is er steeds hooguit één tegelijk
   const EVENT = new Set(["minnow", "shrimp", "crab", "lobster", "dolphin", "shark"]);
@@ -41,6 +41,7 @@
               const im = new Image();
               im.onload = () => {
                 this.img[k] = im;
+                if (k === "whale") this.img.whaleFar = tintFar(im);
                 res();
               };
               im.onerror = () => res(); // ontbreekt er een, dan komt dat dier gewoon niet
@@ -69,6 +70,10 @@
     onRing() {
       if (Math.random() < 0.45) this.try("lobster", 300);
     }
+    // grote buy: een walvis zwemt groot en langzaam door de achtergrond
+    onWhale() {
+      if (this.try("whale", 120, { priority: true })) this.onChip("Whale buy! 🐋");
+    }
     onMilestone(value) {
       this.force("jelly", { value });
     }
@@ -77,7 +82,8 @@
     try(kind, cooldownSec, extra) {
       if (this.reduced || !this.img[kind]) return false;
       if ((this.cool[kind] || 0) > this.t) return false;
-      if (EVENT.has(kind) && this.active.some((a) => EVENT.has(a.kind))) return false;
+      if (!(extra && extra.priority) && EVENT.has(kind) && this.active.some((a) => EVENT.has(a.kind))) return false;
+      if (kind === "whale" && this.active.some((a) => a.kind === "whale")) return false;
       this.cool[kind] = this.t + cooldownSec;
       this._spawn(kind, extra || {});
       return true;
@@ -124,6 +130,10 @@
         a.v = 95;
       } else if (kind === "dolphin") {
         a.dur = 2.6;
+      } else if (kind === "whale") {
+        a.x = -dir * (b.hw + 520);
+        a.y = rnd(-330, -230);
+        a.v = 150;
       } else if (kind === "shark") {
         a.x = -dir * edge;
         a.y = rnd(-160, -40);
@@ -326,6 +336,12 @@
           if (Math.abs(a.x) < b.hw + 100) a.focus = { x: a.x, y: a.y };
           return Math.abs(a.x) < edge + 10 || a.t < 1;
         }
+        case "whale": {
+          a.x += a.dir * a.v * dt;
+          a.y += Math.sin(a.t * 0.6) * 10 * dt;
+          if (Math.abs(a.x) < b.hw) a.focus = { x: a.x, y: a.y };
+          return Math.abs(a.x) < b.hw + 540 || a.t < 1;
+        }
         case "seal": {
           if (!a.leaving) {
             const dx = a.home - a.x;
@@ -416,6 +432,14 @@
           case "dolphin":
             if (layer === "back") this._img(ctx, "dolphin", a.x, a.y, { flip: a.dir < 0, rot: a.rot || 0 });
             break;
+          case "whale":
+            if (layer === "back") {
+              // groot en ver weg: iets doorzichtig, rustig op en neer
+              this._img(ctx, "whale", a.x, a.y, {
+                flip: a.dir < 0, rot: Math.sin(a.t * 0.6) * 0.03, im: this.img.whaleFar,
+              });
+            }
+            break;
           case "shark":
             if (layer === "back") this._img(ctx, "shark", a.x, a.y, { flip: a.dir < 0, rot: Math.sin(a.t * 2) * 0.03 });
             break;
@@ -442,7 +466,7 @@
     }
 
     _img(ctx, kind, x, y, o = {}) {
-      const im = this.img[kind];
+      const im = o.im || this.img[kind];
       if (!im) return;
       const w = SIZE[kind] * (o.s || 1);
       const h = (im.height / im.width) * w;
@@ -470,6 +494,22 @@
       ctx.stroke();
       ctx.restore();
     }
+  }
+
+  // "ver weg in de zee": donkerder en groener, werkt in elke browser
+  function tintFar(im) {
+    const c = document.createElement("canvas");
+    c.width = im.width;
+    c.height = im.height;
+    const x = c.getContext("2d");
+    x.drawImage(im, 0, 0);
+    x.globalCompositeOperation = "source-atop";
+    x.fillStyle = "rgba(4,34,24,0.55)";
+    x.fillRect(0, 0, c.width, c.height);
+    x.globalCompositeOperation = "destination-in";
+    x.globalAlpha = 0.9;
+    x.drawImage(im, 0, 0);
+    return c;
   }
 
   function fmt(v) {
