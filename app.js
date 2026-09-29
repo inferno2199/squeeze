@@ -141,6 +141,10 @@
     if (typeof sea !== "undefined" && sea) sea.wave();
     if (typeof friends !== "undefined" && friends) friends.onRing();
     const r = history.find((x) => x.n === n);
+    if (typeof talk !== "undefined" && talk) {
+      talk.setState({ rings: n });
+      talk.say(r && r.kind === "reclaim" ? "reclaim" : "ring", { ring: n }, 1000);
+    }
     pop(ui.ringChip, r && r.kind === "reclaim" ? "Reclaim!" : "Ring " + n);
     setRingsShown(n);
   }
@@ -406,20 +410,21 @@
   if (sea) sea.start();
 
   // ---------- octopus ----------
-  const sq = new window.Squeeze($("stage"), { reducedMotion: reduced, onRing });
+  const sq = new window.Squeeze($("stage"), {
+    reducedMotion: reduced,
+    onRing,
+    onEvent: (e) => talk && e === "glass" && talk.say("glass", {}, 400),
+  });
+  const talk = window.Talk ? new window.Talk($("stage").parentElement, sq, { reducedMotion: reduced }) : null;
   const friends = window.Friends
     ? new window.Friends(sq, {
         reducedMotion: reduced,
-        onChip: (t) => {
-          // kwal zweeft bovenaan: chipje onderaan tonen
-          ui.ringChip.classList.add("low");
-          pop(ui.ringChip, t);
-          setTimeout(() => ui.ringChip.classList.remove("low"), 1500);
-        },
+        onSay: (cat, vars, delay) => talk && talk.say(cat, vars, delay),
       })
     : null;
 
   let lastCombo = 0;
+  const talkPrev = { drought: false, combo: 0, price: 0, buyAt: Date.now() };
   function apply(s, events, instant = false) {
     sq.setPrice(s.priceInput);
     sq.setCombo(s.combo);
@@ -439,9 +444,28 @@
       sea.setCombo(s.combo || 0);
       if (events.includes("buy")) sea.puff(s.lastBuys || 1);
     }
-    if (events.includes("wake")) {
-      sq.wake();
-      pop(ui.ringChip, "He's awake!");
+    if (events.includes("wake")) sq.wake();
+    if (talk) {
+      talk.setState({ rings: s.rings || 0, drought: !!s.drought });
+      if (!instant) {
+        if (events.includes("wake")) talk.say("wake", {}, 500);
+        if (!talkPrev.drought && s.drought) talk.say("sleep", {}, 800);
+        const c = s.combo || 0;
+        if (c >= 10 && talkPrev.combo < 10) talk.say("combo10", { combo: c });
+        else if (c >= 5 && talkPrev.combo < 5) talk.say("combo5", { combo: c });
+        else if (c >= 3 && talkPrev.combo < 3) talk.say("combo3", { combo: c });
+        const pi = s.priceInput || 0;
+        if (pi >= 0.5 && talkPrev.price < 0.5) talk.say("pump");
+        if (pi <= -0.5 && talkPrev.price > -0.5) talk.say("dump");
+        if (events.includes("buy")) {
+          const now = Date.now();
+          if (now - talkPrev.buyAt > 180000) talk.say("firstBuy");
+          talkPrev.buyAt = now;
+        }
+      }
+      talkPrev.drought = !!s.drought;
+      talkPrev.combo = s.combo || 0;
+      talkPrev.price = s.priceInput || 0;
     }
     if (events.includes("buy")) sq.buyPulse(Math.min(1, (s.lastBuys || 1) / 5));
     setMcap(s.mcap);
@@ -477,14 +501,18 @@
     if (friends && friends.hit(e.clientX, e.clientY)) return;
     if (sq.highFiveAt(e.clientX, e.clientY)) {
       if (navigator.vibrate) navigator.vibrate([15, 30, 15]);
+      if (talk) talk.say("highfive", {}, 250);
       return;
     }
     if (!sq.hitTest(e.clientX, e.clientY)) return;
     const r = sq.poke();
-    if (r === "poke" && navigator.vibrate) navigator.vibrate(12);
+    if (r === "poke") {
+      if (navigator.vibrate) navigator.vibrate(12);
+      if (talk && Math.random() < 0.4) talk.say("poke");
+    }
     if (r === "annoyed") {
       if (navigator.vibrate) navigator.vibrate([20, 40, 20]);
-      pop(ui.pokeChip, "Stop poking.");
+      if (talk) talk.say("annoyed");
     }
   });
   stage.addEventListener("pointermove", (e) => {
