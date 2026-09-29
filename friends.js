@@ -514,7 +514,7 @@
 
   function fmt(v) {
     if (v >= 1e6) return "$" + (v / 1e6).toFixed(v % 1e6 ? 1 : 0) + "M";
-    return "$" + Math.round(v / 1e3) + "k";
+    return "$" + Math.round(v / 1e3) + "k"; // 25k, 50k, 75k, …
   }
 
   window.Friends = Friends;
