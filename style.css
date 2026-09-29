@@ -112,6 +112,66 @@ body.ready .stage-wrap { opacity: 1; transform: none; }
   border-radius: 999px;
 }
 .chip.ring.low { top: auto; bottom: 6%; }
+/* Tekstballonnetjes */
+.bubble {
+  position: absolute;
+  z-index: 3;
+  max-width: min(48%, 240px);
+  padding: 0.5rem 0.8rem;
+  background: #f4fbf2;
+  color: #07140c;
+  font-weight: 700;
+  font-size: 0.92rem;
+  line-height: 1.25;
+  border-radius: 16px;
+  box-shadow: 0 6px 22px rgba(0, 0, 0, 0.35);
+  pointer-events: none;
+  opacity: 0;
+  transform: translateY(6px) scale(0.9);
+  transform-origin: 12% 100%;
+  transition: opacity 0.25s ease, transform 0.35s cubic-bezier(0.2, 1.4, 0.4, 1);
+}
+.bubble.show { opacity: 1; transform: none; }
+/* praatballon: puntje naar zijn hoofd */
+.bubble::after {
+  content: "";
+  position: absolute;
+  left: 14px;
+  bottom: -8px;
+  border-style: solid;
+  border-width: 9px 9px 0 3px;
+  border-color: #f4fbf2 transparent transparent transparent;
+}
+/* denkwolkje: twee bolletjes */
+.bubble.thought {
+  background: rgba(244, 251, 242, 0.93);
+  font-weight: 600;
+  font-style: italic;
+  border-radius: 20px;
+}
+.bubble.thought::after {
+  left: 10px;
+  bottom: -12px;
+  width: 11px;
+  height: 11px;
+  border: 0;
+  border-radius: 50%;
+  background: rgba(244, 251, 242, 0.93);
+}
+.bubble.thought::before {
+  content: "";
+  position: absolute;
+  left: 3px;
+  bottom: -21px;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: rgba(244, 251, 242, 0.93);
+}
+@media (prefers-reduced-motion: reduce) {
+  .bubble { transition: opacity 0.2s ease; transform: none; }
+}
+
 .chip.show { animation: chip 1.4s cubic-bezier(0.2, 1.3, 0.4, 1) forwards; }
 @keyframes chip {
   0% { opacity: 0; transform: translate(-50%, 12px) scale(0.6); }
