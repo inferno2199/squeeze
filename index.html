@@ -24,8 +24,15 @@
 <body>
   <canvas id="sea" aria-hidden="true"></canvas>
   <header class="top">
-    <span class="mark">Squeeze</span>
-    <span class="ticker" data-ticker>$SQUEEZE</span>
+    <div class="title">
+      <span class="mark">Squeeze</span>
+      <span class="ticker" data-ticker>$SQUEEZE</span>
+    </div>
+    <div id="ca" class="ca" hidden>
+      <span class="ca-label">CA</span>
+      <code id="ca-text" title=""></code>
+      <button id="ca-copy" type="button" aria-label="Copy contract address">Copy</button>
+    </div>
   </header>
 
   <main>
@@ -62,12 +69,6 @@
       <p class="perk">Paired with <b>$PUMP</b> · <b>3%</b> rewards to holders</p>
 
       <a id="buy" class="buy" href="#" target="_blank" rel="noopener">Buy on Pump.fun</a>
-
-      <div id="ca" class="ca" hidden>
-        <span class="ca-label">CA</span>
-        <code id="ca-text"></code>
-        <button id="ca-copy" type="button">Copy CA</button>
-      </div>
 
       <p id="status" class="status" data-kind="wait"><span class="dot"></span><span id="status-text">Loading Squeeze</span></p>
 
