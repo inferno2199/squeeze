@@ -730,6 +730,7 @@
         const kind = act.slice(2);
         if (kind === "crab-steal") friends.force("crab", { steal: true });
         else if (kind === "jelly") friends.force("jelly", { value: 1e6 });
+        else if (kind === "jelly-drift") friends.force("jelly", { drift: true });
         else friends.force(kind);
       }
       if (act === "sleep") { s.drought = true; apply(s, []); }
