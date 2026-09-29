@@ -5,7 +5,7 @@
   const C = Object.assign(
     {
       TICKER: "$SQUEEZE", MINT: "", BUY_URL: "", WORKER_URL: "", X_URL: "", TELEGRAM_URL: "",
-      POLL_MS: 10000, DROUGHT_MIN: 15, WHALE_USD: 2000, GRACE_MIN: 5, RECLAIM_DIP: 0.15, RUN_STEP: 0.3, RING_COOLDOWN_S: 30, INK_USD: 250,
+      POLL_MS: 10000, DROUGHT_MIN: 15, WHALE_USD: 500, GRACE_MIN: 5, RECLAIM_DIP: 0.15, RUN_STEP: 0.3, RING_COOLDOWN_S: 30, INK_USD: 250,
     },
     window.SQUEEZE_CONFIG || {}
   );
@@ -27,7 +27,7 @@
   };
 
   const $ = (id) => document.getElementById(id);
-  const MILESTONES = [1e5, 2.5e5, 5e5, 1e6, 2.5e6, 5e6, 1e7, 2.5e7, 5e7, 1e8];
+  const MILESTONES = [2.5e4, 5e4, 7.5e4, 1e5, 2e5, 3e5, 4e5, 5e5, 6e5, 7e5, 8e5, 9e5, 1e6, 2e6, 3e6, 5e6, 1e7, 2.5e7, 5e7, 1e8];
   const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 
   // ---------- opmaak ----------
@@ -733,7 +733,7 @@
       if (act.startsWith("f-") && friends) {
         const kind = act.slice(2);
         if (kind === "crab-steal") friends.force("crab", { steal: true });
-        else if (kind === "jelly") friends.force("jelly", { value: 1e6 });
+        else if (kind === "jelly") friends.force("jelly", { value: 5e4 });
         else if (kind === "jelly-drift") friends.force("jelly", { drift: true });
         else if (kind === "whale") friends.onWhale();
         else friends.force(kind);
