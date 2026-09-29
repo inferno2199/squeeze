@@ -29,6 +29,7 @@
       this.t = 0;
       this.fishTimer = rnd(40, 80);
       this.crabTimer = rnd(200, 320);
+      this.jellyTimer = rnd(90, 180);
       this.prev = { price: 0, combo: 0, drought: false };
     }
 
@@ -127,6 +128,14 @@
         a.x = -dir * edge;
         a.y = rnd(-160, -40);
         a.v = 125;
+      } else if (kind === "jelly" && extra.drift) {
+        // van onder aan één kant, schuin omhoog naar de andere kant
+        // langs één zijkant omhoog, zodat hij niet achter Squeeze verdwijnt
+        a.x0 = dir * b.hw * 0.78;
+        a.x1 = dir * b.hw * 0.55;
+        a.y0 = b.floor - 120;
+        a.y1 = b.top - 260;
+        a.dur = 18;
       } else if (kind === "jelly") {
         a.stage = "down";
         this.sq.focus = null;
@@ -179,6 +188,12 @@
       if (this.fishTimer <= 0) {
         this.fishTimer = rnd(150, 270);
         if (!this.active.some((a) => a.kind === "fish" || a.kind === "shark")) this._spawn("fish", {});
+      }
+      // kwal zweeft af en toe gewoon rustig voorbij (zonder felicitatie)
+      this.jellyTimer -= dt;
+      if (this.jellyTimer <= 0) {
+        this.jellyTimer = rnd(240, 420);
+        if (!this.active.some((a) => a.kind === "jelly")) this._spawn("jelly", { drift: true });
       }
       this.crabTimer -= dt;
       if (this.crabTimer <= 0) {
@@ -322,6 +337,14 @@
           return !(a.leaving && Math.abs(a.x) > edge + 10);
         }
         case "jelly": {
+          if (a.drift) {
+            const u = a.t / a.dur;
+            // stuwen en glijden, zoals een echte kwal
+            const push = u + Math.max(0, Math.sin(a.t * 2.2)) * 0.012;
+            a.x = lerp(a.x0, a.x1, push) + Math.sin(a.t * 0.7) * 30;
+            a.y = lerp(a.y0, a.y1, push);
+            return u < 1.03;
+          }
           const target = -470;
           if (a.stage === "down") {
             a.y = lerp(b.top - 300, target, ease(clamp(a.t / 2.2, 0, 1)));
@@ -404,7 +427,12 @@
             }
             break;
           case "jelly":
-            if (layer === "front") {
+            if (a.drift) {
+              if (layer === "back") {
+                const pulse = 1 + Math.sin(a.t * 2.2) * 0.05;
+                this._img(ctx, "jelly", a.x, a.y, { s: 0.8, sx: 1 / pulse, sy: pulse, alpha: 0.85 });
+              }
+            } else if (layer === "front") {
               const pulse = 1 + Math.sin(a.t * 3) * 0.04;
               this._img(ctx, "jelly", a.x, a.y, { sx: 1 / pulse, sy: pulse });
             }
