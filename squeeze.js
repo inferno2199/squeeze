@@ -136,6 +136,10 @@
       this.turnDir = 1;
 
       this.inkParts = [];
+      this.fx = [];          // high-five flitsen en tikken op het glas
+      this.idle = 0;         // seconden zonder dat de bezoeker iets doet
+      this.glass = null;     // { t, k } tijdens het tikken op het glas
+      this.shake = 0;
       this.sparks = [];
       this.zParts = [];
       this.zTimer = 0;
@@ -271,6 +275,38 @@
       return (x / 270) ** 2 + ((y + 70) / 340) ** 2 <= 1;
     }
 
+    // De bezoeker doet iets (muis, tik, scroll, toets)
+    activity() {
+      this.idle = 0;
+    }
+
+    // Tik op een tentakelpuntje: high five!
+    highFiveAt(clientX, clientY) {
+      if (this.reduced && !this.img.body) return false;
+      const r = this.canvas.getBoundingClientRect();
+      const x = (clientX - r.left - this.w / 2) / this._sc;
+      const y = (clientY - r.top - this.h * 0.47) / this._sc;
+      let best = -1;
+      let bestD = 95;
+      for (let k = 0; k < 8; k++) {
+        const t = this.tips[k];
+        const d = Math.hypot(x - t.x, y - t.y);
+        if (d < bestD) {
+          bestD = d;
+          best = k;
+        }
+      }
+      if (best < 0) return false;
+      const tip = this.tips[best];
+      this.armPulse[best] = 1;
+      this.hold[best] = 1;
+      this.fx.push({ type: "five", x: tip.x, y: tip.y, t: 0 });
+      this.euphoria(0.9);
+      this.sy.vel -= 1.5;
+      this.idle = 0;
+      return true;
+    }
+
     lookAt(nx, ny) {
       if (this.toy && this.toy.toss) return;
       this.look.tx = clamp(nx, -1, 1);
@@ -316,6 +352,10 @@
       this.wakeT = Math.max(0, this.wakeT - dt);
 
       // aantikken
+      this._updateGlass(dt);
+      for (const f of this.fx) f.t += dt;
+      this.fx = this.fx.filter((f) => f.t < 0.9);
+      this.shake *= Math.exp(-dt * 18);
       this.flinch *= Math.exp(-dt * 5);
       this.annoyed = Math.max(0, this.annoyed - dt);
       this.turn.target = this.annoyed > 0 ? this.turnDir : 0;
@@ -323,6 +363,7 @@
       for (let i = 0; i < 8; i++) this.armPulse[i] *= Math.exp(-dt * 3.5);
 
       this._updateToy(dt);
+      if (this.glass) this.hold[this.glass.k] = 1;
       this.scare.step(dt);
       if (this.friends) this.friends.update(dt);
       if (this.focus && !(this.toy && this.toy.toss)) {
@@ -485,6 +526,9 @@
       this._sc = sc;
       ctx.save();
       ctx.translate(w / 2, h * 0.47);
+      if (this.shake > 0.01 && !this.reduced) {
+        ctx.translate((Math.random() - 0.5) * 6 * this.shake, (Math.random() - 0.5) * 6 * this.shake);
+      }
       ctx.scale(sc, sc);
 
       this._drawRings();
@@ -514,6 +558,7 @@
       ctx.drawImage(this.img.body, -BODY_W / 2, -OY, BODY_W, BODY_H);
       this._drawFace(pose.m, Math.abs(this.turn.v));
       this._drawToy();
+      this._drawFx();
       ctx.restore();
 
       this._drawFly();
@@ -584,6 +629,86 @@
       ctx.restore();
     }
 
+    // ---------- tikken op het glas ----------
+    // Doet de bezoeker ~25 sec niks, dan tikt Squeeze met een tentakel tegen je scherm.
+    _updateGlass(dt) {
+      this.idle += dt;
+      const busy =
+        this.athPhase || this.drowsy.v > 0.3 || this.annoyed > 0 || (this.toy && (this.toy.toss || this.toy.stolen));
+      if (!this.glass && this.idle > 25 && !busy && !this.reduced) {
+        const h = this.toy ? this.toy.holder : 0;
+        const k = h % 2 === 0 ? 1 : 0; // bovenste arm aan de andere kant
+        this.glass = { t: 0, k, taps: [0.9, 1.25, 1.6], done: 0 };
+      }
+      if (!this.glass) return;
+      const g = this.glass;
+      g.t += dt;
+      // hij kijkt je recht aan
+      this.look.tx = 0;
+      this.look.ty = 0.15;
+      if (g.done < g.taps.length && g.t >= g.taps[g.done]) {
+        const tip = this.tips[g.k];
+        this.armPulse[g.k] = 0.7;
+        this.fx.push({ type: "glass", k: g.k, x: tip.x, y: tip.y, t: 0 });
+        this.shake = 1;
+        g.done++;
+      }
+      if (g.t > 2.6) {
+        this.glass = null;
+        this.idle = -20; // volgende keer pas na ~45 sec
+      }
+    }
+
+    _drawFx() {
+      const { ctx } = this;
+      for (const f of this.fx) {
+        if (f.type === "five") {
+          // high five: groen-witte flits met straaltjes
+          const k = f.t / 0.9;
+          const a = 1 - k;
+          ctx.save();
+          ctx.translate(f.x, f.y);
+          ctx.strokeStyle = `rgba(${GREEN},${a})`;
+          ctx.lineWidth = 7;
+          ctx.lineCap = "round";
+          for (let i = 0; i < 8; i++) {
+            const ang = (i / 8) * Math.PI * 2;
+            const r0 = 40 + k * 60;
+            const r1 = r0 + 34 * (1 - k);
+            ctx.beginPath();
+            ctx.moveTo(Math.cos(ang) * r0, Math.sin(ang) * r0);
+            ctx.lineTo(Math.cos(ang) * r1, Math.sin(ang) * r1);
+            ctx.stroke();
+          }
+          ctx.beginPath();
+          ctx.arc(0, 0, 26 + k * 40, 0, Math.PI * 2);
+          ctx.fillStyle = `rgba(245,255,243,${0.55 * a})`;
+          ctx.fill();
+          ctx.restore();
+        } else if (f.type === "glass") {
+          // tik op het glas: kringen alsof hij tegen je scherm tikt
+          const k = f.t / 0.9;
+          const tp = this.tips[f.k];
+          ctx.save();
+          ctx.translate(tp.x, tp.y);
+          for (let i = 0; i < 2; i++) {
+            const kk = clamp(k - i * 0.15, 0, 1);
+            if (kk <= 0) continue;
+            ctx.beginPath();
+            ctx.arc(0, 0, 24 + kk * 150, 0, Math.PI * 2);
+            ctx.strokeStyle = `rgba(240,255,240,${0.9 * (1 - kk)})`;
+            ctx.lineWidth = 7;
+            ctx.stroke();
+          }
+          ctx.beginPath();
+          ctx.arc(0, 0, 26, 0, Math.PI * 2);
+          ctx.fillStyle = `rgba(240,255,240,${0.55 * (1 - k)})`;
+          ctx.fill();
+          ctx.restore();
+        }
+      }
+    }
+
     // ---------- speelring ----------
     _pickCatcher() {
       const h = this.toy.holder;
@@ -637,7 +762,7 @@
       // volgende worp plannen (alleen als hij wakker, niet verdrietig en niet aan het knijpen is)
       t.tossTimer -= dt;
       if (t.tossTimer <= 0) {
-        const canPlay = !this.reduced && !this.athPhase && d < 0.3 && t.hang < 0.4 && this.annoyed <= 0;
+        const canPlay = !this.reduced && !this.athPhase && !this.glass && d < 0.3 && t.hang < 0.4 && this.annoyed <= 0;
         if (canPlay) {
           const happy = m > 0.58 || f > 0.3;
           const height = happy ? lerp(170, 400, clamp(f + (m - 0.58) * 1.5, 0, 1)) : 70 + Math.random() * 50;
