@@ -87,6 +87,7 @@
       this.ctx = canvas.getContext("2d");
       this.reduced = !!opts.reducedMotion;
       this.onRing = opts.onRing || (() => {});
+      this.onEvent = opts.onEvent || (() => {});
       this.img = {};
       this.t = 0;
 
@@ -260,6 +261,12 @@
         return "annoyed";
       }
       return "poke";
+    }
+
+    // punt rechtsboven naast zijn hoofd, in pixels van het podium (voor ballonnetjes)
+    headAnchor() {
+      const sc = this._sc || 1;
+      return { x: this.w / 2 + 120 * sc, y: this.h * 0.47 - 300 * sc };
     }
 
     // zichtbaar gebied in wereld-eenheden (voor de vriendjes)
@@ -639,6 +646,7 @@
         const h = this.toy ? this.toy.holder : 0;
         const k = h % 2 === 0 ? 1 : 0; // bovenste arm aan de andere kant
         this.glass = { t: 0, k, taps: [0.9, 1.25, 1.6], done: 0 };
+        this.onEvent("glass");
       }
       if (!this.glass) return;
       const g = this.glass;
