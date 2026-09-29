@@ -468,8 +468,17 @@
 
   // Aantikken
   const stage = $("stage");
+  // alles wat de bezoeker doet, telt als "ik ben er nog"
+  ["pointermove", "pointerdown", "keydown", "scroll", "touchstart", "wheel"].forEach((ev) =>
+    window.addEventListener(ev, () => sq.activity(), { passive: true })
+  );
+
   stage.addEventListener("pointerdown", (e) => {
     if (friends && friends.hit(e.clientX, e.clientY)) return;
+    if (sq.highFiveAt(e.clientX, e.clientY)) {
+      if (navigator.vibrate) navigator.vibrate([15, 30, 15]);
+      return;
+    }
     if (!sq.hitTest(e.clientX, e.clientY)) return;
     const r = sq.poke();
     if (r === "poke" && navigator.vibrate) navigator.vibrate(12);
