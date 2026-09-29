@@ -262,15 +262,16 @@
 
   if (MINT) {
     $("ca").hidden = false;
-    $("ca-text").textContent = MINT.slice(0, 4) + "…" + MINT.slice(-4);
+    $("ca-text").textContent = MINT.slice(0, 6) + "…" + MINT.slice(-4);
+    $("ca-text").title = MINT;
     $("ca-copy").addEventListener("click", async () => {
       try {
         await navigator.clipboard.writeText(MINT);
-        $("ca-copy").textContent = "Copied";
+        $("ca-copy").textContent = "Copied ✓";
       } catch {
         $("ca-copy").textContent = "Copy failed";
       }
-      setTimeout(() => ($("ca-copy").textContent = "Copy CA"), 1600);
+      setTimeout(() => ($("ca-copy").textContent = "Copy"), 1600);
     });
   }
   const links = [["X", C.X_URL], ["Telegram", C.TELEGRAM_URL]].filter(([, u]) => u);
