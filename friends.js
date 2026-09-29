@@ -22,7 +22,7 @@
       this.sq = sq;
       sq.friends = this;
       this.reduced = !!opts.reducedMotion;
-      this.onChip = opts.onChip || (() => {});
+      this.onSay = opts.onSay || (() => {});
       this.img = {};
       this.active = [];
       this.cool = {};
@@ -72,7 +72,7 @@
     }
     // grote buy: een walvis zwemt groot en langzaam door de achtergrond
     onWhale() {
-      if (this.try("whale", 120, { priority: true })) this.onChip("Whale buy! 🐋");
+      if (this.try("whale", 120, { priority: true })) this.onSay("f_whale", {}, 1200);
     }
     onMilestone(value) {
       this.force("jelly", { value });
@@ -151,6 +151,23 @@
         this.sq.focus = null;
       }
       this.active.push(a);
+      this._lineFor(a);
+    }
+
+    // soms zegt Squeeze iets over het vriendje (niet altijd, anders wordt het spam)
+    _lineFor(a) {
+      const map = {
+        fish: ["f_fish", 1500, 0.6],
+        minnow: ["f_minnow", 900, 1],
+        shrimp: ["f_shrimp", 1200, 0.7],
+        lobster: ["f_lobster", 1800, 0.8],
+        dolphin: ["f_dolphin", 1000, 1],
+        shark: ["f_shark", 1600, 1],
+      };
+      if (a.kind === "crab" && a.steal) return this.onSay("f_crabSteal", {}, 300);
+      if (a.kind === "jelly" && a.drift && Math.random() < 0.6) return this.onSay("f_jellyDrift", {}, 3000);
+      const m = map[a.kind];
+      if (m && Math.random() < m[2]) this.onSay(m[0], {}, m[1]);
     }
 
     _seal(on) {
@@ -163,6 +180,7 @@
           kind: "seal", t: 0, side,
           x: side * (b.hw + SIZE.seal), home: side * Math.min(380, b.hw - 170), leaving: false,
         });
+        this.onSay("f_seal", {}, 2600);
       } else if (!on && cur) {
         cur.leaving = true;
       }
@@ -298,6 +316,7 @@
               a.x += Math.sign(dx) * Math.min(Math.abs(dx), a.v * dt);
               if (Math.abs(dx) < 4) {
                 a.poked = a.t;
+                this.onSay("f_crabPoke", {}, 300);
                 sq.flinch = 1;
                 sq.wakeT = 0.5;
                 sq.sx.vel -= 1.5;
@@ -377,7 +396,7 @@
               sq.sx.vel -= 2;
               sq.euphoria(2);
               const v = a.value;
-              this.onChip(v ? "Jelly says congrats! 🎉 " + fmt(v) : "Jelly says congrats! 🎉");
+              if (v) this.onSay("milestone", { mcap: fmt(v) }, 200);
             }
             if (k > 2.4) {
               a.stage = "up";
