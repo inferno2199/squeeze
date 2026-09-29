@@ -5,7 +5,7 @@
   const C = Object.assign(
     {
       TICKER: "$SQUEEZE", MINT: "", BUY_URL: "", WORKER_URL: "", X_URL: "", TELEGRAM_URL: "",
-      POLL_MS: 10000, DROUGHT_MIN: 15, GRACE_MIN: 5, RECLAIM_DIP: 0.15, RUN_STEP: 0.3, RING_COOLDOWN_S: 30, INK_USD: 250,
+      POLL_MS: 10000, DROUGHT_MIN: 15, WHALE_USD: 2000, GRACE_MIN: 5, RECLAIM_DIP: 0.15, RUN_STEP: 0.3, RING_COOLDOWN_S: 30, INK_USD: 250,
     },
     window.SQUEEZE_CONFIG || {}
   );
@@ -22,6 +22,7 @@
     cooldownMs: C.RING_COOLDOWN_S * 1000,
     inkUsd: C.INK_USD,
     droughtMs: C.DROUGHT_MIN * 60000,
+    whaleUsd: C.WHALE_USD,
     sampleMs: 60000,
   };
 
@@ -323,6 +324,7 @@
     if (up) s.combo = Math.min(s.combo + 1, 99);
     else if (delta < -0.3) s.combo = 0;
     if (dVol >= rules.inkUsd && newBuys > 0 && delta >= 0) ev.push("ink");
+    if (dVol >= rules.whaleUsd && newBuys > 0) ev.push("whale");
 
     // buys: knijpjes, droogte (15 min geen buy) en wakker worden
     const m5Up =
@@ -428,6 +430,7 @@
       friends.onState({ priceInput: s.priceInput || 0, combo: s.combo || 0, drought: !!s.drought });
       if (events.includes("buy")) friends.onBuy(s.lastBuys || 1);
       if (events.includes("milestone")) friends.onMilestone(s.milestone);
+      if (events.includes("whale")) friends.onWhale();
     }
     if (sea) {
       sea.setPrice(s.priceInput || 0);
@@ -594,11 +597,12 @@
           if (d.buySeq > seen.buySeq) ev.push("buy");
           if (d.wakeSeq > seen.wakeSeq) ev.push("wake");
           if ((d.milestoneSeq || 0) > seen.milestoneSeq) ev.push("milestone");
+          if ((d.whaleSeq || 0) > seen.whaleSeq) ev.push("whale");
           apply(s, ev);
         }
         seen = {
           athSeq: d.athSeq, inkSeq: d.inkSeq, buySeq: d.buySeq || 0,
-          wakeSeq: d.wakeSeq || 0, milestoneSeq: d.milestoneSeq || 0,
+          wakeSeq: d.wakeSeq || 0, milestoneSeq: d.milestoneSeq || 0, whaleSeq: d.whaleSeq || 0,
         };
         setStatus("live", "Live");
       } catch {
@@ -731,6 +735,7 @@
         if (kind === "crab-steal") friends.force("crab", { steal: true });
         else if (kind === "jelly") friends.force("jelly", { value: 1e6 });
         else if (kind === "jelly-drift") friends.force("jelly", { drift: true });
+        else if (kind === "whale") friends.onWhale();
         else friends.force(kind);
       }
       if (act === "sleep") { s.drought = true; apply(s, []); }
