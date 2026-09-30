@@ -797,6 +797,10 @@
       ty = lerp(ty, 40, this.charge);
       // laten vallen (geïrriteerd) en net op tijd vangen
       if (t.drop > 0) ty += Math.sin((1 - t.drop / 0.6) * Math.PI) * 170;
+      // nooit vóór zijn gezicht: opzij duwen
+      if (this.charge < 0.3 && ty > -340 && ty < 10 && Math.abs(tx) < 240) {
+        tx = (tx < 0 ? -1 : 1) * 240;
+      }
       const k = 1 - Math.exp(-dt * 14);
       t.x += (tx - t.x) * k;
       t.y += (ty - t.y) * k;
