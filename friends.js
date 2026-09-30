@@ -40,8 +40,10 @@
             new Promise((res) => {
               const im = new Image();
               im.onload = () => {
-                this.img[k] = im;
+                // licht in het water zetten: iets groenblauw en minder fel, zoals de foto
+                this.img[k] = waterGrade(im, 0.16);
                 if (k === "whale") this.img.whaleFar = tintFar(im);
+                if (k === "shark") this.img.sharkFar = waterGrade(im, 0.38);
                 res();
               };
               im.onerror = () => res(); // ontbreekt er een, dan komt dat dier gewoon niet
@@ -434,10 +436,17 @@
             }
             break;
           case "shrimp":
-            if (layer === "front") this._img(ctx, "shrimp", a.x, a.y, { flip: a.dir < 0, rot: a.rot || 0 });
+            if (layer === "front") {
+              // schaduw wordt kleiner als hij hoger springt
+              const fl = this._bounds().floor - 40;
+              const k = clamp(1 - (fl - a.y - 30) / 220, 0.35, 1);
+              this._shadow(ctx, a.x, fl, 70, k);
+              this._img(ctx, "shrimp", a.x, a.y, { flip: a.dir < 0, rot: a.rot || 0 });
+            }
             break;
           case "crab":
             if (layer === "front") {
+              this._shadow(ctx, a.x, this._bounds().floor - 40, 110, 1);
               this._img(ctx, "crab", a.x, a.y, { rot: Math.sin(a.t * 12) * 0.04 });
               if (a.ring && !a.ring.back) this._ring(ctx, a.ring.x, a.ring.y);
             }
@@ -445,6 +454,7 @@
           case "lobster":
             if (layer === "front") {
               const clap = 1 + Math.max(0, Math.sin(a.t * 6)) * 0.04;
+              this._shadow(ctx, a.x, this._bounds().floor - 38, 95, 1);
               this._img(ctx, "lobster", a.x, a.y, { s: clap, rot: Math.sin(a.t * 6) * 0.04 });
             }
             break;
@@ -460,11 +470,12 @@
             }
             break;
           case "shark":
-            if (layer === "back") this._img(ctx, "shark", a.x, a.y, { flip: a.dir < 0, rot: Math.sin(a.t * 2) * 0.03 });
+            if (layer === "back") this._img(ctx, "shark", a.x, a.y, { flip: a.dir < 0, rot: Math.sin(a.t * 2) * 0.03, im: this.img.sharkFar });
             break;
           case "seal":
             if (layer === "front") {
               const breathe = 1 + Math.sin(a.t * 0.9) * 0.02;
+              this._shadow(ctx, a.x, this._bounds().floor - 30, 170, 1);
               // kijkt naar Squeeze toe (zeehond kijkt standaard naar rechts)
               this._img(ctx, "seal", a.x, a.y, { flip: a.side > 0, sy: breathe });
             }
@@ -498,6 +509,23 @@
       ctx.restore();
     }
 
+    // zachte schaduw op de bodem
+    _shadow(ctx, x, y, w, k) {
+      const rx = w * 0.62 * k;
+      const ry = Math.max(6, w * 0.12 * k);
+      ctx.save();
+      ctx.translate(x, y);
+      ctx.scale(1, ry / rx);
+      const g = ctx.createRadialGradient(0, 0, 0, 0, 0, rx);
+      g.addColorStop(0, `rgba(0,0,0,${0.42 * k})`);
+      g.addColorStop(1, "rgba(0,0,0,0)");
+      ctx.fillStyle = g;
+      ctx.beginPath();
+      ctx.arc(0, 0, rx, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
+    }
+
     _ring(ctx, x, y) {
       ctx.save();
       ctx.translate(x, y);
@@ -513,6 +541,23 @@
       ctx.stroke();
       ctx.restore();
     }
+  }
+
+  // licht groenblauw water over een dier, zodat hij "in" de foto zit
+  function waterGrade(im, amt) {
+    const c = document.createElement("canvas");
+    c.width = im.width;
+    c.height = im.height;
+    const x = c.getContext("2d");
+    x.drawImage(im, 0, 0);
+    x.globalCompositeOperation = "source-atop";
+    // onderkant iets donkerder (licht komt van boven)
+    const g = x.createLinearGradient(0, 0, 0, c.height);
+    g.addColorStop(0, `rgba(20,70,50,${amt * 0.6})`);
+    g.addColorStop(1, `rgba(4,26,18,${amt * 1.6})`);
+    x.fillStyle = g;
+    x.fillRect(0, 0, c.width, c.height);
+    return c;
   }
 
   // "ver weg in de zee": donkerder en groener, werkt in elke browser
