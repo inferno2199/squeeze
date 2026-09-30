@@ -23,7 +23,14 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
-/* De zee: vast achter alles */
+/* De zee: foto vast achter alles, daarover het levende deel */
+#seabg {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  background: #030604 url("assets/sea.jpg") center 45% / cover no-repeat;
+  pointer-events: none;
+}
 #sea {
   position: fixed;
   inset: 0;
