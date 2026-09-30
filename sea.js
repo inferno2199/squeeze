@@ -156,80 +156,80 @@
     draw() {
       const { ctx, w, h, dpr } = this;
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      // de foto (assets/sea.jpg) ligt eronder als CSS-achtergrond; hier alleen wat leeft
+      ctx.clearRect(0, 0, w, h);
       const p = this.priceV;
       const d = this.drought;
       const pump = clamp(p, 0, 1);
       const dump = clamp(-p, 0, 1);
       const a = this._anchor();
 
-      // 1. water: van donker groen-blauw boven naar bijna zwart onder
-      const g = ctx.createLinearGradient(0, 0, 0, h);
-      g.addColorStop(0, `rgb(${lerp(7, 4, d) | 0},${lerp(38, 22, d + dump * 0.5) | 0},${lerp(30, 18, d) | 0})`);
-      g.addColorStop(0.45, "rgb(3,18,13)");
-      g.addColorStop(1, "rgb(2,8,6)");
-      ctx.fillStyle = g;
-      ctx.fillRect(0, 0, w, h);
-
-      // 2. gloed achter Squeeze
-      const glowA = (0.3 + pump * 0.18) * (1 - 0.55 * d) * (1 - 0.35 * dump);
-      const rg = ctx.createRadialGradient(a.x, a.y, 0, a.x, a.y, a.r * 0.75);
-      rg.addColorStop(0, `rgba(30,120,70,${glowA})`);
-      rg.addColorStop(1, "rgba(30,120,70,0)");
-      ctx.fillStyle = rg;
-      ctx.fillRect(0, 0, w, h);
-
-      // 3. lichtstralen van boven
+      // 1. het licht van boven "ademt": feller bij pump, zwak bij droogte
       ctx.save();
       ctx.globalCompositeOperation = "lighter";
-      const rays = 6;
-      const rayA = (0.05 + pump * 0.06) * (1 - 0.8 * d) * (1 - 0.5 * dump);
-      for (let i = 0; i < rays; i++) {
-        const baseX = ((i + 0.5) / rays) * w * 1.3 - w * 0.15;
-        const sway = this.reduced ? 0 : Math.sin(this.t * 0.25 + i * 1.7) * 40;
-        const topW = 30 + (i % 3) * 22;
-        const botW = topW * 3.2;
-        const skew = h * 0.28;
-        const lg = ctx.createLinearGradient(0, 0, 0, h * 0.85);
-        const flick = this.reduced ? 1 : 0.75 + 0.25 * Math.sin(this.t * 0.6 + i * 2.3);
-        lg.addColorStop(0, `rgba(170,255,190,${rayA * flick})`);
-        lg.addColorStop(1, "rgba(170,255,190,0)");
-        ctx.fillStyle = lg;
-        ctx.beginPath();
-        ctx.moveTo(baseX + sway - topW / 2, 0);
-        ctx.lineTo(baseX + sway + topW / 2, 0);
-        ctx.lineTo(baseX + sway + skew + botW / 2, h * 0.85);
-        ctx.lineTo(baseX + sway + skew - botW / 2, h * 0.85);
-        ctx.closePath();
-        ctx.fill();
+      const breath = this.reduced ? 1 : 0.8 + 0.2 * Math.sin(this.t * 0.6);
+      const lightA = (0.06 + pump * 0.09) * (1 - 0.85 * d) * (1 - 0.5 * dump) * breath;
+      const lx = w * 0.49;
+      const lg = ctx.createRadialGradient(lx, -h * 0.08, 0, lx, -h * 0.08, h * 0.95);
+      lg.addColorStop(0, `rgba(150,255,190,${lightA})`);
+      lg.addColorStop(0.55, `rgba(150,255,190,${lightA * 0.35})`);
+      lg.addColorStop(1, "rgba(150,255,190,0)");
+      ctx.fillStyle = lg;
+      ctx.fillRect(0, 0, w, h);
+
+      // zachte bewegende lichtbundels vanuit hetzelfde punt als in de foto
+      if (!this.reduced) {
+        const rayA = 0.035 * (1 - 0.85 * d) * (0.6 + pump * 0.8);
+        for (let i = 0; i < 5; i++) {
+          const ang = -0.34 + i * 0.17 + Math.sin(this.t * 0.22 + i * 1.9) * 0.03;
+          const len = h * 1.05;
+          const half = 0.035 + (i % 2) * 0.02;
+          const flick = 0.6 + 0.4 * Math.sin(this.t * 0.5 + i * 2.1);
+          const g = ctx.createLinearGradient(lx, 0, lx + Math.sin(ang) * len, Math.cos(ang) * len);
+          g.addColorStop(0, `rgba(170,255,200,${rayA * flick})`);
+          g.addColorStop(1, "rgba(170,255,200,0)");
+          ctx.fillStyle = g;
+          ctx.beginPath();
+          ctx.moveTo(lx, -10);
+          ctx.lineTo(lx + Math.sin(ang - half) * len, Math.cos(ang - half) * len);
+          ctx.lineTo(lx + Math.sin(ang + half) * len, Math.cos(ang + half) * len);
+          ctx.closePath();
+          ctx.fill();
+        }
       }
       ctx.restore();
 
-      // 4. zeesneeuw
-      ctx.fillStyle = `rgba(200,255,210,${0.22 * (1 - 0.4 * d)})`;
+      // 2. zachte gloed achter Squeeze
+      const glowA = (0.16 + pump * 0.12) * (1 - 0.6 * d) * (1 - 0.4 * dump);
+      const rg = ctx.createRadialGradient(a.x, a.y, 0, a.x, a.y, a.r * 0.7);
+      rg.addColorStop(0, `rgba(40,150,90,${glowA})`);
+      rg.addColorStop(1, "rgba(40,150,90,0)");
+      ctx.fillStyle = rg;
+      ctx.fillRect(0, 0, w, h);
+
+      // 3. zeesneeuw
+      ctx.fillStyle = `rgba(200,255,210,${0.2 * (1 - 0.4 * d)})`;
       for (const s of this.snow) {
         ctx.beginPath();
         ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2);
         ctx.fill();
       }
 
-      // 5. bodem: zandheuvels en zeewier
-      this._drawBed();
-
-      // 6. belletjes
+      // 4. belletjes
       for (const b of this.bubbles) {
         const x = b.x + (this.reduced ? 0 : Math.sin(b.ph) * b.wob * 0.3);
         ctx.beginPath();
         ctx.arc(x, b.y, b.r, 0, Math.PI * 2);
-        ctx.strokeStyle = "rgba(210,255,215,0.35)";
+        ctx.strokeStyle = "rgba(210,255,215,0.38)";
         ctx.lineWidth = 1;
         ctx.stroke();
         ctx.beginPath();
         ctx.arc(x - b.r * 0.35, b.y - b.r * 0.35, b.r * 0.28, 0, Math.PI * 2);
-        ctx.fillStyle = "rgba(240,255,240,0.45)";
+        ctx.fillStyle = "rgba(240,255,240,0.5)";
         ctx.fill();
       }
 
-      // 7. lichtgolf bij een nieuwe ring
+      // 5. lichtgolf bij een nieuwe ring
       for (const wv of this.waves) {
         const t = wv.t / 2.2;
         const rr = lerp(a.r * 0.2, Math.hypot(w, h), t);
@@ -241,17 +241,17 @@
         ctx.fillRect(0, 0, w, h);
       }
 
-      // 8. troebel bij dump, schemerig bij droogte
-      const murk = dump * 0.22 + d * 0.28;
+      // 6. troebel bij dump, schemerig bij droogte
+      const murk = dump * 0.25 + d * 0.32;
       if (murk > 0.01) {
         ctx.fillStyle = `rgba(1,6,4,${murk})`;
         ctx.fillRect(0, 0, w, h);
       }
 
-      // 9. vignet: randen donker, zodat tekst leesbaar blijft
-      const vg = ctx.createRadialGradient(w / 2, h * 0.45, Math.min(w, h) * 0.35, w / 2, h * 0.45, Math.max(w, h) * 0.8);
+      // 7. randen iets donkerder, zodat tekst leesbaar blijft
+      const vg = ctx.createRadialGradient(w / 2, h * 0.45, Math.min(w, h) * 0.4, w / 2, h * 0.45, Math.max(w, h) * 0.85);
       vg.addColorStop(0, "rgba(0,0,0,0)");
-      vg.addColorStop(1, "rgba(0,0,0,0.55)");
+      vg.addColorStop(1, "rgba(0,0,0,0.4)");
       ctx.fillStyle = vg;
       ctx.fillRect(0, 0, w, h);
     }
