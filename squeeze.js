@@ -13,8 +13,7 @@
   const easeOutCubic = (t) => 1 - Math.pow(1 - t, 3);
 
   const ASSETS = {
-    body: "assets/body.png",
-    arm: "assets/arm.png",
+    octo: "assets/octo.png", // v2: octopus uit één stuk, zonder gezicht
     eyes_happy: "assets/eyes_happy.png",
     eyes_neutral: "assets/eyes_neutral.png",
     eyes_sad: "assets/eyes_sad.png",
@@ -35,6 +34,30 @@
   const GREEN_MID = "#7cff6b";
 
   // Linkerarmen (rechts = gespiegeld). a = richting (0 omlaag, π/2 links).
+  // ---------- v2: octopus uit één stuk ----------
+  // Maten in pixels van het originele plaatje (1431 x 1152).
+  const IMG_W = 1431;
+  const IMG_H = 1152;
+  const OC = { x: 715, y: 600 };     // waar de tentakels samenkomen
+  const S = 0.91;                     // wereld-eenheden per pixel
+  const R0 = 235;                     // vanaf hier buigen de tentakels
+  const PAD = 320;                    // ruimte rond het plaatje om uit te zwaaien
+  const toWX = (px) => (px - 715) * S;
+  const toWY = (py) => (py - 365) * S - 95; // ogen-onderkant op -95, net als v1
+  // 8 tentakels: hoek (graden, 0 = rechts, 90 = omlaag), lengte en grijppunt
+  // k = i*2 (links) en i*2+1 (rechts), net als v1
+  const TENT = [
+    { k: 0, ang: -158.5, rmax: 626, grip: [266, 339] },
+    { k: 2, ang: 169, rmax: 703, grip: [135, 650] },
+    { k: 4, ang: 142, rmax: 668, grip: [276, 936] },
+    { k: 6, ang: 110, rmax: 590, grip: [527, 1052] },
+    { k: 1, ang: -15.5, rmax: 687, grip: [1223, 342] },
+    { k: 3, ang: 11.5, rmax: 702, grip: [1294, 655] },
+    { k: 5, ang: 37, rmax: 678, grip: [1149, 952] },
+    { k: 7, ang: 68, rmax: 620, grip: [926, 1069] },
+  ];
+  const HEAD_ANG = -88; // het hoofd buigt nooit
+
   const ARMS = [
     { x: -170, y: 150, a: 1.95, len: 0.56, ph: 0.0 },
     { x: -140, y: 200, a: 1.38, len: 0.6, ph: 1.4 },
@@ -78,6 +101,176 @@
       this.vel += ((this.target - this.v) * this.k - this.vel * this.d) * dt;
       this.v += this.vel * dt;
       return this.v;
+    }
+  }
+
+  // ---------- het "rubberen vel" ----------
+  // Een net van driehoekjes over het plaatje. Elk puntje draait om het midden
+  // met een hoek die afhangt van welke tentakel het is en hoe ver naar buiten.
+  const ALL_ANG = TENT.map((t) => t.ang).concat([HEAD_ANG]).sort((a, b) => a - b);
+
+  function angDiff(a, b) {
+    return ((a - b + 540) % 360) - 180;
+  }
+
+  function bendAt(p, r) {
+    const L = p.rmax - R0;
+    let th = p.A * sstep(R0, R0 + L * 0.3, r);
+    for (let j = 0; j < 3; j++) th += p.b[j] * sstep(R0 + (j * L) / 3, R0 + ((j + 1) * L) / 3, r);
+    return th * p.sign;
+  }
+
+  // hoek (rad) voor een punt op (r, phi in graden)
+  function thetaFor(params, r, phiDeg) {
+    if (r <= R0 * 0.8) return 0;
+    // de twee dichtstbijzijnde richtingen (tentakels + hoofd) en daartussen mengen
+    let lo = null, hi = null, dlo = -999, dhi = 999;
+    for (const a of ALL_ANG) {
+      const d = angDiff(a, phiDeg);
+      if (d <= 0 && d > dlo) { dlo = d; lo = a; }
+      if (d > 0 && d < dhi) { dhi = d; hi = a; }
+    }
+    if (lo === null) { lo = hi; dlo = dhi; }
+    if (hi === null) { hi = lo; dhi = dlo; }
+    const span = dhi - dlo || 1;
+    let t = -dlo / span;
+    t = t * t * (3 - 2 * t);
+    const val = (a) => {
+      if (a === HEAD_ANG) return 0;
+      const p = params.find((q) => q.ang === a);
+      return p ? bendAt(p, r) : 0;
+    };
+    return val(lo) * (1 - t) + val(hi) * t;
+  }
+
+  // armen korter/langer maken vanaf de basis
+  function pullR(r, pull) {
+    if (r <= R0) return r;
+    return R0 + (r - R0) * (1 - pull);
+  }
+
+  class OctoMesh {
+    constructor(img) {
+      this.ok = false;
+      this.canvas = document.createElement("canvas");
+      const gl = this.canvas.getContext("webgl", { premultipliedAlpha: true, alpha: true, antialias: true });
+      if (!gl) return;
+      this.gl = gl;
+      const vs = `attribute vec2 p; attribute vec2 uv; uniform vec2 size; varying vec2 v;
+        void main(){ v=uv; vec2 c=(p+vec2(${PAD}.0))/size; gl_Position=vec4(c.x*2.0-1.0, 1.0-c.y*2.0, 0.0, 1.0); }`;
+      const fs = `precision mediump float; varying vec2 v; uniform sampler2D tex;
+        void main(){ gl_FragColor=texture2D(tex, v); }`;
+      const sh = (type, src) => {
+        const o = gl.createShader(type);
+        gl.shaderSource(o, src);
+        gl.compileShader(o);
+        return o;
+      };
+      const prog = gl.createProgram();
+      gl.attachShader(prog, sh(gl.VERTEX_SHADER, vs));
+      gl.attachShader(prog, sh(gl.FRAGMENT_SHADER, fs));
+      gl.linkProgram(prog);
+      if (!gl.getProgramParameter(prog, gl.LINK_STATUS)) return;
+      gl.useProgram(prog);
+      this.prog = prog;
+
+      // polair net: spaken x ringen
+      const SP = 144;
+      const RG = 46;
+      const RMAX = 930;
+      this.rest = [];
+      const uv = [];
+      for (let ri = 0; ri <= RG; ri++) {
+        const r = ri === 0 ? 0.5 : (Math.pow(ri / RG, 1.15)) * RMAX;
+        for (let si = 0; si < SP; si++) {
+          const phi = (si / SP) * 360 - 180;
+          const x = OC.x + r * Math.cos((phi * Math.PI) / 180);
+          const y = OC.y + r * Math.sin((phi * Math.PI) / 180);
+          this.rest.push([r, phi]);
+          uv.push(x / IMG_W, y / IMG_H);
+        }
+      }
+      const idx = [];
+      for (let ri = 0; ri < RG; ri++) {
+        for (let si = 0; si < SP; si++) {
+          const a = ri * SP + si;
+          const b = ri * SP + ((si + 1) % SP);
+          const c = (ri + 1) * SP + si;
+          const d = (ri + 1) * SP + ((si + 1) % SP);
+          idx.push(a, c, b, b, c, d);
+        }
+      }
+      this.count = idx.length;
+      this.pos = new Float32Array(this.rest.length * 2);
+      this.posBuf = gl.createBuffer();
+      const uvBuf = gl.createBuffer();
+      gl.bindBuffer(gl.ARRAY_BUFFER, uvBuf);
+      gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(uv), gl.STATIC_DRAW);
+      const locUV = gl.getAttribLocation(prog, "uv");
+      gl.enableVertexAttribArray(locUV);
+      gl.vertexAttribPointer(locUV, 2, gl.FLOAT, false, 0, 0);
+      this.locP = gl.getAttribLocation(prog, "p");
+      const ib = gl.createBuffer();
+      gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, ib);
+      const big = this.rest.length > 65535;
+      this.idxType = gl.UNSIGNED_SHORT;
+      if (big) {
+        gl.getExtension("OES_element_index_uint");
+        this.idxType = gl.UNSIGNED_INT;
+      }
+      gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, big ? new Uint32Array(idx) : new Uint16Array(idx), gl.STATIC_DRAW);
+
+      const tex = gl.createTexture();
+      gl.bindTexture(gl.TEXTURE_2D, tex);
+      gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, true);
+      gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, img);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+      gl.enable(gl.BLEND);
+      gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
+      this.locSize = gl.getUniformLocation(prog, "size");
+      this.scale = 0;
+      this.ok = true;
+    }
+
+    // één punt vervormen (voor grijppunten)
+    static warpPoint(x, y, params) {
+      const dx = x - OC.x;
+      const dy = y - OC.y;
+      const r = Math.hypot(dx, dy);
+      const phi = (Math.atan2(dy, dx) * 180) / Math.PI;
+      const th = thetaFor(params, r, phi) + (phi * Math.PI) / 180;
+      const rr = pullR(r, params.pull || 0);
+      return [OC.x + rr * Math.cos(th), OC.y + rr * Math.sin(th)];
+    }
+
+    render(params, scale) {
+      const gl = this.gl;
+      if (Math.abs(scale - this.scale) > 0.05) {
+        this.scale = scale;
+        this.canvas.width = Math.round((IMG_W + 2 * PAD) * scale);
+        this.canvas.height = Math.round((IMG_H + 2 * PAD) * scale);
+      }
+      const pos = this.pos;
+      const pull = params.pull || 0;
+      for (let i = 0; i < this.rest.length; i++) {
+        const [r, phi] = this.rest[i];
+        const th = thetaFor(params, r, phi) + (phi * Math.PI) / 180;
+        const rr = phi > -140 && phi < -36 ? r : pullR(r, pull); // hoofd blijft
+        pos[i * 2] = OC.x + rr * Math.cos(th);
+        pos[i * 2 + 1] = OC.y + rr * Math.sin(th);
+      }
+      gl.viewport(0, 0, this.canvas.width, this.canvas.height);
+      gl.clearColor(0, 0, 0, 0);
+      gl.clear(gl.COLOR_BUFFER_BIT);
+      gl.bindBuffer(gl.ARRAY_BUFFER, this.posBuf);
+      gl.bufferData(gl.ARRAY_BUFFER, pos, gl.DYNAMIC_DRAW);
+      gl.enableVertexAttribArray(this.locP);
+      gl.vertexAttribPointer(this.locP, 2, gl.FLOAT, false, 0, 0);
+      gl.uniform2f(this.locSize, IMG_W + 2 * PAD, IMG_H + 2 * PAD);
+      gl.drawElements(gl.TRIANGLES, this.count, this.idxType, 0);
     }
   }
 
@@ -156,6 +349,7 @@
         Object.entries(ASSETS).map(async ([k, src]) => [k, await loadImage(src)])
       );
       for (const [k, img] of entries) this.img[k] = img;
+      this.mesh = new OctoMesh(this.img.octo);
       this.resize();
       window.addEventListener("resize", () => this.resize());
     }
@@ -289,7 +483,7 @@
 
     // Tik op een tentakelpuntje: high five!
     highFiveAt(clientX, clientY) {
-      if (this.reduced && !this.img.body) return false;
+      if (this.reduced && !this.img.octo) return false;
       const r = this.canvas.getBoundingClientRect();
       const x = (clientX - r.left - this.w / 2) / this._sc;
       const y = (clientY - r.top - this.h * 0.47) / this._sc;
@@ -525,7 +719,7 @@
     // ---------- tekenen ----------
     draw() {
       const { ctx, dpr, w, h } = this;
-      if (!this.img.body) return;
+      if (!this.img.octo) return;
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
       ctx.clearRect(0, 0, w, h);
 
@@ -558,11 +752,7 @@
       ctx.translate(0, -240);
 
       const pose = this._pose();
-      for (let i = 0; i < ARMS.length; i++) {
-        this._drawArm(ARMS[i], 1, pose, i * 2);
-        this._drawArm(ARMS[i], -1, pose, i * 2 + 1);
-      }
-      ctx.drawImage(this.img.body, -BODY_W / 2, -OY, BODY_W, BODY_H);
+      this._drawOcto(pose);
       this._drawFace(pose.m, Math.abs(this.turn.v));
       this._drawToy();
       this._drawFx();
@@ -573,6 +763,82 @@
       if (this.friends) this.friends.draw(ctx, "front");
       this._drawSparks();
       ctx.restore();
+    }
+
+    // Buiging per tentakel (radialen) op afstand r van het midden.
+    // Positief = omhoog krullen, net als in v1.
+    _bendParams(pose) {
+      const f = this.frenzy.v;
+      const e = this.euph.v;
+      const d = this.drowsy.v;
+      const amp =
+        (this.reduced ? 0.3 : 1) * (lerp(0.1, 0.2, pose.m) + f * 0.16 + e * 0.14) * (1 - 0.7 * d);
+      const speed = (lerp(1.1, 1.8, pose.m) + f * 2.6 + e * 4) * (1 - 0.6 * d);
+      const N = POSE.neutral;
+      const out = [];
+      for (const T of TENT) {
+        const k = T.k;
+        const i = k >> 1;
+        const side = k % 2 === 0 ? 1 : -1;
+        const ph = ARMS[i].ph + (side < 0 ? 0.8 : 0);
+        const pulse = this.armPulse[k];
+        const hold = this.hold[k];
+        const A =
+          (pose.a - N.a) + this.charge * 0.2 - this.pop * 0.15 + this.flinch * 0.25 + pulse * 0.25 +
+          hold * (0.32 + (this.reduced ? 0 : Math.sin(this.t * 3 + k) * 0.07)) +
+          amp * 0.35 * Math.sin(this.t * speed * 0.6 + ph);
+        const b = [0, 1, 2].map(
+          (j) =>
+            (pose.b[j] - N.b[j]) + this.charge * 0.35 - this.pop * 0.2 +
+            this.flinch * 0.7 + Math.abs(this.turn.v) * 0.35 + pulse * 0.9 -
+            hold * (j === 2 ? 0.45 : 0.1) +
+            amp * Math.sin(this.t * speed + ph - j * 0.95)
+        );
+        // onderste armen niet naar binnen laten zakken (anders kruisen ze)
+        const down = Math.max(0, Math.sin((T.ang * Math.PI) / 180));
+        const damp = (v) => (v < 0 ? v * (1 - 0.75 * down) : v);
+        // links: positief = tegen de klok (omhoog), rechts gespiegeld
+        out.push({ ang: T.ang, rmax: T.rmax, sign: side, A: damp(A * 0.6), b: b.map((v) => damp(v * 0.42)) });
+      }
+      // knijpen = armen naar zich toe trekken; knal = even uitschieten
+      out.pull = clamp(this.charge * 0.3 - this.pop * 0.12 + d * 0.06, -0.2, 0.4);
+      return out;
+    }
+
+    _drawOcto(pose) {
+      const { ctx } = this;
+      const params = this._bendParams(pose);
+      const mesh = this.mesh;
+      if (mesh && mesh.ok) {
+        mesh.render(params, this._meshScale());
+        ctx.drawImage(
+          mesh.canvas,
+          toWX(-PAD), toWY(-PAD),
+          (IMG_W + 2 * PAD) * S, (IMG_H + 2 * PAD) * S
+        );
+      } else {
+        // geen WebGL: stilstaand plaatje (hij blijft wel ademen en knijpen)
+        ctx.drawImage(this.img.octo, toWX(0), toWY(0), IMG_W * S, IMG_H * S);
+      }
+      // grijppunten van de tentakels bijwerken (ring, high five, glas)
+      for (const T of TENT) {
+        const p = OctoMesh.warpPoint(T.grip[0], T.grip[1], params);
+        const q = OctoMesh.warpPoint(
+          T.grip[0] + Math.cos((T.ang * Math.PI) / 180) * 12,
+          T.grip[1] + Math.sin((T.ang * Math.PI) / 180) * 12,
+          params
+        );
+        const tip = this.tips[T.k];
+        tip.x = toWX(p[0]);
+        tip.y = toWY(p[1]);
+        tip.th = Math.atan2(q[1] - p[1], q[0] - p[0]) - Math.PI / 2;
+      }
+    }
+
+    // resolutie van het vel: niet scherper dan het scherm nodig heeft
+    _meshScale() {
+      const px = (this._sc || 0.3) * S * (this.dpr || 1);
+      return clamp(px * 1.15, 0.35, 1);
     }
 
     _drawArm(def, side, pose, k) {
