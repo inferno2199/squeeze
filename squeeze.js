@@ -1163,75 +1163,93 @@
       ctx.restore();
     }
 
+    // Welke uitdrukking hoort bij dit humeur? Met speling, zodat hij niet heen en weer flitst.
+    _pickExpr(me) {
+      const cur = this.exprTo || "neutral";
+      if (cur === "neutral") return me > 0.66 ? "happy" : me < 0.34 ? "sad" : "neutral";
+      if (cur === "happy") return me < 0.34 ? "sad" : me < 0.56 ? "neutral" : "happy";
+      return me > 0.66 ? "happy" : me > 0.44 ? "neutral" : "sad";
+    }
+
     _drawFace(m, annoy = 0) {
       const { ctx, img } = this;
       const d = this.drowsy.v;
       const e = this.euph.v;
       const me = lerp(m, 0.18, annoy);
-      const wh = sstep(0.56, 0.84, me);
-      const ws = sstep(0.44, 0.16, me);
-      const wn = Math.max(0, 1 - wh - ws);
       const lookK = 1 - d;
       const lx = lerp(this.look.x * 10 * lookK, this.turn.v * 60, annoy);
       const ly = lerp(this.look.y * 7 * lookK + d * 8, -4, annoy);
 
-      // ogen: dichtknijpen bij ATH, half dicht bij slaap, groot bij wakker schrikken
-      const eyeW = 300;
+      // ---- wisselen van uitdrukking: knipperen op het moment van wisselen ----
+      const now = this.t;
+      const fdt = Math.min(0.1, Math.max(0, now - (this._faceT || now)));
+      this._faceT = now;
+      if (!this.exprFrom) {
+        this.exprFrom = this.exprTo = this._pickExpr(me);
+        this.exprK = 1;
+      }
+      const want = this._pickExpr(me);
+      if (this.exprK >= 1 && want !== this.exprTo) {
+        this.exprFrom = this.exprTo;
+        this.exprTo = want;
+        this.exprK = 0;
+      }
+      this.exprK = Math.min(1, this.exprK + fdt / (this.reduced ? 0.12 : 0.26));
+      const swapK = this.exprK < 1 ? Math.sin(this.exprK * Math.PI) : 0; // 0 → 1 → 0
+      const expr = this.exprK < 0.5 ? this.exprFrom : this.exprTo;
+
+      // ---- ogen: één set tegelijk, pupillen altijd op dezelfde hoogte ----
+      const EYE = {
+        happy: { im: img.eyes_happy, w: 279, fy: 0.357 },
+        neutral: { im: img.eyes_neutral, w: 300, fy: 0.411 },
+        sad: { im: img.eyes_sad, w: 300, fy: 0.375 },
+      };
       const eyeBottom = -95 + ly;
+      const pupilY = eyeBottom - 71;
       const blinkK = 1 - 0.88 * Math.sin(Math.min(1, this.blink) * Math.PI);
       const squint = 1 - 0.6 * this.charge;
       const sleepy = 1 - 0.5 * d * (this.wakeT > 0 ? 0.3 : 1);
       const surprise = 1 + 0.22 * clamp(this.wakeT / 1.3, 0, 1);
-      const eyeK = blinkK * squint * sleepy * surprise;
-
-      const eyes = [
-        [img.eyes_neutral, wn],
-        [img.eyes_sad, ws],
-        [img.eyes_happy, wh],
-      ];
-      for (const [im, a] of eyes) {
-        if (a < 0.01) continue;
-        const ew = eyeW * (im === img.eyes_happy ? 0.93 : 1) * lerp(1, surprise, 0.6);
-        const eh = (im.height / im.width) * ew;
+      const eyeK = blinkK * squint * sleepy * surprise * (1 - 0.94 * swapK);
+      const E = EYE[expr];
+      {
+        const ew = E.w * lerp(1, surprise, 0.6);
+        const eh = (E.im.height / E.im.width) * ew;
         ctx.save();
-        ctx.globalAlpha = a;
-        ctx.translate(lx, eyeBottom - eh * 0.36);
-        ctx.scale(1, eyeK);
-        ctx.drawImage(im, -ew / 2, -eh * 0.64, ew, eh);
+        ctx.translate(lx, pupilY);
+        ctx.scale(1, Math.max(0.04, eyeK));
+        ctx.drawImage(E.im, -ew / 2, -eh * (1 - E.fy), ew, eh);
         ctx.restore();
       }
 
-      // sterren-ogen bij euforie
-      if (e > 0.05 && this.charge < 0.1) {
-        const ew = eyeW * 0.93;
-        const eh = (img.eyes_happy.height / img.eyes_happy.width) * ew;
-        const py = eyeBottom - eh * 0.357;
+      // sterren-ogen bij euforie (op de pupillen van de blije ogen)
+      if (e > 0.05 && this.charge < 0.1 && swapK < 0.5) {
+        const ew = EYE.happy.w;
         const spin = this.reduced ? 0 : Math.sin(this.t * 3) * 0.3;
         const pulse = 1 + (this.reduced ? 0 : Math.sin(this.t * 10) * 0.12);
-        for (const px of [(0.284 - 0.5) * ew, (0.73 - 0.5) * ew]) {
-          this._star(lx + px, py, 54 * e * pulse, spin, e);
-        }
+        const cx = expr === "happy" ? [(0.284 - 0.5) * ew, (0.73 - 0.5) * ew] : [-86, 86];
+        for (const px of cx) this._star(lx + px, pupilY, 54 * e * pulse, spin, e);
       }
 
-      // mond
+      // ---- mond: knijpt kort samen en springt dan in de nieuwe vorm ----
       const talk = (this.frenzy.v + this.euph.v) * (0.5 + 0.5 * Math.sin(this.t * 14)) * 0.12;
-      const mh0 = sstep(0.56, 0.84, m) * (1 - annoy);
-      const ms0 = sstep(0.44, 0.16, m) * (1 - annoy);
-      const mouths = [
-        [img.mouth_neutral, Math.max(0, 1 - mh0 - ms0), 128 - annoy * 22 - d * 20],
-        [img.mouth_sad, ms0, 138],
-        [img.mouth_happy, mh0, 132 + e * 14],
-      ];
-      for (const [im, a, mw] of mouths) {
-        if (a < 0.01) continue;
-        const mh = (im.height / im.width) * mw;
-        ctx.save();
-        ctx.globalAlpha = a;
-        ctx.translate(lx * 0.7, -55 + ly * 0.7);
-        ctx.scale(1 + talk * 0.3, (1 + talk) * (1 - 0.25 * this.charge));
-        ctx.drawImage(im, -mw / 2, -mh / 2, mw, mh);
-        ctx.restore();
-      }
+      const mExpr = annoy > 0.5 ? "neutral" : expr;
+      const MOUTH = {
+        neutral: { im: img.mouth_neutral, w: 128 - annoy * 22 - d * 20 },
+        sad: { im: img.mouth_sad, w: 138 },
+        happy: { im: img.mouth_happy, w: 132 + e * 14 },
+      };
+      const MO = MOUTH[mExpr];
+      const mw = MO.w;
+      const mh = (MO.im.height / MO.im.width) * mw;
+      ctx.save();
+      ctx.translate(lx * 0.7, -55 + ly * 0.7);
+      ctx.scale(
+        (1 + talk * 0.3) * (1 - 0.18 * swapK),
+        (1 + talk) * (1 - 0.25 * this.charge) * (1 - 0.55 * swapK)
+      );
+      ctx.drawImage(MO.im, -mw / 2, -mh / 2, mw, mh);
+      ctx.restore();
       ctx.globalAlpha = 1;
     }
 
