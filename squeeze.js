@@ -113,20 +113,46 @@
     return ((a - b + 540) % 360) - 180;
   }
 
-  function bendAt(p, r) {
+  // Eén punt van de rust-afbeelding verplaatsen voor één arm.
+  // De arm buigt vanuit zijn eigen basis (waar hij uit het lijf komt),
+  // met een golf die van de basis naar het puntje loopt en een apart krullend puntje.
+  function armXY(p, x, y, r) {
     const L = p.rmax - R0;
-    let th = p.A * sstep(R0, R0 + L * 0.3, r);
-    for (let j = 0; j < 3; j++) th += p.b[j] * sstep(R0 + (j * L) / 3, R0 + ((j + 1) * L) / 3, r);
-    return th * p.sign;
+    const sPos = r - R0;
+    if (sPos <= 0) return [x, y];
+    const u = Math.min(1, sPos / L);
+    // houding (stemming, knijpen, vasthouden)
+    let th = p.A * sstep(0, 0.3, u);
+    for (let j = 0; j < 3; j++) th += p.b[j] * sstep(j / 3, (j + 1) / 3, u);
+    // golf: groeit naar het puntje toe, loopt van basis naar puntje
+    th += p.wa * Math.pow(u, 1.3) * Math.sin(p.wt - u * 5.2 + p.ph);
+    // puntje krult apart
+    th += p.ca * sstep(0.7, 1, u) * Math.sin(p.wt * 0.63 + p.ph * 1.7);
+    th *= p.sign;
+    // basis van deze arm
+    const a = (p.ang * Math.PI) / 180;
+    const bx = OC.x + R0 * Math.cos(a);
+    const by = OC.y + R0 * Math.sin(a);
+    // intrekken (knijpen) vanaf de basis
+    const k = 1 - p.pull * sstep(0, 0.25, u);
+    const dx = (x - bx) * k;
+    const dy = (y - by) * k;
+    const c = Math.cos(th);
+    const sn = Math.sin(th);
+    return [bx + dx * c - dy * sn, by + dx * sn + dy * c];
   }
 
-  // hoek (rad) voor een punt op (r, phi in graden)
-  function thetaFor(params, r, phiDeg) {
-    if (r <= R0 * 0.8) return 0;
-    // de twee dichtstbijzijnde richtingen (tentakels + hoofd) en daartussen mengen
+  // Waar komt een punt terecht? Het hoofd blijft stijf;
+  // alleen in de smalle ruimte tussen hoofd en arm vloeit het over.
+  function warpXY(params, x, y) {
+    const dx = x - OC.x;
+    const dy = y - OC.y;
+    const r = Math.hypot(dx, dy);
+    if (r <= R0 * 0.85) return [x, y];
+    const phi = (Math.atan2(dy, dx) * 180) / Math.PI;
     let lo = null, hi = null, dlo = -999, dhi = 999;
     for (const a of ALL_ANG) {
-      const d = angDiff(a, phiDeg);
+      const d = angDiff(a, phi);
       if (d <= 0 && d > dlo) { dlo = d; lo = a; }
       if (d > 0 && d < dhi) { dhi = d; hi = a; }
     }
@@ -134,19 +160,20 @@
     if (hi === null) { hi = lo; dhi = dlo; }
     const span = dhi - dlo || 1;
     let t = -dlo / span;
-    t = t * t * (3 - 2 * t);
-    const val = (a) => {
-      if (a === HEAD_ANG) return 0;
-      const p = params.find((q) => q.ang === a);
-      return p ? bendAt(p, r) : 0;
+    // naast het hoofd: het hoofd wint bijna overal, alleen vlak bij de arm mengen
+    if (lo === HEAD_ANG) t = sstep(0.62, 0.95, t);
+    else if (hi === HEAD_ANG) t = sstep(0.05, 0.38, t);
+    else t = sstep(0, 1, t);
+    const pos = (a) => {
+      if (a === HEAD_ANG) return [x, y];
+      const pa = params.byAng[a];
+      return pa ? armXY(pa, x, y, r) : [x, y];
     };
-    return val(lo) * (1 - t) + val(hi) * t;
-  }
-
-  // armen korter/langer maken vanaf de basis
-  function pullR(r, pull) {
-    if (r <= R0) return r;
-    return R0 + (r - R0) * (1 - pull);
+    if (t <= 0.0001) return pos(lo);
+    if (t >= 0.9999) return pos(hi);
+    const P = pos(lo);
+    const Q = pos(hi);
+    return [P[0] + (Q[0] - P[0]) * t, P[1] + (Q[1] - P[1]) * t];
   }
 
   class OctoMesh {
@@ -179,6 +206,7 @@
       const RG = 46;
       const RMAX = 930;
       this.rest = [];
+      const rxy = [];
       const uv = [];
       for (let ri = 0; ri <= RG; ri++) {
         const r = ri === 0 ? 0.5 : (Math.pow(ri / RG, 1.15)) * RMAX;
@@ -187,6 +215,7 @@
           const x = OC.x + r * Math.cos((phi * Math.PI) / 180);
           const y = OC.y + r * Math.sin((phi * Math.PI) / 180);
           this.rest.push([r, phi]);
+          rxy.push(x, y);
           uv.push(x / IMG_W, y / IMG_H);
         }
       }
@@ -201,6 +230,7 @@
         }
       }
       this.count = idx.length;
+      this.restXY = new Float32Array(rxy);
       this.pos = new Float32Array(this.rest.length * 2);
       this.posBuf = gl.createBuffer();
       const uvBuf = gl.createBuffer();
@@ -237,13 +267,7 @@
 
     // één punt vervormen (voor grijppunten)
     static warpPoint(x, y, params) {
-      const dx = x - OC.x;
-      const dy = y - OC.y;
-      const r = Math.hypot(dx, dy);
-      const phi = (Math.atan2(dy, dx) * 180) / Math.PI;
-      const th = thetaFor(params, r, phi) + (phi * Math.PI) / 180;
-      const rr = pullR(r, params.pull || 0);
-      return [OC.x + rr * Math.cos(th), OC.y + rr * Math.sin(th)];
+      return warpXY(params, x, y);
     }
 
     render(params, scale) {
@@ -254,13 +278,11 @@
         this.canvas.height = Math.round((IMG_H + 2 * PAD) * scale);
       }
       const pos = this.pos;
-      const pull = params.pull || 0;
-      for (let i = 0; i < this.rest.length; i++) {
-        const [r, phi] = this.rest[i];
-        const th = thetaFor(params, r, phi) + (phi * Math.PI) / 180;
-        const rr = phi > -140 && phi < -36 ? r : pullR(r, pull); // hoofd blijft
-        pos[i * 2] = OC.x + rr * Math.cos(th);
-        pos[i * 2 + 1] = OC.y + rr * Math.sin(th);
+      const rx = this.restXY;
+      for (let i = 0; i < rx.length; i += 2) {
+        const q = warpXY(params, rx[i], rx[i + 1]);
+        pos[i] = q[0];
+        pos[i + 1] = q[1];
       }
       gl.viewport(0, 0, this.canvas.width, this.canvas.height);
       gl.clearColor(0, 0, 0, 0);
@@ -804,10 +826,9 @@
         const st = this._bend[n];
         st.A += (At - st.A) * follow;
         for (let j = 0; j < 3; j++) st.b[j] += (bt[j] - st.b[j]) * follow;
-        // golf erbovenop
-        let A = st.A + amp * 0.35 * Math.sin(this.t * speed * 0.6 + ph) +
-          (this.reduced ? 0 : hold * Math.sin(this.t * 3 + k) * 0.07);
-        const b = st.b.map((v, j) => v + amp * Math.sin(this.t * speed + ph - j * 0.95));
+        // basishouding (de golf gaat apart, als doorlopende beweging)
+        let A = st.A + (this.reduced ? 0 : hold * Math.sin(this.t * 3 + k) * 0.07);
+        const b = st.b.slice();
         // onderste armen niet naar binnen laten zakken (anders kruisen ze),
         // bovenste armen niet over zijn hoofd heen laten buigen
         const sn = Math.sin((T.ang * Math.PI) / 180);
@@ -816,10 +837,22 @@
         const damp = (v) => (v < 0 ? v * (1 - 0.75 * down) : v * (1 - 0.6 * up));
         A = soft(damp(A * 0.6), 0.45);
         const bb = b.map((v) => soft(damp(v * 0.42), 0.28));
-        out.push({ ang: T.ang, rmax: T.rmax, sign: side, A, b: bb });
+        // elke arm een eigen tempo, zodat ze niet als één blok bewegen
+        const tempo = 0.85 + ((k * 37) % 10) / 30;
+        out.push({
+          ang: T.ang, rmax: T.rmax, sign: side, A, b: bb,
+          wa: amp * 0.95, ca: 0.1 + amp * 0.5,
+          wt: this.t * speed * tempo, ph: ph + k * 0.9,
+        });
       });
       // knijpen = armen naar zich toe trekken; knal = even uitschieten
-      out.pull = clamp(this.charge * 0.3 - this.pop * 0.12 + d * 0.06, -0.2, 0.4);
+      const pull = clamp(this.charge * 0.3 - this.pop * 0.12 + d * 0.06, -0.2, 0.4);
+      out.pull = pull;
+      out.byAng = {};
+      for (const q of out) {
+        q.pull = pull;
+        out.byAng[q.ang] = q;
+      }
       return out;
     }
 
