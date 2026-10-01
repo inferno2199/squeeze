@@ -127,7 +127,10 @@
     // golf: groeit naar het puntje toe, loopt van basis naar puntje
     th += p.wa * Math.pow(u, 1.3) * Math.sin(p.wt - u * 5.2 + p.ph);
     // puntje krult apart
-    th += p.ca * sstep(0.7, 1, u) * Math.sin(p.wt * 0.63 + p.ph * 1.7);
+    // puntje rolt langzaam in en uit (en krult in bij de zwemslag)
+    th += (p.cb + p.ca * Math.sin(p.ct + p.ph * 1.7)) * sstep(0.6, 1, u);
+    // naslepen: de puntjes komen een fractie later dan het lijf
+    th += p.lag * sstep(0.25, 1, u);
     th *= p.sign;
     // basis van deze arm
     const a = (p.ang * Math.PI) / 180;
@@ -353,6 +356,11 @@
 
       this.inkParts = [];
       this.fx = [];          // high-five flitsen en tikken op het glas
+      // natuurlijk bewegen
+      this.swim = { ph: Math.random(), c: 0, on: 0, y: 0, vy: 0 };
+      this.drift = { x: 0, y: 0, px: 0, py: 0, vx: 0, vy: 0, init: false };
+      this.whipT = new Array(8).fill(9);
+      this.gest = { k: -1, t: 9, next: 5 + Math.random() * 4 };
       this.idle = 0;         // seconden zonder dat de bezoeker iets doet
       this.glass = null;     // { t, k } tijdens het tikken op het glas
       this.shake = 0;
@@ -588,6 +596,7 @@
       this._updateToy(dt);
       if (this.glass) this.hold[this.glass.k] = 1;
       this.scare.step(dt);
+      this._updateMotion(dt);
       if (this.friends) this.friends.update(dt);
       if (this.focus && !(this.toy && this.toy.toss)) {
         this.look.tx = clamp(this.focus.x / 450, -1, 1);
@@ -762,13 +771,18 @@
       const e = this.euph.v;
       let bob = 0;
       if (!this.reduced) {
-        bob = Math.sin(this.t * lerp(1.25, 0.7, d)) * lerp(10, 5, d) + d * 14;
+        bob = Math.sin(this.t * lerp(1.25, 0.7, d)) * lerp(5, 4, d) + d * 14;
         bob -= Math.abs(Math.sin(this.t * 7)) * 16 * e; // hupjes van blijdschap
       }
+      // drijven: zijwaarts zweven, zwemslag omhoog, licht kantelen in de beweging
+      const dr = this.drift;
+      const tilt = this.reduced
+        ? 0
+        : clamp(dr.vx * 0.0016, -0.06, 0.06) + this.look.x * 0.035 * (1 - d);
 
       ctx.save();
-      ctx.translate(0, bob);
-      ctx.rotate(this.turn.v * 0.09 + (this.reduced ? 0 : Math.sin(this.t * 9) * 0.035 * e));
+      ctx.translate(dr.x, bob + this.swim.y);
+      ctx.rotate(this.turn.v * 0.09 + tilt + (this.reduced ? 0 : Math.sin(this.t * 9) * 0.035 * e));
       ctx.translate(0, 240);
       ctx.scale(this.sx.v * (1 - 0.08 * Math.abs(this.turn.v)), this.sy.v);
       ctx.translate(0, -240);
@@ -785,6 +799,65 @@
       if (this.friends) this.friends.draw(ctx, "front");
       this._drawSparks();
       ctx.restore();
+    }
+
+    // ---------- natuurlijk bewegen ----------
+    _updateMotion(dt) {
+      if (dt <= 0) return;
+      const d = this.drowsy.v;
+      const pump = clamp((this.mood.v - 0.5) * 2, 0, 1) * 0.7 + this.frenzy.v * 0.5;
+      const sw = this.swim;
+
+      // 1. zwemslag: armen samentrekken, uitspreiden + omhoog schieten, rustig terugzakken
+      const canSwim = !this.reduced && !this.athPhase && !this.glass && d < 0.4 && this.annoyed <= 0;
+      sw.on += ((canSwim ? 1 : 0) - sw.on) * (1 - Math.exp(-dt * 2));
+      const period = lerp(6.2, 3.2, clamp(pump, 0, 1));
+      const prev = sw.ph;
+      sw.ph += dt / period;
+      if (sw.ph >= 1) sw.ph -= 1;
+      if (canSwim && prev < 0.4 && sw.ph >= 0.4) sw.vy -= lerp(60, 105, clamp(pump, 0, 1));
+      const ph = sw.ph;
+      let c;
+      if (ph < 0.32) c = sstep(0, 0.32, ph);
+      else if (ph < 0.46) c = lerp(1, -0.7, sstep(0.32, 0.46, ph));
+      else c = -0.7 * (1 - sstep(0.46, 0.92, ph));
+      sw.c = c * sw.on;
+      sw.vy += (-sw.y * 5 - sw.vy * 2.4) * dt;
+      sw.y += sw.vy * dt;
+
+      // 6. drijven: langzaam zijwaarts zweven
+      const dr = this.drift;
+      const amt = this.reduced ? 0 : 1 - 0.6 * d;
+      const nx = (Math.sin(this.t * 0.37) * 16 + Math.sin(this.t * 0.23 + 1) * 9) * amt;
+      if (!dr.init) {
+        dr.px = nx;
+        dr.py = sw.y;
+        dr.init = true;
+      }
+      dr.x = nx;
+      const k = 1 - Math.exp(-dt * 4);
+      dr.vx += ((dr.x - dr.px) / dt - dr.vx) * k;
+      dr.vy += ((sw.y - dr.py) / dt - dr.vy) * k;
+      dr.px = dr.x;
+      dr.py = sw.y;
+
+      // 5. zwiep na het gooien
+      for (let i = 0; i < 8; i++) this.whipT[i] += dt;
+
+      // 4. af en toe een gebaar met een bovenste arm (zwaaien)
+      const g = this.gest;
+      g.t += dt;
+      g.next -= dt;
+      if (g.next <= 0) {
+        g.next = 7 + Math.random() * 6;
+        const busy = this.athPhase || d > 0.3 || (this.toy && this.toy.toss) || this.mood.v < 0.4 || this.reduced;
+        if (!busy) {
+          const h = this.toy ? this.toy.holder : -1;
+          const opts = [0, 1].filter((q) => q !== h);
+          g.k = opts[(Math.random() * opts.length) | 0];
+          g.t = 0;
+        }
+      }
     }
 
     // Buiging per tentakel (radialen) op afstand r van het midden.
@@ -837,16 +910,50 @@
         const damp = (v) => (v < 0 ? v * (1 - 0.75 * down) : v * (1 - 0.6 * up));
         A = soft(damp(A * 0.6), 0.45);
         const bb = b.map((v) => soft(damp(v * 0.42), 0.28));
+        // 4. elke arm een rol: boven expressief, onder rustig en ondersteunend
+        const role = [1.3, 1.0, 0.8, 0.55][i];
+        const sw = this.swim.c;
+        // 1. zwemslag: samentrekken = armen omlaag/naar binnen, loslaten = uitspreiden
+        A += -0.26 * sw * (0.6 + 0.4 * role);
+        // 5. zwiep na het gooien: kort uithalen en naveren
+        const wt = this.whipT[k];
+        if (wt < 1.2) {
+          A += 0.5 * Math.sin(clamp(wt / 0.3, 0, 1) * Math.PI) -
+            0.2 * sstep(0.25, 0.6, wt) * (1 - sstep(0.6, 1.2, wt));
+        }
+        // gebaar: een bovenste arm zwaait even
+        const g = this.gest;
+        if (g.k === k && g.t < 2.4) {
+          const env = Math.sin(clamp(g.t / 2.4, 0, 1) * Math.PI);
+          A += env * 0.32;
+          bb[2] += env * 0.22 * Math.sin(g.t * 7);
+        }
+        // 2. naslepen: lijf omlaag -> puntjes omhoog, lijf naar rechts -> puntjes naar links
+        const cosA = Math.abs(Math.cos((T.ang * Math.PI) / 180));
+        const sinA = Math.abs(Math.sin((T.ang * Math.PI) / 180));
+        const lag = clamp(
+          (this.drift.vy * 0.0024 * cosA + this.drift.vx * 0.003 * side * sinA) * (this.reduced ? 0 : 1),
+          -0.32, 0.32
+        );
         // elke arm een eigen tempo, zodat ze niet als één blok bewegen
         const tempo = 0.85 + ((k * 37) % 10) / 30;
         out.push({
-          ang: T.ang, rmax: T.rmax, sign: side, A, b: bb,
-          wa: amp * 0.95, ca: 0.1 + amp * 0.5,
+          ang: T.ang, rmax: T.rmax, sign: side, A: soft(A, 0.55), b: bb,
+          wa: amp * 0.95 * role,
+          // 3. puntjes rollen langzaam in en uit; bij de zwemslag krullen ze in
+          ca: (0.16 + amp * 0.35) * (0.7 + 0.3 * role),
+          cb: -0.22 * Math.max(0, sw),
+          ct: this.t * 0.55 * tempo * (1 - 0.5 * d),
+          lag,
           wt: this.t * speed * tempo, ph: ph + k * 0.9,
         });
       });
       // knijpen = armen naar zich toe trekken; knal = even uitschieten
-      const pull = clamp(this.charge * 0.3 - this.pop * 0.12 + d * 0.06, -0.2, 0.4);
+      const swc = this.swim.c;
+      const pull = clamp(
+        this.charge * 0.3 - this.pop * 0.12 + d * 0.06 + 0.13 * Math.max(0, swc) - 0.07 * Math.max(0, -swc),
+        -0.2, 0.45
+      );
       out.pull = pull;
       out.byAng = {};
       for (const q of out) {
@@ -1044,6 +1151,7 @@
 
     _toss(to, height) {
       const t = this.toy;
+      if (t.holder >= 0 && t.holder < 8) this.whipT[t.holder] = 0;
       t.toss = { t: 0, T: 0.5 + height / 700, x0: t.x, y0: t.y, to, h: height };
     }
 
