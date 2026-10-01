@@ -771,35 +771,53 @@
       const f = this.frenzy.v;
       const e = this.euph.v;
       const d = this.drowsy.v;
-      const amp =
-        (this.reduced ? 0.3 : 1) * (lerp(0.1, 0.2, pose.m) + f * 0.16 + e * 0.14) * (1 - 0.7 * d);
-      const speed = (lerp(1.1, 1.8, pose.m) + f * 2.6 + e * 4) * (1 - 0.6 * d);
+      // hoeveel golf: nooit te wild, ook niet als alles tegelijk gebeurt
+      const amp = Math.min(
+        0.24,
+        (this.reduced ? 0.3 : 1) * (lerp(0.1, 0.18, pose.m) + f * 0.1 + e * 0.08) * (1 - 0.7 * d)
+      );
+      const speed = (lerp(1.1, 1.8, pose.m) + f * 2 + e * 2.5) * (1 - 0.6 * d);
       const N = POSE.neutral;
+      // zachte overgangen: de basishouding schuift vloeiend naar de nieuwe stand
+      const now = this.t;
+      const dt = Math.min(0.1, Math.max(0, now - (this._bendT || now)));
+      this._bendT = now;
+      const follow = 1 - Math.exp(-dt * 7);
+      if (!this._bend) this._bend = TENT.map(() => ({ A: 0, b: [0, 0, 0] }));
+      const soft = (x, m) => m * Math.tanh(x / m);
       const out = [];
-      for (const T of TENT) {
+      TENT.forEach((T, n) => {
         const k = T.k;
         const i = k >> 1;
         const side = k % 2 === 0 ? 1 : -1;
         const ph = ARMS[i].ph + (side < 0 ? 0.8 : 0);
         const pulse = this.armPulse[k];
         const hold = this.hold[k];
-        const A =
-          (pose.a - N.a) + this.charge * 0.2 - this.pop * 0.15 + this.flinch * 0.25 + pulse * 0.25 +
-          hold * (0.32 + (this.reduced ? 0 : Math.sin(this.t * 3 + k) * 0.07)) +
-          amp * 0.35 * Math.sin(this.t * speed * 0.6 + ph);
-        const b = [0, 1, 2].map(
+        // doel (zonder golf)
+        const At =
+          (pose.a - N.a) + this.charge * 0.2 - this.pop * 0.15 + this.flinch * 0.25 + pulse * 0.25 + hold * 0.32;
+        const bt = [0, 1, 2].map(
           (j) =>
             (pose.b[j] - N.b[j]) + this.charge * 0.35 - this.pop * 0.2 +
-            this.flinch * 0.7 + Math.abs(this.turn.v) * 0.35 + pulse * 0.9 -
-            hold * (j === 2 ? 0.45 : 0.1) +
-            amp * Math.sin(this.t * speed + ph - j * 0.95)
+            this.flinch * 0.5 + Math.abs(this.turn.v) * 0.3 + pulse * 0.7 - hold * (j === 2 ? 0.45 : 0.1)
         );
-        // onderste armen niet naar binnen laten zakken (anders kruisen ze)
-        const down = Math.max(0, Math.sin((T.ang * Math.PI) / 180));
-        const damp = (v) => (v < 0 ? v * (1 - 0.75 * down) : v);
-        // links: positief = tegen de klok (omhoog), rechts gespiegeld
-        out.push({ ang: T.ang, rmax: T.rmax, sign: side, A: damp(A * 0.6), b: b.map((v) => damp(v * 0.42)) });
-      }
+        const st = this._bend[n];
+        st.A += (At - st.A) * follow;
+        for (let j = 0; j < 3; j++) st.b[j] += (bt[j] - st.b[j]) * follow;
+        // golf erbovenop
+        let A = st.A + amp * 0.35 * Math.sin(this.t * speed * 0.6 + ph) +
+          (this.reduced ? 0 : hold * Math.sin(this.t * 3 + k) * 0.07);
+        const b = st.b.map((v, j) => v + amp * Math.sin(this.t * speed + ph - j * 0.95));
+        // onderste armen niet naar binnen laten zakken (anders kruisen ze),
+        // bovenste armen niet over zijn hoofd heen laten buigen
+        const sn = Math.sin((T.ang * Math.PI) / 180);
+        const down = Math.max(0, sn);
+        const up = Math.max(0, -sn);
+        const damp = (v) => (v < 0 ? v * (1 - 0.75 * down) : v * (1 - 0.6 * up));
+        A = soft(damp(A * 0.6), 0.45);
+        const bb = b.map((v) => soft(damp(v * 0.42), 0.28));
+        out.push({ ang: T.ang, rmax: T.rmax, sign: side, A, b: bb });
+      });
       // knijpen = armen naar zich toe trekken; knal = even uitschieten
       out.pull = clamp(this.charge * 0.3 - this.pop * 0.12 + d * 0.06, -0.2, 0.4);
       return out;
