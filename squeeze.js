@@ -13,8 +13,7 @@
   const easeOutCubic = (t) => 1 - Math.pow(1 - t, 3);
 
   const ASSETS = {
-    octo: "assets/octo_body.png", // lijf uit één stuk met korte aanzetten van de armen
-    arms: "assets/arms.png",      // de 8 echte armen, rechtgestreken
+    octo: "assets/octo.png", // v2: octopus uit één stuk, zonder gezicht
     eyes_happy: "assets/eyes_happy.png",
     eyes_neutral: "assets/eyes_neutral.png",
     eyes_sad: "assets/eyes_sad.png",
@@ -58,32 +57,6 @@
     { k: 7, ang: 68, rmax: 620, grip: [926, 1069] },
   ];
   const HEAD_ANG = -88; // het hoofd buigt nooit
-
-  // v4: elke arm is de echte arm uit het plaatje, rechtgestreken tot een strook.
-  // th = de vorm in rust (hoek per stukje), van de basis tot het puntje.
-  const STRIP_W = 125;
-  const TENT4 = [
-    { k: 0, x: -208.4, y: 25.7, L: 479.3, col: 0, rows: 527, th: [1.030,1.030,1.018,1.020,0.984,1.149,1.792,1.849,2.065,2.223,2.124,1.973,2.186,2.360,2.235,2.062,2.258,2.468,2.433,2.311,2.435,2.592,2.581,2.574,2.708,2.866,2.803,2.861,3.118,3.111,3.257,3.377,3.211,3.331,3.396,3.350,3.299,3.268,3.006,2.930,2.839,2.502,2.079,1.650,1.340,1.023,0.481,-0.107], w: [18,34,57,83,115,125,96,100,98,99,96,95,94,93,88,87,89,86,80,83,84,80,78,78,75,75,75,71,71,68,61,63,60,56,53,49,46,44,45,41,37,33,32,30,26,19,15,8] },
-    { k: 1, x: 227.6, y: 36.5, L: 504.8, col: 4, rows: 555, th: [-0.896,-0.896,-0.897,-0.902,-1.065,-1.816,-1.636,-1.714,-1.968,-2.125,-1.956,-1.822,-2.085,-2.217,-2.178,-2.010,-2.215,-2.422,-2.304,-2.204,-2.395,-2.530,-2.399,-2.406,-2.586,-2.759,-2.605,-2.688,-2.912,-2.852,-2.851,-3.187,-3.211,-3.337,-3.309,-3.256,-3.269,-3.118,-3.008,-2.937,-2.778,-2.487,-2.056,-1.711,-1.356,-1.102,-0.631,0.060], w: [50,67,90,114,120,101,102,104,98,102,98,99,94,94,91,90,90,89,82,82,84,78,77,80,77,76,75,74,72,73,71,68,64,58,57,53,48,45,43,40,38,36,34,34,35,31,20,9] },
-    { k: 2, x: -232.4, y: 181.5, L: 478.6, col: 1, rows: 526, th: [1.893,1.893,1.927,2.007,1.441,1.385,1.401,1.384,1.142,1.164,1.329,1.401,1.327,1.369,1.529,1.510,1.559,1.440,1.686,1.687,1.575,1.615,1.821,1.919,1.746,1.692,1.915,2.139,2.096,1.979,2.198,2.406,2.282,2.225,2.477,2.422,2.313,2.215,1.911,1.587,1.381,1.203,0.872,0.609,0.363,-0.178,-0.564,-1.136], w: [113,125,103,119,106,101,105,104,100,98,97,98,96,93,89,91,92,89,85,86,84,81,79,81,80,81,73,76,71,65,65,64,57,56,52,45,46,43,39,38,36,33,30,27,24,20,14,8] },
-    { k: 3, x: 235.3, y: 185.1, L: 472.1, col: 5, rows: 519, th: [-2.007,-2.008,-2.058,-2.164,-1.480,-1.315,-1.372,-1.401,-1.360,-1.106,-1.113,-1.342,-1.451,-1.320,-1.260,-1.398,-1.500,-1.544,-1.512,-1.745,-1.639,-1.571,-1.606,-1.787,-1.883,-1.666,-1.792,-2.026,-2.158,-2.012,-2.070,-2.335,-2.346,-2.344,-2.492,-2.652,-2.462,-2.377,-2.171,-1.987,-1.856,-1.788,-1.557,-1.199,-0.769,-0.143,0.400,0.945], w: [110,125,109,125,125,125,107,113,108,104,103,97,103,101,101,94,97,95,94,96,92,91,89,85,87,86,82,80,78,74,70,72,63,62,61,53,52,52,47,32,21,16,10,22,27,18,14,9] },
-    { k: 4, x: -195.1, y: 258.2, L: 473.5, col: 2, rows: 521, th: [1.249,1.249,1.294,1.291,0.910,0.610,0.600,0.770,0.846,0.569,0.573,0.719,0.868,0.953,0.653,0.597,0.802,0.960,0.962,0.744,0.695,0.946,1.183,1.070,0.905,1.027,1.279,1.370,1.199,1.157,1.460,1.669,1.649,1.593,1.801,1.913,1.823,1.981,2.311,2.428,2.590,3.106,3.399,3.664,3.947,4.289,4.974,6.174], w: [92,95,104,112,105,104,110,112,106,104,103,106,105,99,97,98,101,97,92,90,94,92,86,84,84,84,76,78,77,76,68,71,69,65,61,61,58,51,54,48,49,47,42,34,23,18,21,11] },
-    { k: 5, x: 200.8, y: 246.7, L: 476.6, col: 6, rows: 524, th: [-0.983,-0.983,-0.969,-0.976,-0.999,-0.908,-0.756,-0.672,-0.762,-0.885,-0.636,-0.550,-0.692,-0.897,-0.859,-0.664,-0.664,-0.847,-0.971,-0.933,-0.810,-0.863,-1.004,-1.162,-0.861,-0.880,-1.076,-1.228,-1.166,-1.199,-1.412,-1.530,-1.512,-1.588,-1.800,-1.845,-1.703,-1.942,-2.198,-2.326,-2.555,-2.930,-3.226,-3.423,-3.748,-4.329,-5.065,-5.996], w: [69,85,91,95,98,103,111,113,113,107,104,103,108,106,100,99,101,102,98,94,95,96,93,91,84,88,86,83,81,80,73,73,70,67,65,64,60,53,52,46,49,45,42,33,28,20,21,14] },
-    { k: 6, x: -69.6, y: 347.0, L: 422.3, col: 3, rows: 465, th: [0.588,0.588,0.603,0.688,0.545,0.327,0.523,0.481,0.211,0.130,0.279,0.417,0.564,0.530,0.255,0.361,0.458,0.577,0.634,0.381,0.376,0.517,0.632,0.778,0.661,0.558,0.752,0.964,1.112,1.000,1.028,1.420,1.597,1.788,1.815,1.737,1.958,2.294,2.441,2.636,3.023,3.315,3.433,3.649,3.914,4.489,5.216,6.044], w: [108,109,109,112,108,104,109,109,105,106,96,98,101,101,100,92,93,94,91,89,85,85,84,81,77,77,80,77,72,70,70,65,64,60,56,53,48,46,42,40,37,33,27,20,21,22,19,12] },
-    { k: 7, x: 81.4, y: 341.5, L: 445.7, col: 7, rows: 490, th: [-0.588,-0.588,-0.609,-0.688,-0.425,-0.263,-0.412,-0.414,-0.261,-0.192,-0.336,-0.443,-0.544,-0.373,-0.287,-0.385,-0.533,-0.642,-0.525,-0.370,-0.484,-0.642,-0.776,-0.730,-0.482,-0.664,-0.868,-1.021,-0.853,-0.868,-1.185,-1.404,-1.408,-1.492,-1.745,-1.717,-1.786,-2.036,-2.137,-2.370,-3.024,-3.316,-3.352,-3.424,-3.683,-4.142,-5.424,-6.314], w: [107,110,112,111,103,99,104,105,105,104,96,100,101,99,98,93,96,95,90,90,86,89,86,80,81,84,82,74,72,75,72,72,69,65,65,61,56,55,50,47,52,44,28,20,11,15,17,11] },
-  ];
-
-  // v3: lange losse tentakels vanaf de aanzetten van het lijf (links; rechts gespiegeld)
-  const TENT3 = [
-    { k: 0, x: -271.6, y: 68.3, a: 2.323, len: 0.70 },
-    { k: 1, x: -272.5, y: 89.9, a: 2.175, len: 0.70 },
-    { k: 2, x: -262.6, y: 169.8, a: 1.360, len: 0.74 },
-    { k: 3, x: -264.1, y: 163.2, a: 1.290, len: 0.74 },
-    { k: 4, x: -224.2, y: 266.9, a: 0.749, len: 0.72 },
-    { k: 5, x: -233.1, y: 256.1, a: 0.697, len: 0.72 },
-    { k: 6, x: -84.3, y: 373.0, a: 0.407, len: 0.68 },
-    { k: 7, x: -97.5, y: 368.0, a: 0.386, len: 0.68 },
-  ];
 
   const ARMS = [
     { x: -170, y: 150, a: 1.95, len: 0.56, ph: 0.0 },
@@ -154,10 +127,7 @@
     // golf: groeit naar het puntje toe, loopt van basis naar puntje
     th += p.wa * Math.pow(u, 1.3) * Math.sin(p.wt - u * 5.2 + p.ph);
     // puntje krult apart
-    // puntje rolt langzaam in en uit (en krult in bij de zwemslag)
-    th += (p.cb + p.ca * Math.sin(p.ct + p.ph * 1.7)) * sstep(0.6, 1, u);
-    // naslepen: de puntjes komen een fractie later dan het lijf
-    th += p.lag * sstep(0.25, 1, u);
+    th += p.ca * sstep(0.7, 1, u) * Math.sin(p.wt * 0.63 + p.ph * 1.7);
     th *= p.sign;
     // basis van deze arm
     const a = (p.ang * Math.PI) / 180;
@@ -383,11 +353,6 @@
 
       this.inkParts = [];
       this.fx = [];          // high-five flitsen en tikken op het glas
-      // natuurlijk bewegen
-      this.swim = { ph: Math.random(), c: 0, on: 0, y: 0, vy: 0 };
-      this.drift = { x: 0, y: 0, px: 0, py: 0, vx: 0, vy: 0, init: false };
-      this.whipT = new Array(8).fill(9);
-      this.gest = { k: -1, t: 9, next: 5 + Math.random() * 4 };
       this.idle = 0;         // seconden zonder dat de bezoeker iets doet
       this.glass = null;     // { t, k } tijdens het tikken op het glas
       this.shake = 0;
@@ -406,7 +371,7 @@
         Object.entries(ASSETS).map(async ([k, src]) => [k, await loadImage(src)])
       );
       for (const [k, img] of entries) this.img[k] = img;
-      this.mesh = null; // v3: geen vervorming meer nodig
+      this.mesh = new OctoMesh(this.img.octo);
       this.resize();
       window.addEventListener("resize", () => this.resize());
     }
@@ -623,7 +588,6 @@
       this._updateToy(dt);
       if (this.glass) this.hold[this.glass.k] = 1;
       this.scare.step(dt);
-      this._updateMotion(dt);
       if (this.friends) this.friends.update(dt);
       if (this.focus && !(this.toy && this.toy.toss)) {
         this.look.tx = clamp(this.focus.x / 450, -1, 1);
@@ -798,18 +762,13 @@
       const e = this.euph.v;
       let bob = 0;
       if (!this.reduced) {
-        bob = Math.sin(this.t * lerp(1.25, 0.7, d)) * lerp(5, 4, d) + d * 14;
+        bob = Math.sin(this.t * lerp(1.25, 0.7, d)) * lerp(10, 5, d) + d * 14;
         bob -= Math.abs(Math.sin(this.t * 7)) * 16 * e; // hupjes van blijdschap
       }
-      // drijven: zijwaarts zweven, zwemslag omhoog, licht kantelen in de beweging
-      const dr = this.drift;
-      const tilt = this.reduced
-        ? 0
-        : clamp(dr.vx * 0.0016, -0.06, 0.06) + this.look.x * 0.035 * (1 - d);
 
       ctx.save();
-      ctx.translate(dr.x, bob + this.swim.y);
-      ctx.rotate(this.turn.v * 0.09 + tilt + (this.reduced ? 0 : Math.sin(this.t * 9) * 0.035 * e));
+      ctx.translate(0, bob);
+      ctx.rotate(this.turn.v * 0.09 + (this.reduced ? 0 : Math.sin(this.t * 9) * 0.035 * e));
       ctx.translate(0, 240);
       ctx.scale(this.sx.v * (1 - 0.08 * Math.abs(this.turn.v)), this.sy.v);
       ctx.translate(0, -240);
@@ -826,65 +785,6 @@
       if (this.friends) this.friends.draw(ctx, "front");
       this._drawSparks();
       ctx.restore();
-    }
-
-    // ---------- natuurlijk bewegen ----------
-    _updateMotion(dt) {
-      if (dt <= 0) return;
-      const d = this.drowsy.v;
-      const pump = clamp((this.mood.v - 0.5) * 2, 0, 1) * 0.7 + this.frenzy.v * 0.5;
-      const sw = this.swim;
-
-      // 1. zwemslag: armen samentrekken, uitspreiden + omhoog schieten, rustig terugzakken
-      const canSwim = !this.reduced && !this.athPhase && !this.glass && d < 0.4 && this.annoyed <= 0;
-      sw.on += ((canSwim ? 1 : 0) - sw.on) * (1 - Math.exp(-dt * 2));
-      const period = lerp(6.2, 3.2, clamp(pump, 0, 1));
-      const prev = sw.ph;
-      sw.ph += dt / period;
-      if (sw.ph >= 1) sw.ph -= 1;
-      if (canSwim && prev < 0.4 && sw.ph >= 0.4) sw.vy -= lerp(60, 105, clamp(pump, 0, 1));
-      const ph = sw.ph;
-      let c;
-      if (ph < 0.32) c = sstep(0, 0.32, ph);
-      else if (ph < 0.46) c = lerp(1, -0.7, sstep(0.32, 0.46, ph));
-      else c = -0.7 * (1 - sstep(0.46, 0.92, ph));
-      sw.c = c * sw.on;
-      sw.vy += (-sw.y * 5 - sw.vy * 2.4) * dt;
-      sw.y += sw.vy * dt;
-
-      // 6. drijven: langzaam zijwaarts zweven
-      const dr = this.drift;
-      const amt = this.reduced ? 0 : 1 - 0.6 * d;
-      const nx = (Math.sin(this.t * 0.37) * 16 + Math.sin(this.t * 0.23 + 1) * 9) * amt;
-      if (!dr.init) {
-        dr.px = nx;
-        dr.py = sw.y;
-        dr.init = true;
-      }
-      dr.x = nx;
-      const k = 1 - Math.exp(-dt * 4);
-      dr.vx += ((dr.x - dr.px) / dt - dr.vx) * k;
-      dr.vy += ((sw.y - dr.py) / dt - dr.vy) * k;
-      dr.px = dr.x;
-      dr.py = sw.y;
-
-      // 5. zwiep na het gooien
-      for (let i = 0; i < 8; i++) this.whipT[i] += dt;
-
-      // 4. af en toe een gebaar met een bovenste arm (zwaaien)
-      const g = this.gest;
-      g.t += dt;
-      g.next -= dt;
-      if (g.next <= 0) {
-        g.next = 7 + Math.random() * 6;
-        const busy = this.athPhase || d > 0.3 || (this.toy && this.toy.toss) || this.mood.v < 0.4 || this.reduced;
-        if (!busy) {
-          const h = this.toy ? this.toy.holder : -1;
-          const opts = [0, 1].filter((q) => q !== h);
-          g.k = opts[(Math.random() * opts.length) | 0];
-          g.t = 0;
-        }
-      }
     }
 
     // Buiging per tentakel (radialen) op afstand r van het midden.
@@ -937,50 +837,16 @@
         const damp = (v) => (v < 0 ? v * (1 - 0.75 * down) : v * (1 - 0.6 * up));
         A = soft(damp(A * 0.6), 0.45);
         const bb = b.map((v) => soft(damp(v * 0.42), 0.28));
-        // 4. elke arm een rol: boven expressief, onder rustig en ondersteunend
-        const role = [1.3, 1.0, 0.8, 0.55][i];
-        const sw = this.swim.c;
-        // 1. zwemslag: samentrekken = armen omlaag/naar binnen, loslaten = uitspreiden
-        A += -0.26 * sw * (0.6 + 0.4 * role);
-        // 5. zwiep na het gooien: kort uithalen en naveren
-        const wt = this.whipT[k];
-        if (wt < 1.2) {
-          A += 0.5 * Math.sin(clamp(wt / 0.3, 0, 1) * Math.PI) -
-            0.2 * sstep(0.25, 0.6, wt) * (1 - sstep(0.6, 1.2, wt));
-        }
-        // gebaar: een bovenste arm zwaait even
-        const g = this.gest;
-        if (g.k === k && g.t < 2.4) {
-          const env = Math.sin(clamp(g.t / 2.4, 0, 1) * Math.PI);
-          A += env * 0.32;
-          bb[2] += env * 0.22 * Math.sin(g.t * 7);
-        }
-        // 2. naslepen: lijf omlaag -> puntjes omhoog, lijf naar rechts -> puntjes naar links
-        const cosA = Math.abs(Math.cos((T.ang * Math.PI) / 180));
-        const sinA = Math.abs(Math.sin((T.ang * Math.PI) / 180));
-        const lag = clamp(
-          (this.drift.vy * 0.0024 * cosA + this.drift.vx * 0.003 * side * sinA) * (this.reduced ? 0 : 1),
-          -0.32, 0.32
-        );
         // elke arm een eigen tempo, zodat ze niet als één blok bewegen
         const tempo = 0.85 + ((k * 37) % 10) / 30;
         out.push({
-          ang: T.ang, rmax: T.rmax, sign: side, A: soft(A, 0.55), b: bb,
-          wa: amp * 0.95 * role,
-          // 3. puntjes rollen langzaam in en uit; bij de zwemslag krullen ze in
-          ca: (0.16 + amp * 0.35) * (0.7 + 0.3 * role),
-          cb: -0.22 * Math.max(0, sw),
-          ct: this.t * 0.55 * tempo * (1 - 0.5 * d),
-          lag,
+          ang: T.ang, rmax: T.rmax, sign: side, A, b: bb,
+          wa: amp * 0.95, ca: 0.1 + amp * 0.5,
           wt: this.t * speed * tempo, ph: ph + k * 0.9,
         });
       });
       // knijpen = armen naar zich toe trekken; knal = even uitschieten
-      const swc = this.swim.c;
-      const pull = clamp(
-        this.charge * 0.3 - this.pop * 0.12 + d * 0.06 + 0.13 * Math.max(0, swc) - 0.07 * Math.max(0, -swc),
-        -0.2, 0.45
-      );
+      const pull = clamp(this.charge * 0.3 - this.pop * 0.12 + d * 0.06, -0.2, 0.4);
       out.pull = pull;
       out.byAng = {};
       for (const q of out) {
@@ -992,249 +858,32 @@
 
     _drawOcto(pose) {
       const { ctx } = this;
-      // eerst de armen (onder het lijf), dan het lijf; de armen lopen precies door
-      for (const def of TENT4) this._drawRealArm(def, pose);
-      ctx.drawImage(this.img.octo, toWX(0), toWY(0), IMG_W * S, IMG_H * S);
-    }
-
-    // Een echte arm: in rust exact zoals op het plaatje, en van daaruit buigen.
-    _drawRealArm(def, pose) {
-      const { ctx } = this;
-      const img = this.img.arms;
-      const k = def.k;
-      const i = k >> 1;
-      const side = k % 2 === 0 ? 1 : -1; // links +, rechts gespiegeld (omhoog = positief)
-      const f = this.frenzy.v;
-      const e = this.euph.v;
-      const d = this.drowsy.v;
-      const N0 = POSE.neutral;
-      const role = [1.25, 1.0, 0.85, 0.65][i];
-      const amp = Math.min(
-        0.3 * role,
-        (this.reduced ? 0.3 : 1) * (lerp(0.1, 0.19, pose.m) + f * 0.16 + e * 0.2) * (1 - 0.7 * d) * role
-      );
-      // nooit trillen: tempo heeft een plafond, ook bij een enorme combo
-      const speed = Math.min(3.2, (lerp(1.1, 1.8, pose.m) + f * 1.6 + e * 2) * (1 - 0.6 * d));
-      const tempo = 0.85 + ((k * 37) % 10) / 30;
-      const ph = ARMS[i].ph + (side < 0 ? 0.8 : 0) + k * 0.7;
-      const pulse = this.armPulse[k];
-      const hold = this.hold[k];
-      const sw = this.swim.c;
-
-      // houding t.o.v. rust (de vorm uit het plaatje is "gewoon")
-      let A =
-        (pose.a - N0.a) * 0.85 + this.charge * 0.5 - this.pop * 0.3 + this.flinch * 0.3 + pulse * 0.25 +
-        hold * (0.32 + (this.reduced ? 0 : Math.sin(this.t * 3 + k) * 0.07)) -
-        0.28 * sw * (0.6 + 0.4 * role);
-      const wt = this.whipT[k];
-      if (wt < 1.2) {
-        A += 0.5 * Math.sin(clamp(wt / 0.3, 0, 1) * Math.PI) -
-          0.2 * sstep(0.25, 0.6, wt) * (1 - sstep(0.6, 1.2, wt));
+      const params = this._bendParams(pose);
+      const mesh = this.mesh;
+      if (mesh && mesh.ok) {
+        mesh.render(params, this._meshScale());
+        ctx.drawImage(
+          mesh.canvas,
+          toWX(-PAD), toWY(-PAD),
+          (IMG_W + 2 * PAD) * S, (IMG_H + 2 * PAD) * S
+        );
+      } else {
+        // geen WebGL: stilstaand plaatje (hij blijft wel ademen en knijpen)
+        ctx.drawImage(this.img.octo, toWX(0), toWY(0), IMG_W * S, IMG_H * S);
       }
-      const b = [0, 1, 2].map(
-        (j) =>
-          (pose.b[j] - N0.b[j]) * 0.85 + this.charge * 0.8 - this.pop * 0.5 +
-          this.flinch * 0.6 + Math.abs(this.turn.v) * 0.3 + pulse * 0.8 - hold * (j === 2 ? 0.4 : 0.1)
-      );
-      // vloeiend: de houding schuift zacht naar de nieuwe stand (geen sprongen)
-      if (!this._armSm) this._armSm = [];
-      const now = this.t;
-      const sm = this._armSm[k] || (this._armSm[k] = { A, b: b.slice(), t: now });
-      const fl = 1 - Math.exp(-Math.min(0.1, Math.max(0, now - sm.t)) * 9);
-      sm.t = now;
-      sm.A += (A - sm.A) * fl;
-      for (let q = 0; q < 3; q++) sm.b[q] += (b[q] - sm.b[q]) * fl;
-      A = sm.A;
-      for (let q = 0; q < 3; q++) b[q] = sm.b[q];
-      const g = this.gest;
-      if (g.k === k && g.t < 2.4) {
-        const env = Math.sin(clamp(g.t / 2.4, 0, 1) * Math.PI);
-        A += env * 0.35;
-        b[2] += env * 0.25 * Math.sin(g.t * 7);
+      // grijppunten van de tentakels bijwerken (ring, high five, glas)
+      for (const T of TENT) {
+        const p = OctoMesh.warpPoint(T.grip[0], T.grip[1], params);
+        const q = OctoMesh.warpPoint(
+          T.grip[0] + Math.cos((T.ang * Math.PI) / 180) * 12,
+          T.grip[1] + Math.sin((T.ang * Math.PI) / 180) * 12,
+          params
+        );
+        const tip = this.tips[T.k];
+        tip.x = toWX(p[0]);
+        tip.y = toWY(p[1]);
+        tip.th = Math.atan2(q[1] - p[1], q[0] - p[0]) - Math.PI / 2;
       }
-      // naslepen
-      const th0 = def.th[0];
-      const dx0 = -Math.sin(th0);
-      const dy0 = Math.cos(th0);
-      const lag = this.reduced ? 0 : clamp(
-        this.drift.vy * 0.0024 * Math.abs(dx0) + this.drift.vx * 0.003 * side * Math.abs(dy0), -0.35, 0.35
-      );
-      const tipCurl = -0.25 * Math.max(0, sw) +
-        (0.16 + amp * 0.3) * Math.sin(this.t * 0.55 * tempo * (1 - 0.5 * d) + ph * 1.7);
-      const wtime = this.t * speed * tempo;
-
-      const L = def.L;
-      const W = STRIP_W * S;
-      const N = 48;
-      const ds = L / N;
-      const srcH = def.rows / N;
-      const sx = def.col * STRIP_W;
-      const TH = def.th;
-      // 1. middellijn uitrekenen
-      const px = new Array(N + 1);
-      const py = new Array(N + 1);
-      const ang = new Array(N);
-      const restA = new Array(N);
-      px[0] = 0;
-      py[0] = 0;
-      for (let j = 0; j < N; j++) {
-        const u = (j + 0.5) / N;
-        const fi = u * (TH.length - 1);
-        const i0 = Math.floor(fi);
-        const rest = TH[i0] + (TH[Math.min(TH.length - 1, i0 + 1)] - TH[i0]) * (fi - i0);
-        // buiging: begint zacht na de basis, zodat de overgang met het lijf blijft kloppen
-        // pas buigen ná de zachte overgang met het lijf (u < ~0.2 blijft exact in rust)
-        const free = sstep(0.19, 0.3, u);
-        let bend = A * sstep(0.19, 0.4, u);
-        for (let q = 0; q < 3; q++) bend += b[q] * sstep(0.22 + q * 0.26, 0.22 + (q + 1) * 0.26, u);
-        bend += amp * Math.pow(u, 1.3) * Math.sin(wtime - u * 5.2 + ph) * free;
-        bend += (tipCurl + lag) * sstep(0.62, 1, u) + lag * 0.4 * sstep(0.35, 0.62, u);
-        ang[j] = rest + side * bend;
-        restA[j] = rest;
-      }
-      // krommingsgrens: een arm kan nooit strakker krullen dan zijn dikte toelaat
-      // (anders vouwt de binnenbocht om en krijg je spleetjes)
-      const WS = def.w;
-      for (let j = 1; j < N; j++) {
-        const u = j / N;
-        const hwj = (WS[Math.min(WS.length - 1, Math.round(u * (WS.length - 1)))] * S) / 2;
-        const restD = Math.abs(restA[j] - restA[j - 1]);
-        const maxD = Math.max(restD * 1.05, ds / (1.25 * hwj));
-        let dlt = ang[j] - ang[j - 1];
-        if (dlt > maxD) ang[j] = ang[j - 1] + maxD;
-        else if (dlt < -maxD) ang[j] = ang[j - 1] - maxD;
-      }
-      for (let j = 0; j < N; j++) {
-        px[j + 1] = px[j] - Math.sin(ang[j]) * ds;
-        py[j + 1] = py[j] + Math.cos(ang[j]) * ds;
-      }
-      // 2. elk stukje precies uitsnijden langs de buiging (geen overlap, geen spleten)
-      const hw = W / 2 + 3;
-      const edge = (j) => {
-        const a = j === 0 ? ang[0] : j === N ? ang[N - 1] : (ang[j - 1] + ang[j]) / 2;
-        const c = Math.cos(a);
-        const sn = Math.sin(a);
-        return [px[j] - c * hw, py[j] - sn * hw, px[j] + c * hw, py[j] + sn * hw];
-      };
-      ctx.save();
-      ctx.translate(def.x, def.y);
-      let e0 = edge(0);
-      for (let j = 0; j < N; j++) {
-        const e1 = edge(j + 1);
-        // een fractie langer, zodat de naden dicht zijn
-        const tx = (px[j + 1] - px[j]) * 0.1;
-        const ty = (py[j + 1] - py[j]) * 0.1;
-        ctx.save();
-        ctx.beginPath();
-        ctx.moveTo(e0[0] - tx, e0[1] - ty);
-        ctx.lineTo(e0[2] - tx, e0[3] - ty);
-        ctx.lineTo(e1[2] + tx, e1[3] + ty);
-        ctx.lineTo(e1[0] + tx, e1[1] + ty);
-        ctx.closePath();
-        ctx.clip();
-        ctx.translate(px[j], py[j]);
-        ctx.rotate(ang[j]);
-        ctx.drawImage(img, sx, Math.max(0, j * srcH - srcH * 0.5), STRIP_W, srcH * 2, -W / 2, -ds * 0.5, W, ds * 2);
-        ctx.restore();
-        e0 = e1;
-      }
-      ctx.restore();
-      // grijppunt (ring, high five, glas)
-      const gj = Math.floor(N * 0.8);
-      const tip = this.tips[k];
-      tip.x = def.x + px[gj + 1];
-      tip.y = def.y + py[gj + 1];
-      tip.th = ang[gj];
-    }
-
-    // Eén lange tentakel als een ketting van stukjes (zoals v1), met:
-    // houding per stemming, golf, zwemslag, naslepen, krullend puntje, zwiep en gebaren.
-    _drawTentacle(def, side, k, pose) {
-      const { ctx } = this;
-      const img = this.img.tent;
-      const i = k >> 1;
-      const f = this.frenzy.v;
-      const e = this.euph.v;
-      const d = this.drowsy.v;
-      const role = [1.25, 1.0, 0.85, 0.65][i];
-      const amp =
-        (this.reduced ? 0.3 : 1) * (lerp(0.1, 0.2, pose.m) + f * 0.22 + e * 0.28) * (1 - 0.7 * d) * role;
-      const speed = (lerp(1.1, 1.8, pose.m) + f * 2.2 + e * 3) * (1 - 0.6 * d);
-      const tempo = 0.85 + ((k * 37) % 10) / 30;
-      const ph = ARMS[i].ph + (side < 0 ? 0.8 : 0);
-      const pulse = this.armPulse[k];
-      const hold = this.hold[k];
-      const sw = this.swim.c;
-
-      let A =
-        def.a + pose.a + this.charge * 0.55 - this.pop * 0.35 + this.flinch * 0.3 + pulse * 0.25 +
-        hold * (0.32 + (this.reduced ? 0 : Math.sin(this.t * 3 + k) * 0.07)) +
-        amp * 0.35 * Math.sin(this.t * speed * 0.6 * tempo + ph) -
-        0.3 * sw * (0.6 + 0.4 * role);
-      // zwiep na het gooien
-      const wt = this.whipT[k];
-      if (wt < 1.2) {
-        A += 0.55 * Math.sin(clamp(wt / 0.3, 0, 1) * Math.PI) -
-          0.22 * sstep(0.25, 0.6, wt) * (1 - sstep(0.6, 1.2, wt));
-      }
-      const b = [0, 1, 2].map(
-        (j) =>
-          pose.b[j] + this.charge * 0.95 - this.pop * 0.6 +
-          this.flinch * 0.7 + Math.abs(this.turn.v) * 0.35 + pulse * 0.9 -
-          hold * (j === 2 ? 0.45 : 0.1) +
-          amp * Math.sin(this.t * speed * tempo + ph - j * 0.95)
-      );
-      // gebaar: een bovenste arm zwaait even
-      const g = this.gest;
-      if (g.k === k && g.t < 2.4) {
-        const env = Math.sin(clamp(g.t / 2.4, 0, 1) * Math.PI);
-        A += env * 0.35;
-        b[2] += env * 0.25 * Math.sin(g.t * 7);
-      }
-      // krullend puntje (en inkrullen bij de zwemslag)
-      b[2] += -0.25 * Math.max(0, sw) +
-        (0.18 + amp * 0.3) * Math.sin(this.t * 0.55 * tempo * (1 - 0.5 * d) + ph * 1.7);
-      // naslepen: lijf omlaag -> puntjes omhoog, lijf opzij -> puntjes de andere kant op
-      const dirAng = Math.atan2(Math.cos(def.a), -Math.sin(def.a) * side);
-      const lag = this.reduced ? 0 : clamp(
-        this.drift.vy * 0.0024 * Math.abs(Math.cos(dirAng)) +
-        this.drift.vx * 0.003 * side * Math.abs(Math.sin(dirAng)),
-        -0.35, 0.35
-      );
-      b[1] += lag * 0.5;
-      b[2] += lag;
-
-      const L = img.height * def.len;
-      const W = img.width * def.len * 1.16; // iets voller, past bij de aanzetten
-      ctx.save();
-      ctx.scale(side, 1);
-      ctx.translate(def.x, def.y);
-      const N = 40;
-      const ds = L / N;
-      const srcH = img.height / N;
-      let x = 0;
-      let y = 0;
-      const grip = Math.floor(N * 0.8);
-      for (let j = 0; j < N; j++) {
-        const sP = (j + 0.5) * ds;
-        // eerste stuk (onder de aanzet) wijst altijd dezelfde kant op als de aanzet
-        let th = def.a + (A - def.a) * sstep(L * 0.08, L * 0.24, sP);
-        for (let q = 0; q < 3; q++) th += b[q] * sstep(L * 0.12 + (q * L * 0.88) / 3, L * 0.12 + ((q + 1) * L * 0.88) / 3, sP);
-        ctx.save();
-        ctx.translate(x, y);
-        ctx.rotate(th);
-        ctx.drawImage(img, 0, j * srcH, img.width, srcH + 2, -W / 2, 0, W, ds + 2 * def.len + 1);
-        ctx.restore();
-        x += -Math.sin(th) * ds;
-        y += Math.cos(th) * ds;
-        if (j === grip) {
-          const tip = this.tips[k];
-          tip.x = side * (def.x + x);
-          tip.y = def.y + y;
-          tip.th = side > 0 ? th : -th;
-        }
-      }
-      ctx.restore();
     }
 
     // resolutie van het vel: niet scherper dan het scherm nodig heeft
@@ -1395,7 +1044,6 @@
 
     _toss(to, height) {
       const t = this.toy;
-      if (t.holder >= 0 && t.holder < 8) this.whipT[t.holder] = 0;
       t.toss = { t: 0, T: 0.5 + height / 700, x0: t.x, y0: t.y, to, h: height };
     }
 
