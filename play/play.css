@@ -206,3 +206,9 @@ form button {
 .split span { font-weight: 800; color: var(--green); }
 .prize a { color: var(--green); font-weight: 700; text-decoration: none; }
 .small { font-size: 0.8rem; }
+
+.pool { display: flex; align-items: baseline; gap: 0.5rem; flex-wrap: wrap; margin: 0.5rem 0 0.2rem; }
+.pool span { color: var(--muted); font-size: 0.85rem; }
+.pool b { font-size: 1.5rem; font-weight: 800; color: var(--green); }
+.pool em { font-style: normal; color: var(--muted); font-weight: 700; }
+.split small { display: block; font-size: 0.72rem; color: var(--text); opacity: 0.85; margin-top: 0.1rem; white-space: nowrap; }
