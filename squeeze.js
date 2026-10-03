@@ -486,7 +486,8 @@
 
     // Spel (Squeeze Hold): van buitenaf knijpen, 0..1. null = loslaten.
     setSqueeze(p) {
-      this.extCharge = p == null ? null : clamp(p, 0, 1);
+      // alleen geldige getallen; anders loslaten
+      this.extCharge = p == null || !isFinite(p) ? null : clamp(p, 0, 1);
     }
 
     // Korte euforie (na nieuwe ring of combo x10)
@@ -904,6 +905,9 @@
     // Buiging per tentakel (radialen) op afstand r van het midden.
     // Positief = omhoog krullen, net als in v1.
     _bendParams(pose) {
+      // in het spel (lang vasthouden) spannen de armen zich alleen licht op en blijven ze zichtbaar;
+      // bij een ATH (1 sec) krullen ze wel helemaal in
+      const armCh = this.extCharge != null ? this.charge * 0.22 : this.charge;
       const f = this.frenzy.v;
       const e = this.euph.v;
       const d = this.drowsy.v;
@@ -940,12 +944,12 @@
         const sad = clamp(-(pose.a - N.a) / 0.42, 0, 1.5);
         const hang = -0.16 * horiz * (1 - happy) - 0.22 * horiz * sad;
         const At =
-          (pose.a - N.a) * 1.1 + hang + happy * 0.5 + e * 0.15 + this.charge * 0.35 - this.pop * 0.25 +
+          (pose.a - N.a) * 1.1 + hang + happy * 0.5 + e * 0.15 + armCh * 0.35 - this.pop * 0.25 +
           this.flinch * 0.25 + pulse * 0.25 + hold * 0.32;
         // krullen alleen nog bij het squeeze-moment; anders reiken in plaats van oprollen
         const bt = [0, 1, 2].map((j) => {
           const dlt = pose.b[j] - N.b[j];
-          return (dlt > 0 ? dlt * 0.35 : dlt * 1.1) + this.charge * (0.55 + j * 0.25) - this.pop * 0.3 +
+          return (dlt > 0 ? dlt * 0.35 : dlt * 1.1) + armCh * (0.55 + j * 0.25) - this.pop * 0.3 +
             this.flinch * 0.5 + Math.abs(this.turn.v) * 0.25 + pulse * 0.6 - hold * (j === 2 ? 0.45 : 0.1) +
             (j === 2 ? hang * 0.6 : 0);
         });
@@ -1000,7 +1004,7 @@
         });
       });
       // knijpen = armen naar zich toe trekken; knal = even uitschieten
-      const pull = clamp(this.charge * 0.3 - this.pop * 0.12 + d * 0.06, -0.2, 0.4);
+      const pull = clamp(armCh * 0.3 - this.pop * 0.12 + d * 0.06, -0.2, 0.4);
       out.pull = pull;
       out.byAng = {};
       out.byK = {};
