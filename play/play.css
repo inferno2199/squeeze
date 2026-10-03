@@ -212,3 +212,81 @@ form button {
 .pool b { font-size: 1.5rem; font-weight: 800; color: var(--green); }
 .pool em { font-style: normal; color: var(--muted); font-weight: 700; }
 .split small { display: block; font-size: 0.72rem; color: var(--text); opacity: 0.85; margin-top: 0.1rem; white-space: nowrap; }
+
+/* high score: altijd in beeld bij Squeeze */
+.best-badge {
+  position: absolute;
+  left: 0.6rem;
+  top: 0.6rem;
+  z-index: 3;
+  padding: 0.3rem 0.7rem;
+  border-radius: 999px;
+  background: rgba(3, 12, 8, 0.72);
+  border: 1px solid var(--line);
+  font-size: 0.85rem;
+  color: var(--muted);
+  pointer-events: none;
+}
+.best-badge b { color: var(--text); font-weight: 800; }
+.best-badge.pulse { animation: badgePulse 0.9s ease; }
+@keyframes badgePulse {
+  0% { transform: scale(1); }
+  35% { transform: scale(1.18); border-color: var(--green); }
+  100% { transform: scale(1); }
+}
+
+/* een vriendje komt feliciteren */
+.friend {
+  position: absolute;
+  bottom: 6%;
+  z-index: 4;
+  width: 30%;
+  max-width: 210px;
+  pointer-events: none;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+.friend img { width: 100%; height: auto; filter: drop-shadow(0 8px 14px rgba(0, 0, 0, 0.35)); }
+.friend.from-left { left: 2%; animation: friendInL 3.4s ease forwards; }
+.friend.from-right { right: 2%; animation: friendInR 3.4s ease forwards; }
+.friend.from-right img { transform: scaleX(-1); }
+.friend-bubble {
+  margin-bottom: 0.3rem;
+  padding: 0.4rem 0.7rem;
+  border-radius: 14px;
+  background: #f4fbf2;
+  color: #07140c;
+  font-weight: 800;
+  font-size: 0.92rem;
+  text-align: center;
+  white-space: nowrap;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.3);
+}
+@keyframes friendInL {
+  0% { transform: translateX(-130%) translateY(10px); opacity: 0; }
+  14% { transform: translateX(0) translateY(0); opacity: 1; }
+  20%, 40%, 60%, 80% { transform: translateY(-6px); }
+  30%, 50%, 70% { transform: translateY(2px); }
+  86% { transform: translateX(0); opacity: 1; }
+  100% { transform: translateX(-130%); opacity: 0; }
+}
+@keyframes friendInR {
+  0% { transform: translateX(130%) translateY(10px); opacity: 0; }
+  14% { transform: translateX(0) translateY(0); opacity: 1; }
+  20%, 40%, 60%, 80% { transform: translateY(-6px); }
+  30%, 50%, 70% { transform: translateY(2px); }
+  86% { transform: translateX(0); opacity: 1; }
+  100% { transform: translateX(130%); opacity: 0; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .friend.from-left, .friend.from-right { animation: none; }
+  .best-badge.pulse { animation: none; }
+}
+@media (max-width: 820px) {
+  .best-badge { font-size: 0.78rem; }
+  .friend { width: 34%; }
+  .friend-bubble { font-size: 0.8rem; }
+}
+
+.friend[hidden] { display: none; }
