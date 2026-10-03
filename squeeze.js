@@ -484,6 +484,25 @@
       this.athPhase = { t: 0, dur: this.reduced ? 0.4 : 1.0 };
     }
 
+    // Spel (Squeeze Says): kijk en wijs naar een punt op het podium (nx, ny van -1 tot 1).
+    pointAt(nx, ny, sec = 0.8) {
+      this.focus = { x: nx * 520, y: ny * 420 - 60 };
+      this.pointT = sec;
+      // de arm die het dichtst in die richting wijst, steekt even uit
+      const ang = (Math.atan2(ny, nx) * 180) / Math.PI;
+      let best = 0;
+      let bd = 999;
+      for (const T of TENT) {
+        const d = Math.abs(((T.ang - ang + 540) % 360) - 180);
+        if (d < bd) {
+          bd = d;
+          best = T.k;
+        }
+      }
+      this.armPulse[best] = Math.max(this.armPulse[best], 0.9);
+      this.idle = 0;
+    }
+
     // Spel (Squeeze Hold): van buitenaf knijpen, 0..1. null = loslaten.
     setSqueeze(p) {
       // alleen geldige getallen; anders loslaten
@@ -667,6 +686,10 @@
 
       // aantikken
       this._updateGlass(dt);
+      if (this.pointT > 0) {
+        this.pointT -= dt;
+        if (this.pointT <= 0) this.focus = null;
+      }
       for (const f of this.fx) f.t += dt;
       this.fx = this.fx.filter((f) => f.t < 0.9);
       this.shake *= Math.exp(-dt * 18);
