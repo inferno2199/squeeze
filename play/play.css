@@ -199,3 +199,10 @@ form button {
   .hold { padding: 0.9rem 1.2rem; }
   .hint { font-size: 0.8rem; }
 }
+
+.split { list-style: none; margin: 0.4rem 0; padding: 0; display: grid; grid-template-columns: repeat(5, 1fr); gap: 0.35rem; }
+.split li { text-align: center; background: rgba(124, 255, 107, 0.08); border: 1px solid var(--line); border-radius: 10px; padding: 0.35rem 0.2rem; }
+.split b { display: block; font-size: 0.8rem; color: var(--muted); }
+.split span { font-weight: 800; color: var(--green); }
+.prize a { color: var(--green); font-weight: 700; text-decoration: none; }
+.small { font-size: 0.8rem; }
