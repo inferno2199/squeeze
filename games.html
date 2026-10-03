@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>Squeeze games — daily prizes ($SQUEEZE)</title>
+  <meta name="description" content="Two free daily games with Squeeze and his friends. Win $PUMP and $SQUEEZE." />
+  <meta name="theme-color" content="#030604" />
+  <meta property="og:title" content="Squeeze games" />
+  <meta property="og:description" content="Two free daily games. Win $PUMP and $SQUEEZE." />
+  <meta property="og:image" content="https://inferno2199.github.io/squeeze/assets/og.png" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <link rel="icon" href="assets/icon.png" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="play/play.css" />
+</head>
+<body>
+  <div class="seabg" aria-hidden="true"></div>
+  <header class="top">
+    <a class="back" href="./">← Squeeze</a>
+    <h1>Squeeze games</h1>
+    <p class="sub">Two free daily games. Top 5 win every day at <span class="tz">8:00 PM CET</span>.</p>
+  </header>
+
+  <main class="hub">
+    <a class="game-card" href="hold.html">
+      <div class="art"><img src="assets/icon.png" alt="" style="border-radius:24px" /></div>
+      <h2>Squeeze Hold</h2>
+      <p>Hold to squeeze. Let go right before he pops. Every round gets faster.</p>
+      <p class="win">Win $PUMP daily</p>
+      <span class="go">Play</span>
+    </a>
+    <a class="game-card" href="says.html">
+      <div class="art">
+        <img class="mini" src="assets/friends/fish.png" alt="" />
+        <img class="mini" src="assets/friends/jelly.png" alt="" />
+        <img class="mini" src="assets/friends/crab.png" alt="" />
+      </div>
+      <h2>Squeeze Says</h2>
+      <p>Watch the friends light up and tap them back in order. One more every round.</p>
+      <p class="win">Win $SQUEEZE daily</p>
+      <span class="go">Play</span>
+    </a>
+  </main>
+  <p class="hub-note">One entry (X handle + wallet) works for both games.</p>
+  <script>
+    // CET in de winter, CEST in de zomer
+    (function () {
+      try {
+        var p = new Intl.DateTimeFormat("en-GB", { timeZone: "Europe/Amsterdam", timeZoneName: "short" })
+          .formatToParts(new Date()).find(function (x) { return x.type === "timeZoneName"; });
+        if (p && /^CES?T$/.test(p.value)) document.querySelectorAll(".tz").forEach(function (n) { n.textContent = "8:00 PM " + p.value; });
+      } catch (e) {}
+    })();
+  </script>
+</body>
+</html>
