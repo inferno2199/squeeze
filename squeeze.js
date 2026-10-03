@@ -14,6 +14,7 @@
 
   const ASSETS = {
     octo: "assets/octo.png", // v2: octopus uit één stuk, zonder gezicht
+    armmap: "assets/octo_map.png", // welke pixel bij welke arm hoort
     eyes_happy: "assets/eyes_happy.png",
     eyes_neutral: "assets/eyes_neutral.png",
     eyes_sad: "assets/eyes_sad.png",
@@ -116,11 +117,44 @@
   // Eén punt van de rust-afbeelding verplaatsen voor één arm.
   // De arm buigt vanuit zijn eigen basis (waar hij uit het lijf komt),
   // met een golf die van de basis naar het puntje loopt en een apart krullend puntje.
+  const TIP_U = 0.76;
+
+  // Armenkaart: voor elk punt van het plaatje bij welke arm het hoort (255 = lijf/hoofd).
+  // Zo beweegt een krulletje altijd met zijn eigen arm mee, nooit half met de buurarm.
+  let ARM_MAP = null;
+  let MAP_W = 0;
+  let MAP_H = 0;
+  const MAP_F = 2;
+  function setArmMap(img) {
+    try {
+      const c = document.createElement("canvas");
+      c.width = img.width;
+      c.height = img.height;
+      const x = c.getContext("2d");
+      x.drawImage(img, 0, 0);
+      const d = x.getImageData(0, 0, c.width, c.height).data;
+      ARM_MAP = new Uint8Array(c.width * c.height);
+      for (let i = 0; i < ARM_MAP.length; i++) ARM_MAP[i] = d[i * 4];
+      MAP_W = c.width;
+      MAP_H = c.height;
+    } catch (e) {
+      ARM_MAP = null;
+    }
+  }
+  function armAt(x, y) {
+    if (!ARM_MAP) return 255;
+    const ix = Math.max(0, Math.min(MAP_W - 1, Math.round(x / MAP_F)));
+    const iy = Math.max(0, Math.min(MAP_H - 1, Math.round(y / MAP_F)));
+    return ARM_MAP[iy * MAP_W + ix];
+  }
+
   function armXY(p, x, y, r) {
     const L = p.rmax - R0;
     const sPos = r - R0;
     if (sPos <= 0) return [x, y];
-    const u = Math.min(1, sPos / L);
+    const uu = Math.min(1, sPos / L);
+    // het puntje (krulletje) beweegt als één stevig geheel: daar buigt niets meer
+    const u = Math.min(uu, TIP_U);
     // houding (stemming, knijpen, vasthouden)
     let th = p.A * sstep(0, 0.3, u);
     for (let j = 0; j < 3; j++) th += p.b[j] * sstep(j / 3, (j + 1) / 3, u);
@@ -144,7 +178,7 @@
 
   // Waar komt een punt terecht? Het hoofd blijft stijf;
   // alleen in de smalle ruimte tussen hoofd en arm vloeit het over.
-  function warpXY(params, x, y) {
+  function warpAngle(params, x, y) {
     const dx = x - OC.x;
     const dy = y - OC.y;
     const r = Math.hypot(dx, dy);
@@ -176,6 +210,19 @@
     return [P[0] + (Q[0] - P[0]) * t, P[1] + (Q[1] - P[1]) * t];
   }
 
+  function warpXY(params, x, y) {
+    const r = Math.hypot(x - OC.x, y - OC.y);
+    if (r <= R0 * 0.85) return [x, y];
+    const L = r > 285 ? armAt(x, y) : 255;
+    const pa = L !== 255 && params.byK ? params.byK[L] : null;
+    if (!pa) return warpAngle(params, x, y);
+    const w = sstep(285, 345, r);
+    const Q = armXY(pa, x, y, r);
+    if (w >= 0.999) return Q;
+    const P = warpAngle(params, x, y);
+    return [P[0] + (Q[0] - P[0]) * w, P[1] + (Q[1] - P[1]) * w];
+  }
+
   class OctoMesh {
     constructor(img) {
       this.ok = false;
@@ -203,13 +250,13 @@
 
       // polair net: spaken x ringen
       const SP = 144;
-      const RG = 46;
+      const RG = 48;
       const RMAX = 930;
       this.rest = [];
       const rxy = [];
       const uv = [];
       for (let ri = 0; ri <= RG; ri++) {
-        const r = ri === 0 ? 0.5 : (Math.pow(ri / RG, 1.15)) * RMAX;
+        const r = ri === 0 ? 0.5 : (Math.pow(ri / RG, 0.95)) * RMAX;
         for (let si = 0; si < SP; si++) {
           const phi = (si / SP) * 360 - 180;
           const x = OC.x + r * Math.cos((phi * Math.PI) / 180);
@@ -231,6 +278,17 @@
       }
       this.count = idx.length;
       this.restXY = new Float32Array(rxy);
+      // per punt vooraf: afstand tot het midden en bij welke arm het hoort
+      const nv = rxy.length / 2;
+      this.rr = new Float32Array(nv);
+      this.lab = new Uint8Array(nv);
+      for (let i = 0; i < nv; i++) {
+        const x = rxy[i * 2];
+        const y = rxy[i * 2 + 1];
+        const r = Math.hypot(x - OC.x, y - OC.y);
+        this.rr[i] = r;
+        this.lab[i] = r > 285 ? armAt(x, y) : 255;
+      }
       this.pos = new Float32Array(this.rest.length * 2);
       this.posBuf = gl.createBuffer();
       const uvBuf = gl.createBuffer();
@@ -279,8 +337,28 @@
       }
       const pos = this.pos;
       const rx = this.restXY;
-      for (let i = 0; i < rx.length; i += 2) {
-        const q = warpXY(params, rx[i], rx[i + 1]);
+      const rr = this.rr;
+      const lab = this.lab;
+      const byK = params.byK || {};
+      for (let v = 0, i = 0; i < rx.length; i += 2, v++) {
+        const x = rx[i];
+        const y = rx[i + 1];
+        const r = rr[v];
+        const L = lab[v];
+        // lijfkern, hoofd en de lege ruimte rond het hoofd bewegen niet: overslaan
+        if (r <= R0 * 0.85 || (L === 255 && r > 345)) {
+          pos[i] = x;
+          pos[i + 1] = y;
+          continue;
+        }
+        // ver genoeg in een arm: alleen die arm
+        if (L !== 255 && r >= 345 && byK[L]) {
+          const q = armXY(byK[L], x, y, r);
+          pos[i] = q[0];
+          pos[i + 1] = q[1];
+          continue;
+        }
+        const q = warpXY(params, x, y);
         pos[i] = q[0];
         pos[i + 1] = q[1];
       }
@@ -371,6 +449,7 @@
         Object.entries(ASSETS).map(async ([k, src]) => [k, await loadImage(src)])
       );
       for (const [k, img] of entries) this.img[k] = img;
+      setArmMap(this.img.armmap);
       this.mesh = new OctoMesh(this.img.octo);
       this.resize();
       window.addEventListener("resize", () => this.resize());
@@ -840,8 +919,9 @@
         // elke arm een eigen tempo, zodat ze niet als één blok bewegen
         const tempo = 0.85 + ((k * 37) % 10) / 30;
         out.push({
-          ang: T.ang, rmax: T.rmax, sign: side, A, b: bb,
-          wa: amp * 0.95, ca: 0.1 + amp * 0.5,
+          k: T.k, ang: T.ang, rmax: T.rmax, sign: side, A, b: bb,
+          // iets rustiger: dit ziet er bij zachte, sierlijke bewegingen het mooist uit
+          wa: amp * 0.72, ca: 0.05 + amp * 0.2,
           wt: this.t * speed * tempo, ph: ph + k * 0.9,
         });
       });
@@ -849,9 +929,11 @@
       const pull = clamp(this.charge * 0.3 - this.pop * 0.12 + d * 0.06, -0.2, 0.4);
       out.pull = pull;
       out.byAng = {};
+      out.byK = {};
       for (const q of out) {
         q.pull = pull;
         out.byAng[q.ang] = q;
+        out.byK[q.k] = q;
       }
       return out;
     }
