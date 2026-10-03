@@ -22,7 +22,9 @@
   const $ = (id) => document.getElementById(id);
   const el = {
     stage: $("stage"), wrap: $("stage-wrap"), fill: $("fill"), toast: $("toast"),
-    run: $("run"), combo: $("combo"), best: $("best"), hold: $("hold"),
+    run: $("run"), combo: $("combo"), hold: $("hold"),
+    badge: $("best-badge"), bestToday: $("best-today"), bestAll: $("best-all"),
+    friend: $("friend"), friendImg: $("friend-img"), friendText: $("friend-text"),
     clock: $("clock"), closeLocal: $("close-local"), board: $("board"), last: $("last"),
     form: $("me-form"), handle: $("me-handle"), wallet: $("me-wallet"), saved: $("me-saved"),
     name: $("me-name"), edit: $("me-edit"), err: $("me-err"), prizeWallet: $("prize-wallet"),
@@ -42,6 +44,9 @@
   let sid = null;      // sessie van deze run (van de server)
   let sidPromise = null;
   let me = loadMe();
+  let bestToday = 0;    // beste run vandaag (telt voor de prijs)
+  let bestAll = 0;      // beste run ooit (op dit toestel)
+  let newBestShown = false;
   let serverOffset = 0; // server-tijd minus eigen klok
   let closesAt = 0;
   let today = "";
@@ -114,24 +119,34 @@
       run += gain;
       combo = Math.min(MAX_COMBO, combo + 1);
       rate = Math.min(RATE_MAX, rate * RATE_UP);
-      toast(`+${gain}  ·  ${Math.round(p * 100)}%${pts === 3 ? "  ·  risky!" : ""}`, "good");
+      if (!newBestShown && bestToday > 0 && run > bestToday) {
+        newBestShown = true;
+        toast(`New best! ${run}  ·  +${gain}`, "good");
+      } else {
+        toast(`+${gain}  ·  ${Math.round(p * 100)}%${pts === 3 ? "  ·  risky!" : ""}`, "good");
+      }
       sq.pop = 0.5 + pts * 0.18;
       sq.buyPulse(1);
       if (pts === 3) sq.euphoria(1.2);
       sq.setPrice(moodFor());
     } else {
+      // nieuw record? dan is het geen verdrietig einde maar een feestje
+      const record = run > 0 && run > bestToday;
       if (popped) {
-        toast(`POP! Run over · ${run}`, "bad");
+        toast(record ? `POP! · New high score: ${run}` : `POP! Run over · ${run}`, record ? "good" : "bad");
         sq.inkBurst();
         sq.flinch = 1;
-        sq.setPrice(-0.8);
+        sq.setPrice(record ? 0.7 : -0.8);
       } else {
-        toast(`Too early (${Math.round(p * 100)}%) · Run over · ${run}`, "bad");
+        toast(
+          record ? `Run over · New high score: ${run}` : `Too early (${Math.round(p * 100)}%) · Run over · ${run}`,
+          record ? "good" : "bad"
+        );
         sq.flinch = 0.6;
-        sq.setPrice(-0.4);
+        sq.setPrice(record ? 0.7 : -0.4);
       }
       endRun();
-      setTimeout(() => sq.setPrice(0.3), 1600);
+      setTimeout(() => sq.setPrice(0.3), record ? 3200 : 1600);
     }
     pressure = 0;
     paintStats();
@@ -139,6 +154,8 @@
 
   function endRun() {
     const done = { score: run, rounds: rounds.slice() };
+    celebrate(run);
+    newBestShown = false;
     const mySid = sid;
     const myPromise = sidPromise;
     rate = RATE0;
@@ -173,12 +190,68 @@
         return;
       }
       showErr("");
-      if (d.best != null) el.best.textContent = d.best;
+      if (d.best != null) setBest(Math.max(bestToday, d.best));
       if (d.rank && d.rank <= 5) toast(`You're #${d.rank} today!`, "good");
       refresh();
     } catch {
       showErr("Couldn't reach the leaderboard.");
     }
+  }
+
+  // ---------- high scores ----------
+  function dayKeyLocal() {
+    return today || new Date().toISOString().slice(0, 10);
+  }
+  function paintBest() {
+    el.bestToday.textContent = bestToday;
+    el.bestAll.textContent = bestAll;
+  }
+  function setBest(score) {
+    if (score > bestToday) {
+      bestToday = score;
+      localStorage.setItem("squeeze-hold-best-" + dayKeyLocal(), String(bestToday));
+    }
+    if (score > bestAll) {
+      bestAll = score;
+      localStorage.setItem("squeeze-hold-alltime", String(bestAll));
+    }
+    paintBest();
+  }
+
+  // een vriendje komt feliciteren (elke keer een ander)
+  const FRIENDS = [
+    { k: "jelly", line: "New high score!" },
+    { k: "dolphin", line: "Woohoo! New best!" },
+    { k: "seal", line: "New high score! 👏" },
+    { k: "whale", line: "That's a whale of a score!" },
+    { k: "crab", line: "Okay, that's a new best." },
+    { k: "fish", line: "New high score!" },
+    { k: "lobster", line: "Fancy! New best!" },
+    { k: "shrimp", line: "Tiny me, big score!" },
+    { k: "shark", line: "Even I'm impressed." },
+  ];
+  let friendT = 0;
+  function celebrate(score) {
+    if (score <= 0) return;
+    const wasToday = bestToday;
+    const wasAll = bestAll;
+    setBest(score);
+    if (score <= wasToday) return;
+    const allTime = score > wasAll && wasAll > 0;
+    let n = Number(localStorage.getItem("squeeze-hold-friend") || 0);
+    const f = FRIENDS[n % FRIENDS.length];
+    localStorage.setItem("squeeze-hold-friend", String(n + 1));
+    el.friendImg.src = "assets/friends/" + f.k + ".png";
+    el.friendText.textContent = allTime ? `New all-time best! ${score} 🏆` : `${f.line} ${score} 🎉`;
+    el.friend.hidden = false;
+    el.friend.className = "friend " + (n % 2 === 0 ? "from-right" : "from-left");
+    void el.friend.offsetWidth; // animatie opnieuw starten
+    el.badge.classList.remove("pulse");
+    void el.badge.offsetWidth;
+    el.badge.classList.add("pulse");
+    sq.euphoria(2.5);
+    clearTimeout(friendT);
+    friendT = setTimeout(() => (el.friend.hidden = true), 3500);
   }
 
   // ---------- elk beeldje ----------
@@ -322,7 +395,7 @@
     paintList(el.board, lastRows, true);
     if (me) {
       const mine = lastRows.find((r) => r.handle.toLowerCase() === me.handle.toLowerCase());
-      if (mine) el.best.textContent = mine.score;
+      if (mine) setBest(Math.max(bestToday, mine.score));
     }
   }
   async function refresh() {
@@ -339,7 +412,11 @@
       const d = await r.json();
       serverOffset = (d.now || Date.now()) - Date.now();
       closesAt = d.closesAt || 0;
-      today = d.day || "";
+      if (d.day && d.day !== today) {
+        today = d.day;
+        bestToday = Number(localStorage.getItem("squeeze-hold-best-" + today) || 0);
+        paintBest();
+      }
       lastRows = d.top || [];
       paintBoardMe();
       paintList(el.last, d.lastTop || [], false);
@@ -411,6 +488,9 @@
   refreshPrize();
   setInterval(refreshPrize, 5 * 60000);
 
+  bestAll = Number(localStorage.getItem("squeeze-hold-alltime") || 0);
+  bestToday = Number(localStorage.getItem("squeeze-hold-best-" + dayKeyLocal()) || 0);
+  paintBest();
   paintMe();
   paintStats();
   refresh();
