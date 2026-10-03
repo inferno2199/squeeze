@@ -480,6 +480,11 @@
       this.athPhase = { t: 0, dur: this.reduced ? 0.4 : 1.0 };
     }
 
+    // Spel (Squeeze Hold): van buitenaf knijpen, 0..1. null = loslaten.
+    setSqueeze(p) {
+      this.extCharge = p == null ? null : clamp(p, 0, 1);
+    }
+
     // Korte euforie (na nieuwe ring of combo x10)
     euphoria(sec = 3.5) {
       if (this.reduced) sec = Math.min(sec, 1.5);
@@ -720,6 +725,11 @@
             setTimeout(() => this.ath(), 600);
           }
         }
+      }
+      // spel: knijpen van buitenaf (alleen als er geen ATH-moment loopt)
+      if (!this.athPhase) {
+        if (this.extCharge != null) this.charge = this.extCharge;
+        else if (this.charge > 0) this.charge = Math.max(0, this.charge - dt * 6);
       }
       this.pop *= Math.exp(-dt * 3.2);
       if (this.fly) {
@@ -1255,7 +1265,7 @@
       // laten vallen (geïrriteerd) en net op tijd vangen
       if (t.drop > 0) ty += Math.sin((1 - t.drop / 0.6) * Math.PI) * 170;
       // nooit vóór zijn gezicht: opzij duwen
-      if (this.charge < 0.3 && ty > -340 && ty < 10 && Math.abs(tx) < 240) {
+      if ((this.charge < 0.3 || this.extCharge != null) && ty > -340 && ty < 10 && Math.abs(tx) < 240) {
         tx = (tx < 0 ? -1 : 1) * 240;
       }
       const k = 1 - Math.exp(-dt * 14);
