@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>Squeeze Hold — daily game ($SQUEEZE)</title>
+  <meta name="description" content="Hold to squeeze. Let go right before he pops. Daily top 5 at 8 PM CET." />
+  <meta name="theme-color" content="#030604" />
+  <meta property="og:title" content="Squeeze Hold" />
+  <meta property="og:description" content="Hold to squeeze. Let go right before he pops. Daily prizes." />
+  <meta property="og:image" content="https://inferno2199.github.io/squeeze/assets/og.png" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <link rel="icon" href="assets/icon.png" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="play/play.css" />
+</head>
+<body>
+  <div class="seabg" aria-hidden="true"></div>
+
+  <header class="top">
+    <a class="back" href="games.html">← All games</a>
+    <h1>Squeeze Hold</h1>
+    <p class="sub">Hold to squeeze. Let go right before he pops.</p>
+  </header>
+
+  <main class="wrap">
+    <section class="game">
+      <div class="stage" id="stage-wrap">
+        <canvas id="stage" aria-label="Squeeze the octopus"></canvas>
+        <div class="best-badge" id="best-badge">🏆 Today <b id="best-today">0</b> · All-time <b id="best-all">0</b></div>
+        <div class="friend" id="friend" aria-live="polite" hidden>
+          <div class="friend-bubble" id="friend-text"></div>
+          <img id="friend-img" alt="" />
+        </div>
+        <div class="toast" id="toast" aria-live="polite"></div>
+      </div>
+
+      <div class="meter" aria-hidden="true">
+        <div class="zones">
+          <span class="z0"></span><span class="z1">1</span><span class="z2">2</span><span class="z3">3</span>
+        </div>
+        <div class="fill" id="fill"></div>
+      </div>
+
+      <div class="stats">
+        <div><span>Run</span><b id="run">0</b></div>
+        <div><span>Combo</span><b id="combo">x1</b></div>
+      </div>
+
+      <button id="hold" class="hold" type="button">Hold</button>
+      <p class="hint">Hold the button (or the octopus, or space). Release in the green zone.
+        The higher you dare, the more points. Every good round is faster. Past 100% he pops.</p>
+    </section>
+
+    <aside class="side">
+      <section class="card">
+        <h2>Today's round</h2>
+        <p class="clock"><span id="clock">–</span></p>
+        <p class="muted" id="close-local">Closes daily at <span class="tz">8:00 PM CET</span>.</p>
+        <ol class="board" id="board"><li class="empty">Loading…</li></ol>
+      </section>
+
+      <section class="card" id="me-card">
+        <h2>Your entry</h2>
+        <form id="me-form" autocomplete="off">
+          <label>X handle<input id="me-handle" maxlength="16" placeholder="yourhandle" /></label>
+          <label>Solana wallet <small>(private, never shown)</small><input id="me-wallet" maxlength="44" placeholder="for the prize" /></label>
+          <button type="submit">Save</button>
+        </form>
+        <div id="me-saved" hidden>
+          <p><b id="me-name"></b> <button id="me-edit" class="link" type="button">change</button></p>
+          <p class="muted">Your wallet is linked to your X handle. Only the team can see it.</p>
+        </div>
+        <p class="err" id="me-err" hidden></p>
+      </section>
+
+      <section class="card prize">
+        <h2>Daily prize</h2>
+        <p class="muted">A prize wallet holds 5% of the $SQUEEZE supply. Its $PUMP holder rewards go to the daily top 5.</p>
+        <p class="pool"><span>Prize pool</span><b id="pool-pump">–</b><em id="pool-usd"></em></p>
+        <ol class="split" id="split">
+          <li><b>1st</b><span>40%</span><small></small></li>
+          <li><b>2nd</b><span>25%</span><small></small></li>
+          <li><b>3rd</b><span>15%</span><small></small></li>
+          <li><b>4th</b><span>10%</span><small></small></li>
+          <li><b>5th</b><span>10%</span><small></small></li>
+        </ol>
+        <p class="muted" id="prize-wallet-line" hidden>Prize wallet: <a id="prize-wallet" target="_blank" rel="noopener"></a></p>
+        <p class="muted small">Prize size depends on trading volume. Paid manually after <span class="tz">8:00 PM CET</span> and posted on X.</p>
+      </section>
+
+      <section class="card">
+        <h2>Yesterday's winners</h2>
+        <ol class="board" id="last"><li class="empty">–</li></ol>
+      </section>
+
+      <section class="card rules">
+        <h2>Rules</h2>
+        <ul>
+          <li>Free to play. No purchase needed.</li>
+          <li>Your best run of the day counts. Top 5 at <span class="tz">8:00 PM CET</span> win.</li>
+          <li>One X account and one wallet per person.</li>
+          <li>Your X handle is linked to one wallet for good.</li>
+          <li>Winners are paid manually after <span class="tz">8:00 PM CET</span> and announced on X.</li>
+          <li>Suspicious scores are checked and can be removed. The team decides in disputes.</li>
+        </ul>
+      </section>
+    </aside>
+  </main>
+
+  <script src="config.js"></script>
+  <script src="squeeze.js"></script>
+  <script src="play/hold.js"></script>
+</body>
+</html>
