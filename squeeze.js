@@ -159,7 +159,7 @@
     let th = p.A * sstep(0, 0.3, u);
     for (let j = 0; j < 3; j++) th += p.b[j] * sstep(j / 3, (j + 1) / 3, u);
     // golf: groeit naar het puntje toe, loopt van basis naar puntje
-    th += p.wa * Math.pow(u, 1.3) * Math.sin(p.wt - u * 5.2 + p.ph);
+    th += p.wa * Math.pow(u, 1.2) * Math.sin(p.wt - u * (p.wl || 5.2) + p.ph);
     // puntje krult apart
     th += p.ca * sstep(0.7, 1, u) * Math.sin(p.wt * 0.63 + p.ph * 1.7);
     th *= p.sign;
@@ -896,7 +896,7 @@
         0.42,
         (this.reduced ? 0.3 : 1) * (lerp(0.1, 0.2, pose.m) + f * 0.2 + e * 0.26) * (1 - 0.75 * d)
       );
-      const speed = Math.min(3.4, (lerp(1.1, 1.8, pose.m) + f * 2 + e * 2.5) * (1 - 0.6 * d));
+      const speed = Math.min(2.6, (lerp(0.8, 1.3, pose.m) + f * 1.4 + e * 1.8) * (1 - 0.6 * d));
       const happy = sstep(0.58, 0.9, pose.m) * (1 - d);
       const N = POSE.neutral;
       // zachte overgangen: de basishouding schuift vloeiend naar de nieuwe stand
@@ -917,19 +917,32 @@
         // doel (zonder golf)
         // 1. blij: armen duidelijk omhoog (juichen); 4. verdrietig/slapen: slap omlaag (via pose)
         // 2. squeeze-moment: armen krullen om zijn lijf heen
+        // los hangen: zijarmen zakken een beetje door (alsof het water ze draagt),
+        // verdrietig/slapen hangen ze echt slap; blij en euforie: wijd open en naar buiten
+        const horiz = Math.abs(Math.cos((T.ang * Math.PI) / 180));
+        const sad = clamp(-(pose.a - N.a) / 0.42, 0, 1.5);
+        const hang = -0.16 * horiz * (1 - happy) - 0.22 * horiz * sad;
         const At =
-          (pose.a - N.a) * 1.25 + happy * 0.45 + this.charge * 0.35 - this.pop * 0.25 +
+          (pose.a - N.a) * 1.1 + hang + happy * 0.5 + e * 0.15 + this.charge * 0.35 - this.pop * 0.25 +
           this.flinch * 0.25 + pulse * 0.25 + hold * 0.32;
-        const bt = [0, 1, 2].map(
-          (j) =>
-            (pose.b[j] - N.b[j]) * 1.2 + this.charge * (0.55 + j * 0.25) - this.pop * 0.3 +
-            this.flinch * 0.5 + Math.abs(this.turn.v) * 0.3 + pulse * 0.7 - hold * (j === 2 ? 0.45 : 0.1)
-        );
+        // krullen alleen nog bij het squeeze-moment; anders reiken in plaats van oprollen
+        const bt = [0, 1, 2].map((j) => {
+          const dlt = pose.b[j] - N.b[j];
+          return (dlt > 0 ? dlt * 0.35 : dlt * 1.1) + this.charge * (0.55 + j * 0.25) - this.pop * 0.3 +
+            this.flinch * 0.5 + Math.abs(this.turn.v) * 0.25 + pulse * 0.6 - hold * (j === 2 ? 0.45 : 0.1) +
+            (j === 2 ? hang * 0.6 : 0);
+        });
         const st = this._bend[n];
         st.A += (At - st.A) * follow;
         for (let j = 0; j < 3; j++) st.b[j] += (bt[j] - st.b[j]) * follow;
         // basishouding (de golf gaat apart, als doorlopende beweging)
         let A = st.A + (this.reduced ? 0 : hold * Math.sin(this.t * 3 + k) * 0.07);
+        // de hele arm slingert langzaam heen en weer, elke arm in zijn eigen ritme
+        if (!this.reduced) {
+          const slow = (0.55 + 0.25 * ((k * 53) % 7) / 7) * (1 - 0.5 * d);
+          A += (0.1 + 0.12 * pose.m + 0.12 * e + 0.08 * f) * (1 - 0.4 * d) *
+            Math.sin(this.t * slow + ph * 1.3);
+        }
         const b = st.b.slice();
         // onderste armen niet naar binnen laten zakken (anders kruisen ze),
         // bovenste armen niet over zijn hoofd heen laten buigen
@@ -964,7 +977,8 @@
           k: T.k, ang: T.ang, rmax: T.rmax, sign: side, A, b: bb,
           // iets rustiger: dit ziet er bij zachte, sierlijke bewegingen het mooist uit
           // bovenste armen golven minder, zodat ze nooit over zijn gezicht zwaaien
-          wa: amp * 0.95 * (1 - 0.6 * up), ca: 0.05 + amp * 0.2,
+          wa: amp * 1.05 * (1 - 0.6 * up), ca: 0.05 + amp * 0.2,
+          wl: 3.2, // lange golf: de arm slingert als geheel, niet alleen het puntje
           wt: this.t * speed * tempo, ph: ph + k * 0.9,
         });
       });
