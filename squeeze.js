@@ -431,6 +431,8 @@
 
       this.inkParts = [];
       this.fx = [];          // high-five flitsen en tikken op het glas
+      this.whipT = new Array(8).fill(9);               // tijd sinds een arm gooide
+      this.gest = { k: -1, t: 9, next: 4 + Math.random() * 4 }; // af en toe zwaaien
       this.idle = 0;         // seconden zonder dat de bezoeker iets doet
       this.glass = null;     // { t, k } tijdens het tikken op het glas
       this.shake = 0;
@@ -667,6 +669,22 @@
       this._updateToy(dt);
       if (this.glass) this.hold[this.glass.k] = 1;
       this.scare.step(dt);
+      // zwiep en zwaaien bijhouden
+      for (let i = 0; i < 8; i++) this.whipT[i] += dt;
+      const g = this.gest;
+      g.t += dt;
+      g.next -= dt;
+      if (g.next <= 0) {
+        g.next = 6 + Math.random() * 6;
+        const busy = this.athPhase || this.drowsy.v > 0.3 || (this.toy && this.toy.toss) ||
+          this.mood.v < 0.42 || this.reduced || this.annoyed > 0;
+        if (!busy) {
+          const h = this.toy ? this.toy.holder : -1;
+          const opts = [0, 1].filter((q) => q !== h);
+          g.k = opts[(Math.random() * opts.length) | 0];
+          g.t = 0;
+        }
+      }
       if (this.friends) this.friends.update(dt);
       if (this.focus && !(this.toy && this.toy.toss)) {
         this.look.tx = clamp(this.focus.x / 450, -1, 1);
@@ -873,11 +891,13 @@
       const e = this.euph.v;
       const d = this.drowsy.v;
       // hoeveel golf: nooit te wild, ook niet als alles tegelijk gebeurt
+      // 3. euforie en hoge combo: armen zwaaien wild (maar met een plafond)
       const amp = Math.min(
-        0.24,
-        (this.reduced ? 0.3 : 1) * (lerp(0.1, 0.18, pose.m) + f * 0.1 + e * 0.08) * (1 - 0.7 * d)
+        0.42,
+        (this.reduced ? 0.3 : 1) * (lerp(0.1, 0.2, pose.m) + f * 0.2 + e * 0.26) * (1 - 0.75 * d)
       );
-      const speed = (lerp(1.1, 1.8, pose.m) + f * 2 + e * 2.5) * (1 - 0.6 * d);
+      const speed = Math.min(3.4, (lerp(1.1, 1.8, pose.m) + f * 2 + e * 2.5) * (1 - 0.6 * d));
+      const happy = sstep(0.58, 0.9, pose.m) * (1 - d);
       const N = POSE.neutral;
       // zachte overgangen: de basishouding schuift vloeiend naar de nieuwe stand
       const now = this.t;
@@ -895,11 +915,14 @@
         const pulse = this.armPulse[k];
         const hold = this.hold[k];
         // doel (zonder golf)
+        // 1. blij: armen duidelijk omhoog (juichen); 4. verdrietig/slapen: slap omlaag (via pose)
+        // 2. squeeze-moment: armen krullen om zijn lijf heen
         const At =
-          (pose.a - N.a) + this.charge * 0.2 - this.pop * 0.15 + this.flinch * 0.25 + pulse * 0.25 + hold * 0.32;
+          (pose.a - N.a) * 1.25 + happy * 0.45 + this.charge * 0.35 - this.pop * 0.25 +
+          this.flinch * 0.25 + pulse * 0.25 + hold * 0.32;
         const bt = [0, 1, 2].map(
           (j) =>
-            (pose.b[j] - N.b[j]) + this.charge * 0.35 - this.pop * 0.2 +
+            (pose.b[j] - N.b[j]) * 1.2 + this.charge * (0.55 + j * 0.25) - this.pop * 0.3 +
             this.flinch * 0.5 + Math.abs(this.turn.v) * 0.3 + pulse * 0.7 - hold * (j === 2 ? 0.45 : 0.1)
         );
         const st = this._bend[n];
@@ -913,15 +936,35 @@
         const sn = Math.sin((T.ang * Math.PI) / 180);
         const down = Math.max(0, sn);
         const up = Math.max(0, -sn);
-        const damp = (v) => (v < 0 ? v * (1 - 0.75 * down) : v * (1 - 0.6 * up));
-        A = soft(damp(A * 0.6), 0.45);
-        const bb = b.map((v) => soft(damp(v * 0.42), 0.28));
+        const damp = (v) => (v < 0 ? v * (1 - 0.75 * down) : v * (1 - 0.82 * up));
+        // 6. zwiep bij het gooien: kort uithalen en naveren (snel, niet afgevlakt)
+        const wt = this.whipT ? this.whipT[k] : 9;
+        if (wt < 1.2) {
+          A += 0.7 * Math.sin(clamp(wt / 0.3, 0, 1) * Math.PI) -
+            0.28 * sstep(0.25, 0.6, wt) * (1 - sstep(0.6, 1.2, wt));
+        }
+        // 5. zwaaien: een bovenste arm zwaait even naar je
+        const gs = this.gest;
+        if (gs && gs.k === k && gs.t < 2.6) {
+          const env = Math.sin(clamp(gs.t / 2.6, 0, 1) * Math.PI);
+          A += env * 0.6;
+          b[1] += env * 0.35 * Math.sin(gs.t * 6.5);
+          b[2] += env * 0.45 * Math.sin(gs.t * 6.5 - 0.8);
+        }
+        A = soft(damp(A * 0.85), 0.8);
+        let bb = b.map((v) => soft(damp(v * 0.6), 0.5));
+        // de bovenste twee armen zitten vlak naast zijn hoofd: nooit verder omhoog dan dat
+        if (i === 0) {
+          A = Math.min(A, 0.34);
+          bb = bb.map((v) => (v > 0 ? Math.min(v * 0.5, 0.2) : v));
+        }
         // elke arm een eigen tempo, zodat ze niet als één blok bewegen
         const tempo = 0.85 + ((k * 37) % 10) / 30;
         out.push({
           k: T.k, ang: T.ang, rmax: T.rmax, sign: side, A, b: bb,
           // iets rustiger: dit ziet er bij zachte, sierlijke bewegingen het mooist uit
-          wa: amp * 0.72, ca: 0.05 + amp * 0.2,
+          // bovenste armen golven minder, zodat ze nooit over zijn gezicht zwaaien
+          wa: amp * 0.95 * (1 - 0.6 * up), ca: 0.05 + amp * 0.2,
           wt: this.t * speed * tempo, ph: ph + k * 0.9,
         });
       });
@@ -1126,6 +1169,7 @@
 
     _toss(to, height) {
       const t = this.toy;
+      if (this.whipT && t.holder >= 0 && t.holder < 8) this.whipT[t.holder] = 0;
       t.toss = { t: 0, T: 0.5 + height / 700, x0: t.x, y0: t.y, to, h: height };
     }
 
