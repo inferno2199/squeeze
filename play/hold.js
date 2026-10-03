@@ -377,9 +377,9 @@
     el.clock.textContent = `${h}h ${String(m).padStart(2, "0")}m ${String(s % 60).padStart(2, "0")}s`;
   }
 
-  // prijzen-wallet (optioneel in config.js: PRIZE_WALLET)
-  if (el.prizeWallet) {
-    const pw = String(C.PRIZE_WALLET || "");
+  // ---------- prijzenpot ----------
+  function showWallet(pw) {
+    if (!el.prizeWallet) return;
     if (WALLET_RE.test(pw)) {
       el.prizeWallet.textContent = pw.slice(0, 6) + "…" + pw.slice(-6);
       el.prizeWallet.title = pw;
@@ -389,6 +389,27 @@
       el.prizeWallet.removeAttribute("href");
     }
   }
+  const fmtNum = (n) =>
+    n >= 1e6 ? (n / 1e6).toFixed(2) + "M" : n >= 100 ? Math.round(n).toLocaleString("en-US") : n.toLocaleString("en-US", { maximumFractionDigits: 1 });
+  const fmtUsd = (n) => (n >= 1 ? "$" + n.toLocaleString("en-US", { maximumFractionDigits: n >= 100 ? 0 : 2 }) : n > 0 ? "<$1" : "");
+  async function refreshPrize() {
+    if (!API) return;
+    try {
+      const r = await fetch(API + "/prize", { cache: "no-store" });
+      const d = await r.json();
+      showWallet(d.wallet || String(C.PRIZE_WALLET || ""));
+      if (!d.wallet) return;
+      $("pool-pump").textContent = fmtNum(d.pump || 0) + " $PUMP";
+      $("pool-usd").textContent = d.usd ? "≈ " + fmtUsd(d.usd) : "";
+      const items = document.querySelectorAll("#split li small");
+      (d.split || []).forEach((x, i) => {
+        if (items[i]) items[i].textContent = x.pump > 0 ? "≈ " + fmtNum(x.pump) : "";
+      });
+    } catch {}
+  }
+  showWallet(String(C.PRIZE_WALLET || ""));
+  refreshPrize();
+  setInterval(refreshPrize, 5 * 60000);
 
   paintMe();
   paintStats();
