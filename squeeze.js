@@ -455,6 +455,10 @@
       this.mesh = new OctoMesh(this.img.octo);
       this.resize();
       window.addEventListener("resize", () => this.resize());
+      // opnieuw meten zodra het podium van maat verandert (lettertype, ranglijst, inzoomen)
+      if (window.ResizeObserver) {
+        new ResizeObserver(() => this.resize()).observe(this.canvas);
+      }
     }
 
     // ---------- publieke API ----------
@@ -847,6 +851,9 @@
 
     // ---------- tekenen ----------
     draw() {
+      if (this.canvas.clientWidth && (Math.abs(this.canvas.clientWidth - this.w) > 1 || Math.abs(this.canvas.clientHeight - this.h) > 1)) {
+        this.resize();
+      }
       const { ctx, dpr, w, h } = this;
       if (!this.img.octo) return;
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
