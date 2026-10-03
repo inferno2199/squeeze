@@ -31,6 +31,11 @@
     <section class="game">
       <div class="stage" id="stage-wrap">
         <canvas id="stage" aria-label="Squeeze the octopus"></canvas>
+        <div class="best-badge" id="best-badge">🏆 Today <b id="best-today">0</b> · All-time <b id="best-all">0</b></div>
+        <div class="friend" id="friend" aria-live="polite" hidden>
+          <div class="friend-bubble" id="friend-text"></div>
+          <img id="friend-img" alt="" />
+        </div>
         <div class="toast" id="toast" aria-live="polite"></div>
       </div>
 
@@ -44,7 +49,6 @@
       <div class="stats">
         <div><span>Run</span><b id="run">0</b></div>
         <div><span>Combo</span><b id="combo">x1</b></div>
-        <div><span>Today's best</span><b id="best">–</b></div>
       </div>
 
       <button id="hold" class="hold" type="button">Hold</button>
@@ -85,7 +89,7 @@
           <li><b>4th</b><span>10%</span><small></small></li>
           <li><b>5th</b><span>10%</span><small></small></li>
         </ol>
-        <p class="muted">Prize wallet: <a id="prize-wallet" target="_blank" rel="noopener">announced on X</a></p>
+        <p class="muted" id="prize-wallet-line" hidden>Prize wallet: <a id="prize-wallet" target="_blank" rel="noopener"></a></p>
         <p class="muted small">Prize size depends on trading volume. Paid manually after <span class="tz">8:00 PM CET</span> and posted on X.</p>
       </section>
 
