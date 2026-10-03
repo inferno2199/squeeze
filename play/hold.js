@@ -47,7 +47,9 @@
   let today = "";
 
   function pressureAt(h) {
-    return Math.pow(Math.min(1, (rate * h) / 1000), EASE);
+    // nooit negatief (het eerste beeldje kan net vóór het indrukken getekend zijn)
+    const x = Math.max(0, Math.min(1, (rate * Math.max(0, h)) / 1000));
+    return Math.pow(x, EASE);
   }
   function points(p) {
     if (p >= 1 || p < 0.75) return 0;
@@ -185,7 +187,7 @@
     const dt = Math.min(0.1, (now - last) / 1000);
     last = now;
     if (holding) {
-      pressure = pressureAt(now - holdStart);
+      pressure = pressureAt(performance.now() - holdStart);
       sq.setSqueeze(pressure * 0.95);
       if (pressure >= 1) {
         // te lang: knap!
@@ -343,8 +345,18 @@
       paintList(el.last, d.lastTop || [], false);
       paintMe();
       if (closesAt) {
-        const local = new Date(closesAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
-        el.closeLocal.textContent = `Closes daily at 20:00 Amsterdam (${local} your time).`;
+        // CET in de winter, CEST in de zomer (Amsterdamse tijd)
+        let tz = "CET";
+        try {
+          const part = new Intl.DateTimeFormat("en-GB", { timeZone: "Europe/Amsterdam", timeZoneName: "short" })
+            .formatToParts(new Date(closesAt))
+            .find((x) => x.type === "timeZoneName");
+          if (part && /^CES?T$/.test(part.value)) tz = part.value;
+        } catch {}
+        const label = "8:00 PM " + tz;
+        document.querySelectorAll(".tz").forEach((n) => (n.textContent = label));
+        const local = new Date(closesAt).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" });
+        el.closeLocal.textContent = `Closes daily at ${label} (${local} your time).`;
       }
     } catch {}
   }
