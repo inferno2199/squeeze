@@ -9,7 +9,8 @@
 
   // moet gelijk zijn aan de server (worker.js, HOLD)
   const RATE0 = 0.42;
-  const RATE_UP = 1.35;
+  const RATE_UP = 1.4;
+  const EASE = 1.6; // de balk versnelt binnen een ronde
   const RATE_MAX = 3.3;
   const MAX_COMBO = 9;
   const MIN_HOLD = 80;
@@ -24,7 +25,7 @@
     run: $("run"), combo: $("combo"), best: $("best"), hold: $("hold"),
     clock: $("clock"), closeLocal: $("close-local"), board: $("board"), last: $("last"),
     form: $("me-form"), handle: $("me-handle"), wallet: $("me-wallet"), saved: $("me-saved"),
-    name: $("me-name"), code: $("me-code"), edit: $("me-edit"), err: $("me-err"),
+    name: $("me-name"), edit: $("me-edit"), err: $("me-err"), prizeWallet: $("prize-wallet"),
   };
 
   const reduced = window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -45,6 +46,9 @@
   let closesAt = 0;
   let today = "";
 
+  function pressureAt(h) {
+    return Math.pow(Math.min(1, (rate * h) / 1000), EASE);
+  }
   function points(p) {
     if (p >= 1 || p < 0.75) return 0;
     if (p < 0.85) return 1;
@@ -101,7 +105,7 @@
 
   function finishRound(h, popped) {
     rounds.push(Math.round(h));
-    const p = Math.min(1, (rate * h) / 1000);
+    const p = pressureAt(h);
     const pts = popped ? 0 : points(p);
     if (pts > 0) {
       const gain = pts * combo;
@@ -167,10 +171,6 @@
         return;
       }
       showErr("");
-      if (d.code) {
-        localStorage.setItem("squeeze-hold-code-" + d.day, d.code);
-        el.code.textContent = d.code;
-      }
       if (d.best != null) el.best.textContent = d.best;
       if (d.rank && d.rank <= 5) toast(`You're #${d.rank} today!`, "good");
       refresh();
@@ -185,7 +185,7 @@
     const dt = Math.min(0.1, (now - last) / 1000);
     last = now;
     if (holding) {
-      pressure = Math.min(1, (rate * (now - holdStart)) / 1000);
+      pressure = pressureAt(now - holdStart);
       sq.setSqueeze(pressure * 0.95);
       if (pressure >= 1) {
         // te lang: knap!
@@ -263,7 +263,6 @@
       el.form.hidden = true;
       el.saved.hidden = false;
       el.name.textContent = "@" + me.handle;
-      el.code.textContent = (today && localStorage.getItem("squeeze-hold-code-" + today)) || "after your first run";
     } else {
       el.form.hidden = false;
       el.saved.hidden = true;
@@ -364,6 +363,19 @@
     const h = Math.floor(s / 3600);
     const m = Math.floor((s % 3600) / 60);
     el.clock.textContent = `${h}h ${String(m).padStart(2, "0")}m ${String(s % 60).padStart(2, "0")}s`;
+  }
+
+  // prijzen-wallet (optioneel in config.js: PRIZE_WALLET)
+  if (el.prizeWallet) {
+    const pw = String(C.PRIZE_WALLET || "");
+    if (WALLET_RE.test(pw)) {
+      el.prizeWallet.textContent = pw.slice(0, 6) + "…" + pw.slice(-6);
+      el.prizeWallet.title = pw;
+      el.prizeWallet.href = "https://solscan.io/account/" + pw;
+    } else {
+      el.prizeWallet.textContent = "announced on X";
+      el.prizeWallet.removeAttribute("href");
+    }
   }
 
   paintMe();
