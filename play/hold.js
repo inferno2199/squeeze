@@ -455,15 +455,17 @@
   }
 
   // ---------- prijzenpot ----------
+  // het wallet-adres verschijnt pas als het ingesteld is; anders staat de regel er niet
   function showWallet(pw) {
-    if (!el.prizeWallet) return;
+    const line = $("prize-wallet-line");
+    if (!el.prizeWallet || !line) return;
     if (WALLET_RE.test(pw)) {
       el.prizeWallet.textContent = pw.slice(0, 6) + "…" + pw.slice(-6);
       el.prizeWallet.title = pw;
       el.prizeWallet.href = "https://solscan.io/account/" + pw;
+      line.hidden = false;
     } else {
-      el.prizeWallet.textContent = "announced on X";
-      el.prizeWallet.removeAttribute("href");
+      line.hidden = true;
     }
   }
   const fmtNum = (n) =>
