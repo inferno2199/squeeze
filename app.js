@@ -1,5 +1,5 @@
 // Squeeze — data + UI. Leest config.js, stuurt de octopus aan.
-(function () {
+(async function () {
   "use strict";
 
   const C = Object.assign(
@@ -12,6 +12,17 @@
   const params = new URLSearchParams(location.search);
   const DEV = params.has("dev");
   const FORCE_DEMO = params.has("demo");
+  // Geen CA in config.js? Dan halen we hem bij de Worker (ingesteld via de Telegram-bot).
+  if (!(C.MINT || "").trim() && C.WORKER_URL && !FORCE_DEMO) {
+    try {
+      const ctl = new AbortController();
+      const to = setTimeout(() => ctl.abort(), 2500);
+      const r = await fetch(C.WORKER_URL.replace(/\/$/, "") + "/settings", { cache: "no-store", signal: ctl.signal });
+      clearTimeout(to);
+      const d = await r.json();
+      if (d && /^[1-9A-HJ-NP-Za-km-z]{32,44}$/.test(d.mint || "")) C.MINT = d.mint;
+    } catch (e) {}
+  }
   const MINT = (C.MINT || "").trim();
   const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
