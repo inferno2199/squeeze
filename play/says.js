@@ -5,7 +5,7 @@
 
   const C = window.SQUEEZE_CONFIG || {};
   const API = (C.WORKER_URL || "").replace(/\/$/, "");
-  const PRIZES = Array.isArray(C.SAYS_PRIZES) && C.SAYS_PRIZES.length
+  let PRIZES = Array.isArray(C.SAYS_PRIZES) && C.SAYS_PRIZES.length
     ? C.SAYS_PRIZES
     : [500000, 250000, 100000, 50000, 50000];
 
@@ -126,7 +126,12 @@
         sid = d.sid;
         ranked = d.ranked;
         if (!ranked) showErr("Practice run. Save your X handle and wallet to enter the leaderboard.");
-      } catch {
+      } catch (e) {
+        if (String(e && e.message).includes("paused")) {
+          showErr("");
+          status("Squeeze Says is paused for a moment. Try again soon. 🐙");
+          return endUi();
+        }
         localMode = true;
       }
     }
@@ -354,9 +359,24 @@
     if (n >= 1e3) return +(n / 1e3).toFixed(1) + "k";
     return String(n);
   }
-  document.querySelectorAll("#says-prizes li span").forEach((s, i) => {
-    s.textContent = PRIZES[i] != null ? fmtTokens(Number(PRIZES[i])) : "–";
-  });
+  function paintPrizes() {
+    document.querySelectorAll("#says-prizes li span").forEach((s, i) => {
+      s.textContent = PRIZES[i] != null ? fmtTokens(Number(PRIZES[i])) : "–";
+    });
+  }
+  paintPrizes();
+  // de bedragen stel je in via de bot (/prizes); die gaan voor
+  if (API) {
+    fetch(API + "/settings", { cache: "no-store" })
+      .then((r) => r.json())
+      .then((d) => {
+        if (Array.isArray(d.saysPrizes) && d.saysPrizes.length) {
+          PRIZES = d.saysPrizes;
+          paintPrizes();
+        }
+      })
+      .catch(() => {});
+  }
 
   // ---------- ranglijst ----------
   let lastRows = [];
