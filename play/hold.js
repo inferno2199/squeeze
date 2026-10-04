@@ -80,7 +80,10 @@
   function startSession() {
     if (!API) return null;
     sidPromise = fetch(API + "/hold/start", { method: "POST" })
-      .then((r) => (r.ok ? r.json() : null))
+      .then((r) => {
+        if (r.status === 503) showErr("Squeeze Hold is paused for a moment. Runs won't count right now. 🐙");
+        return r.ok ? r.json() : null;
+      })
       .then((d) => (sid = d && d.sid ? d.sid : null))
       .catch(() => (sid = null));
     return sidPromise;
