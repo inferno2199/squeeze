@@ -141,6 +141,25 @@
       ARM_MAP = null;
     }
   }
+  // Exacte armkaart uit een databestand (niet via een plaatje: sommige browsers, zoals Safari op
+  // iPhone en binnen Telegram, veranderen pixelwaarden een heel klein beetje bij het uitlezen,
+  // waardoor stukjes arm bij de buurarm gingen horen en de armen "scheurden").
+  async function loadArmMapData(url) {
+    const r = await fetch(url, { cache: "force-cache" });
+    if (!r.ok) throw new Error("map " + r.status);
+    const j = await r.json();
+    const out = new Uint8Array(j.w * j.h);
+    let o = 0;
+    for (let i = 0; i < j.rle.length; i += 2) {
+      out.fill(j.rle[i], o, o + j.rle[i + 1]);
+      o += j.rle[i + 1];
+    }
+    if (o !== out.length) throw new Error("map size");
+    ARM_MAP = out;
+    MAP_W = j.w;
+    MAP_H = j.h;
+  }
+
   function armAt(x, y) {
     if (!ARM_MAP) return 255;
     const ix = Math.max(0, Math.min(MAP_W - 1, Math.round(x / MAP_F)));
@@ -451,7 +470,11 @@
         Object.entries(ASSETS).map(async ([k, src]) => [k, await loadImage(src)])
       );
       for (const [k, img] of entries) this.img[k] = img;
-      setArmMap(this.img.armmap);
+      try {
+        await loadArmMapData(ASSETS.armmap.replace(/\.png$/, ".json"));
+      } catch (e) {
+        setArmMap(this.img.armmap); // reserve: het plaatje
+      }
       this.mesh = new OctoMesh(this.img.octo);
       this.resize();
       window.addEventListener("resize", () => this.resize());
