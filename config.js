@@ -12,8 +12,8 @@ window.SQUEEZE_CONFIG = {
   WORKER_URL: "https://squeeze-state.inferno2199.workers.dev",
 
   // Socials (leeg = niet tonen)
-  X_URL: "https://x.com/JOUW-ACCOUNT",
-  TELEGRAM_URL: "https://t.me/JOUW-GROEP",
+  X_URL: "https://x.com/SqueezeOcto",
+  TELEGRAM_URL: "https://t.me/SqueezeOcto" ,
 
   POLL_MS: 10000,       // prijs ophalen, elke 10 sec
 
