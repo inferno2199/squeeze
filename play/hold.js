@@ -79,9 +79,17 @@
   // ---------- vasthouden en loslaten ----------
   function startSession() {
     if (!API) return null;
-    sidPromise = fetch(API + "/hold/start", { method: "POST" })
+    sidPromise = (window.SqzHuman ? window.SqzHuman.token() : Promise.resolve(null))
+      .then((turnstile) =>
+        fetch(API + "/hold/start", {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({ turnstile }),
+        })
+      )
       .then((r) => {
         if (r.status === 503) showErr("Squeeze Hold is paused for a moment. Runs won't count right now. 🐙");
+        if (r.status === 403) showErr("Couldn't confirm you're human, so this run won't count. Try again. 🐙");
         return r.ok ? r.json() : null;
       })
       .then((d) => (sid = d && d.sid ? d.sid : null))
@@ -113,6 +121,7 @@
     finishRound(h, false);
   }
 
+  const MAX_ROUNDS_RUN = 40;
   function finishRound(h, popped) {
     rounds.push(Math.round(h));
     const p = pressureAt(h);
@@ -132,6 +141,11 @@
       sq.buyPulse(1);
       if (pts === 3) sq.euphoria(1.2);
       sq.setPrice(moodFor());
+      // plafond: na 40 rondes is de run klaar
+      if (rounds.length >= MAX_ROUNDS_RUN) {
+        toast(`🏆 Max level! Final score ${run}`, "good");
+        endRun();
+      }
     } else {
       // nieuw record? dan is het geen verdrietig einde maar een feestje
       const record = run > 0 && run > bestToday;
