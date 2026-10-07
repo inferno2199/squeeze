@@ -16,7 +16,7 @@ window.SQUEEZE_CONFIG = {
   TELEGRAM_URL: "https://t.me/SqueezeOcto",
 
   // Cloudflare Turnstile ("ben je een mens?") voor de spellen. Leeg = uit.
-  TURNSTILE_SITE_KEY: "",
+  TURNSTILE_SITE_KEY: "0x4AAAAAAFP8QC6dZrVG0T5L",
 
   POLL_MS: 10000,       // prijs ophalen, elke 10 sec
 
