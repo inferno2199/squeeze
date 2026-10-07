@@ -122,10 +122,12 @@
     localMode = !API;
     if (!localMode) {
       try {
-        const d = await post("/says/start", me ? { handle: me.handle, wallet: me.wallet } : {});
+        const turnstile = me && window.SqzHuman ? await window.SqzHuman.token() : null;
+        const d = await post("/says/start", me ? { handle: me.handle, wallet: me.wallet, turnstile } : {});
         sid = d.sid;
         ranked = d.ranked;
-        if (!ranked) showErr("Practice run. Save your X handle and wallet to enter the leaderboard.");
+        if (d.human === false) showErr("Couldn't confirm you're human, so this is a practice run. Try again for the leaderboard. 🐙");
+        else if (!ranked) showErr("Practice run. Save your X handle and wallet to enter the leaderboard.");
       } catch (e) {
         if (String(e && e.message).includes("paused")) {
           showErr("");
@@ -198,6 +200,19 @@
         status("Couldn't check your answer. Press start to play again.");
         return endUi();
       }
+    }
+    if (res.correct && res.finished) {
+      // plafond bereikt: run klaar met een feestje
+      score = res.score;
+      paintStats();
+      status(`🏆 Max level reached! Final score ${score}`);
+      toast(`🏆 Max level! ${score}`, "good");
+      sq.euphoria(3);
+      celebrate(score);
+      if (ranked && res.rank && res.rank <= 5) setTimeout(() => toast(`You're #${res.rank} today!`, "good"), 1600);
+      if (res.best != null) setBest(res.best);
+      if (!localMode && ranked) refresh();
+      return endUi();
     }
     if (res.correct) {
       score = res.score;
