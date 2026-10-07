@@ -13,7 +13,10 @@ window.SQUEEZE_CONFIG = {
 
   // Socials (leeg = niet tonen)
   X_URL: "https://x.com/SqueezeOcto",
-  TELEGRAM_URL: "https://t.me/SqueezeOcto" ,
+  TELEGRAM_URL: "https://t.me/SqueezeOcto",
+
+  // Cloudflare Turnstile ("ben je een mens?") voor de spellen. Leeg = uit.
+  TURNSTILE_SITE_KEY: "",
 
   POLL_MS: 10000,       // prijs ophalen, elke 10 sec
 
