@@ -417,6 +417,7 @@ body.ready .stage-wrap { opacity: 1; transform: none; }
 .links { order: 8; }
 .timeline { order: 9; }
 .dev { order: 10; }
+.ad-slot { order: 20; width: 100%; } /* advertentie: altijd helemaal onderaan */
 
 /* Laptop / desktop: Squeeze links, info rechts. Buy-knop altijd in beeld. */
 @media (min-width: 900px) and (orientation: landscape) {
@@ -431,6 +432,7 @@ body.ready .stage-wrap { opacity: 1; transform: none; }
     min-height: calc(100dvh - 5rem);
     padding-bottom: 1.5rem;
   }
+  .ad-slot { grid-column: 2; }
   .stage-wrap {
     width: 100%;
     height: calc(100vh - 7rem);
