@@ -21,7 +21,10 @@
     mouth_happy: "assets/mouth_happy.png",
     mouth_neutral: "assets/mouth_neutral.png",
     mouth_sad: "assets/mouth_sad.png",
+    eyes_wink: "assets/eyes_wink.png", // optioneel: knipoog (rechteroog dicht)
   };
+  const OPTIONAL = new Set(["eyes_wink"]); // ontbreekt het plaatje, dan gewoon zonder
+  const WINK_FY = 0.69; // hoogte van de pupil van het open oog in eyes_wink.png (zelfde uitsnede als eyes_happy)
 
   // Wereld = pixels van body.png, oorsprong midden-onder van het hoofd.
   const BODY_W = 497;
@@ -460,6 +463,9 @@
       this.zTimer = 0;
       this.blink = 0;
       this.nextBlink = 1.5 + Math.random() * 3;
+      this.winkT = 0;        // > 0: knipoog bezig (seconden)
+      this.winkDelay = 0;    // knipoog na een nieuwe ring, als de sterren weg zijn
+      this.nextWink = 30 + Math.random() * 40;
       this._sc = 1;
       this._last = 0;
       this._raf = 0;
@@ -467,7 +473,7 @@
 
     async load() {
       const entries = await Promise.all(
-        Object.entries(ASSETS).map(async ([k, src]) => [k, await loadImage(src)])
+        Object.entries(ASSETS).map(async ([k, src]) => [k, OPTIONAL.has(k) ? await loadImage(src).catch(() => null) : await loadImage(src)])
       );
       for (const [k, img] of entries) this.img[k] = img;
       try {
@@ -609,6 +615,7 @@
         this.turnDir = Math.random() < 0.5 ? -1 : 1;
         return "annoyed";
       }
+      if (this.taps.length === 1 && Math.random() < 0.35) this.winkT = 0.8; // soms een knipoog terug
       return "poke";
     }
 
@@ -760,6 +767,7 @@
           this.pop = 1;
           this.rings++;
           this.ringBorn = this.t;
+          this.winkDelay = 2.4; // daarna een knipoog
           this.fly = { t: 0, x: this.toy.x, y: this.toy.y };
           this.shock = { t: 0 };
           this.toy.toss = null;
@@ -808,6 +816,15 @@
         this.nextBlink = 2.2 + Math.random() * 3.5;
       }
       this.blink = Math.max(0, this.blink - dt * 7);
+
+      // knipogen: na een nieuwe ring, en af en toe als hij vrolijk en wakker is
+      if (this.winkDelay > 0 && (this.winkDelay -= dt) <= 0) this.winkT = 0.9;
+      this.nextWink -= dt;
+      if (this.nextWink <= 0) {
+        if (this.mood.v > 0.6 && d < 0.3 && this.euph.v < 0.3 && !this.athPhase) this.winkT = 0.9;
+        this.nextWink = 35 + Math.random() * 50;
+      }
+      this.winkT = Math.max(0, this.winkT - dt);
 
       if (this.shock) {
         this.shock.t += dt;
@@ -1440,24 +1457,27 @@
 
       // ---- ogen: één set tegelijk, pupillen altijd op dezelfde hoogte ----
       const EYE = {
-        happy: { im: img.eyes_happy, w: 279, fy: 0.357 },
-        neutral: { im: img.eyes_neutral, w: 300, fy: 0.411 },
-        sad: { im: img.eyes_sad, w: 300, fy: 0.375 },
+        // v2 (polaroid-stijl): losse ogen met wimpers; fy = hoogte van de pupillen in het plaatje
+        happy: { im: img.eyes_happy, w: 335, fy: 0.688 },
+        neutral: { im: img.eyes_neutral, w: 330, fy: 0.677 },
+        sad: { im: img.eyes_sad, w: 338, fy: 0.724 },
       };
-      const eyeBottom = -95 + ly;
+      const eyeBottom = -120 + ly; // v2: gezicht iets hoger op het hoofd (zoals de polaroid)
       const pupilY = eyeBottom - 71;
       const blinkK = 1 - 0.88 * Math.sin(Math.min(1, this.blink) * Math.PI);
       const squint = 1 - 0.6 * this.charge;
       const sleepy = 1 - 0.5 * d * (this.wakeT > 0 ? 0.3 : 1);
       const surprise = 1 + 0.22 * clamp(this.wakeT / 1.3, 0, 1);
       const eyeK = blinkK * squint * sleepy * surprise * (1 - 0.94 * swapK);
-      const E = EYE[expr];
+      // knipoog: alleen als het plaatje er is, niet bij verdriet, slaap of sterren-ogen
+      const winking = this.winkT > 0 && img.eyes_wink && expr !== "sad" && swapK < 0.5 && d < 0.3 && this.euph.v < 0.05;
+      const E = winking ? { im: img.eyes_wink, w: EYE.happy.w, fy: WINK_FY } : EYE[expr];
       {
         const ew = E.w * lerp(1, surprise, 0.6);
         const eh = (E.im.height / E.im.width) * ew;
         ctx.save();
         ctx.translate(lx, pupilY);
-        ctx.scale(1, Math.max(0.04, eyeK));
+        ctx.scale(1, winking ? 1 : Math.max(0.04, eyeK));
         ctx.drawImage(E.im, -ew / 2, -eh * (1 - E.fy), ew, eh);
         ctx.restore();
       }
@@ -1467,7 +1487,7 @@
         const ew = EYE.happy.w;
         const spin = this.reduced ? 0 : Math.sin(this.t * 3) * 0.3;
         const pulse = 1 + (this.reduced ? 0 : Math.sin(this.t * 10) * 0.12);
-        const cx = expr === "happy" ? [(0.284 - 0.5) * ew, (0.73 - 0.5) * ew] : [-86, 86];
+        const cx = expr === "happy" ? [(0.245 - 0.5) * ew, (0.759 - 0.5) * ew] : [-86, 86];
         for (const px of cx) this._star(lx + px, pupilY, 54 * e * pulse, spin, e);
       }
 
@@ -1483,7 +1503,7 @@
       const mw = MO.w;
       const mh = (MO.im.height / MO.im.width) * mw;
       ctx.save();
-      ctx.translate(lx * 0.7, -55 + ly * 0.7);
+      ctx.translate(lx * 0.7, -45 + ly * 0.7); // v2: onder de (grotere) ogen
       ctx.scale(
         (1 + talk * 0.3) * (1 - 0.18 * swapK),
         (1 + talk) * (1 - 0.25 * this.charge) * (1 - 0.55 * swapK)
