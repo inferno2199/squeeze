@@ -26,6 +26,7 @@
     .num { background: rgba(255,255,255,.03); border: 1px solid rgba(255,255,255,.06); border-radius: 14px; padding: .7rem .8rem; }
     .num span { display: block; color: var(--muted); font-size: .8rem; }
     .num b { font-size: 1.15rem; font-variant-numeric: tabular-nums; }
+    .num b + span { margin-top: .1rem; font-size: .78rem; }
     .up { color: var(--green); } .down { color: #ff8a7a; }
     .trades { list-style: none; margin: 0; padding: 0; display: grid; gap: .55rem; }
     .trade { display: grid; grid-template-columns: auto 1fr auto; gap: .2rem .7rem; align-items: start; padding: .7rem .8rem; border-radius: 14px; background: rgba(255,255,255,.03); border: 1px solid rgba(255,255,255,.06); }
@@ -57,10 +58,13 @@
     <section class="wcard">
       <h2>📊 Holdings & results</h2>
       <div class="nums">
-        <div class="num"><span>$SQUEEZE</span><b id="n-sq">–</b></div>
-        <div class="num"><span>Worth now</span><b id="n-val">–</b></div>
+        <div class="num"><span>SOL</span><b id="n-sol">–</b></div>
+        <div class="num"><span>$PUMP</span><b id="n-pump">–</b><span id="n-pumpusd"></span></div>
+        <div class="num"><span>$SQUEEZE</span><b id="n-sq">–</b><span id="n-val"></span></div>
+        <div class="num"><span>Total PnL</span><b id="n-pnl">–</b><span id="n-pnlpct"></span></div>
         <div class="num"><span>Profit taken</span><b id="n-real">–</b></div>
         <div class="num"><span>Open result</span><b id="n-open">–</b></div>
+        <div class="num"><span>🎁 $PUMP rewards</span><b id="n-rew">–</b><span id="n-rewusd"></span></div>
         <div class="num"><span>🔥 Burned by him</span><b id="n-burn">–</b></div>
       </div>
     </section>
@@ -133,8 +137,16 @@
       } else {
         $("addr").innerHTML = "<span class=\"muted\">His wallet isn't set up yet.</span>";
       }
+      $("n-sol").textContent = d.sol != null ? (+Number(d.sol).toFixed(3)).toString() : "–";
+      $("n-pump").textContent = d.pump != null ? tok(d.pump) : "–";
+      $("n-pumpusd").textContent = d.pumpValueUsd != null ? "≈ " + usd(d.pumpValueUsd) : "";
       $("n-sq").textContent = d.squeeze != null ? tok(d.squeeze) : "–";
-      $("n-val").textContent = usd(d.valueUsd);
+      $("n-val").textContent = d.valueUsd != null ? "≈ " + usd(d.valueUsd) : "";
+      $("n-pnl").textContent = usd(d.pnlUsd, true);
+      $("n-pnl").className = signClass(d.pnlUsd);
+      $("n-pnlpct").textContent = d.pnlPct != null && isFinite(d.pnlPct) ? (d.pnlPct > 0 ? "+" : "") + d.pnlPct.toFixed(1) + "%" : "";
+      $("n-rew").textContent = tok(d.rewardsPump || 0);
+      $("n-rewusd").textContent = d.rewardsUsd ? "≈ " + usd(d.rewardsUsd) : "";
       $("n-real").textContent = usd(d.realizedUsd, true);
       $("n-real").className = signClass(d.realizedUsd);
       $("n-open").textContent = usd(d.unrealizedUsd, true);
