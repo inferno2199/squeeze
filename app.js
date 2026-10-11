@@ -321,6 +321,8 @@
       s.prevBuysH1 = null;
       s.prevVolH1 = null;
       s.prevBuysM5 = null;
+      s.prevSellsH1 = null;
+      s.prevSellsM5 = null;
     }
     s.source = snap.source;
     if (!s.firstSeenAt) s.firstSeenAt = now;
@@ -334,9 +336,13 @@
       s.prevBuysH1 != null && snap.buysH1 != null ? Math.max(0, snap.buysH1 - s.prevBuysH1) : 0;
     const dVol = s.prevVolH1 != null && snap.volH1 != null ? snap.volH1 - s.prevVolH1 : 0;
 
-    // combo = buys op rij (sinds de laatste echte dip): elke nieuwe buy +1, terug naar 0 als de prijs meer dan 0,3% zakt
+    // combo = buys op rij: elke nieuwe buy +1; een sell ertussen (of een dip van meer dan 0,3%) = terug naar 0
     const buysIn = Math.max(newBuys, s.prevBuysM5 != null && snap.buysM5 != null ? Math.max(0, snap.buysM5 - s.prevBuysM5) : 0);
-    if (delta < -0.3) s.combo = 0;
+    const sellsIn = Math.max(
+      s.prevSellsH1 != null && snap.sellsH1 != null ? Math.max(0, snap.sellsH1 - s.prevSellsH1) : 0,
+      s.prevSellsM5 != null && snap.sellsM5 != null ? Math.max(0, snap.sellsM5 - s.prevSellsM5) : 0
+    );
+    if (sellsIn > 0 || delta < -0.3) s.combo = 0;
     else if (buysIn > 0) s.combo = Math.min(s.combo + buysIn, 999);
     // inkt
     if (dVol >= rules.inkUsd && newBuys > 0 && delta >= 0) ev.push("ink");
@@ -411,6 +417,8 @@
     s.prevBuysH1 = snap.buysH1 ?? null;
     s.prevVolH1 = snap.volH1 ?? null;
     s.prevBuysM5 = snap.buysM5 ?? null;
+    s.prevSellsH1 = snap.sellsH1 ?? null;
+    s.prevSellsM5 = snap.sellsM5 ?? null;
     return ev;
   }
 
@@ -566,7 +574,7 @@
     return {
       price, m5: Number(pc.m5), h24: Number(pc.h24),
       buysM5: tx.m5 ? tx.m5.buys : 0, sellsM5: tx.m5 ? tx.m5.sells : 0,
-      buysH1: tx.h1 ? tx.h1.buys : null, volH1: vol.h1 != null ? Number(vol.h1) : null,
+      buysH1: tx.h1 ? tx.h1.buys : null, sellsH1: tx.h1 ? tx.h1.sells : null, volH1: vol.h1 != null ? Number(vol.h1) : null,
       mcap: Number(p.marketCap || p.fdv) || null,
       createdAt: isFinite(created) ? created : 0,
       source: "dexscreener",
@@ -590,7 +598,7 @@
     return {
       price, m5: Number(pc.m5), h24: Number(pc.h24),
       buysM5: tx.m5 ? tx.m5.buys : 0, sellsM5: tx.m5 ? tx.m5.sells : 0,
-      buysH1: tx.h1 ? tx.h1.buys : null, volH1: vol.h1 != null ? Number(vol.h1) : null,
+      buysH1: tx.h1 ? tx.h1.buys : null, sellsH1: tx.h1 ? tx.h1.sells : null, volH1: vol.h1 != null ? Number(vol.h1) : null,
       mcap: Number(a.market_cap_usd || a.fdv_usd) || null,
       createdAt: isFinite(created) ? created : 0,
       source: "geckoterminal",
@@ -714,7 +722,7 @@
     let price = 0.00001;
     const start = price;
     const hist = [];
-    let buysH1 = 0;
+    let buysH1 = 0, sellsH1 = 0;
     let volH1 = 0;
     const buyWin = [];
     let regime = "chop";
@@ -743,7 +751,7 @@
       if (regime === "pump" && Math.random() < 0.12) volH1 += 260 + Math.random() * 400;
       const snap = {
         price, m5: (price / hist[0] - 1) * 100, h24: (price / start - 1) * 100,
-        buysM5, sellsM5: sells * 4, buysH1, volH1,
+        buysM5, sellsM5: sells * 4, buysH1, sellsH1: (sellsH1 += sells), volH1,
         mcap: price * 1e9, createdAt: t0, source: "demo",
       };
       // demo-tijd loopt 20x sneller, zodat de tijdlijn realistisch oogt

@@ -48,6 +48,7 @@
   var fish = []; // zwemmende octopussen
   var eggs = []; // eitjes op de bodem
   var whales = [], jellies = [], parts = [], food = [], bubbles = [];
+  var VENTS = [0.17, 0.63, 0.86]; // plekjes in de bodem waar belletjes uit komen
   var seenWhale = {};
   var mood = { green: 0.5, red: 0, ath: 0 }; // vloeiend
   var night = 0;
@@ -545,7 +546,12 @@
     food = food.filter(function (p) { return !p.eaten && p.age < 25; });
     parts.forEach(function (p) { p.age += dt; p.x += p.vx * dt; p.y += p.vy * dt; p.vx *= 1 - dt * 1.5; p.vy *= 1 - dt * 1.5; });
     parts = parts.filter(function (p) { return p.age < p.life; });
-    if (!reduced && Math.random() < dt * 1.5) bubbles.push({ x: rnd(0, W), y: H + 10, r: rnd(1.5, 4) * U, vy: -rnd(20, 45) * U, ph: rnd(0, 6), age: 0, life: 30 });
+    // belletjes: overal een paar, en sliertjes uit drie plekjes in de bodem
+    var want = (W * H) / (reduced ? 70000 : 22000);
+    if (bubbles.length < want && Math.random() < dt * 5) bubbles.push({ x: rnd(0, W), y: H + 10, r: rnd(1.8, 5) * U, vy: -rnd(22, 48) * U, ph: rnd(0, 6), age: 0, life: 40 });
+    if (!reduced) VENTS.forEach(function (v) {
+      if (Math.random() < dt * 3) bubbles.push({ x: v * W + rnd(-6, 6) * U, y: H - 20 * U, r: rnd(1.5, 4.5) * U, vy: -rnd(45, 80) * U, ph: rnd(0, 6), age: 0, life: 40 });
+    });
     bubbles.forEach(function (b) { b.age += dt; b.y += b.vy * dt; b.x += Math.sin(T * 2 + b.ph) * 12 * U * dt; });
     bubbles = bubbles.filter(function (b) { return b.y > -20 && b.age < b.life; });
     whales.forEach(function (w) { w.x += w.dir * w.sp * dt; });
@@ -618,11 +624,13 @@
       ctx.fill();
     });
     // belletjes
-    ctx.strokeStyle = "rgba(220,255,240,.45)";
-    ctx.lineWidth = 1;
+    ctx.strokeStyle = "rgba(225,255,245,.55)";
+    ctx.lineWidth = 1.2;
+    ctx.fillStyle = "rgba(225,255,245,.10)";
     bubbles.forEach(function (b) {
       ctx.beginPath();
       ctx.arc(b.x, b.y, b.r, 0, 6.28);
+      ctx.fill();
       ctx.stroke();
     });
   }
