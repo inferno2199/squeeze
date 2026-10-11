@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>Squeeze ID ($SQUEEZE)</title>
+  <meta name="description" content="Look up any wallet's Squeeze ID: rank, holding streak, $PUMP rewards, Squeeze Squad and game scores." />
+  <meta name="theme-color" content="#030604" />
+  <meta property="og:title" content="Squeeze ID" />
+  <meta property="og:description" content="Rank, holding streak, $PUMP rewards and your Squeeze Squad." />
+  <meta property="og:image" content="https://squeezeocto.com/assets/og.png" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <link rel="icon" href="assets/icon.png" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="play/play.css" />
+  <style>
+    /* nieuwe stijl: geen vakjes, alles zweeft los over de zee */
+    .iwrap { position: relative; z-index: 1; width: min(1000px, calc(100% - 32px)); margin: .4rem auto 3rem; }
+    .kick { color: var(--green); font-weight: 800; letter-spacing: .14em; font-size: .85rem; text-align: center; text-shadow: 0 0 18px rgba(124,255,107,.35); }
+    .find { display: flex; gap: .6rem; justify-content: center; flex-wrap: wrap; margin: 1rem auto 0; max-width: 640px; }
+    .find input { flex: 1 1 320px; min-width: 0; font: 600 1rem var(--font); color: #fff; background: rgba(3,12,8,.35); border: 0; border-bottom: 2px solid rgba(124,255,107,.55); padding: .8rem .4rem; outline: none; text-shadow: 0 1px 10px rgba(0,0,0,.8); }
+    .find input::placeholder { color: #9fb7a6; }
+    .find button, .cta { font: 800 1rem var(--font); border: 0; border-radius: 999px; padding: .85rem 1.6rem; cursor: pointer; background: var(--green); color: #031006; box-shadow: 0 0 28px rgba(124,255,107,.4); text-decoration: none; display: inline-block; }
+    .msg { text-align: center; min-height: 1.4em; margin: .9rem 0 0; color: #ff9a8a; font-weight: 700; text-shadow: 0 1px 10px rgba(0,0,0,.9); }
+    .idcard { display: grid; grid-template-columns: minmax(220px, 380px) 1fr; gap: 2.4rem; align-items: center; margin-top: 2rem; }
+    .idcard.hidden { display: none; }
+    .oct { text-align: center; }
+    .oct img { width: 100%; aspect-ratio: 1; object-fit: cover; border-radius: 28px; box-shadow: 0 0 0 4px rgba(124,255,107,.75), 0 0 46px rgba(124,255,107,.35); animation: bob 7s ease-in-out infinite; }
+    .oct .miss { aspect-ratio: 1; display: grid; place-items: center; color: #a9bfb0; font-weight: 800; font-size: 1.4rem; text-shadow: 0 2px 14px rgba(0,0,0,.9); }
+    .oct .miss a { color: var(--green); }
+    .oct .cap { margin-top: .9rem; color: #cfe9d2; font-weight: 700; text-shadow: 0 1px 10px rgba(0,0,0,.9); }
+    .who { font-family: ui-monospace, Menlo, monospace; color: #e9f5ea; text-shadow: 0 2px 14px rgba(0,0,0,.9); overflow-wrap: anywhere; }
+    .rank { font-size: clamp(2rem, 6vw, 3rem); font-weight: 800; margin: .2rem 0 .1rem; text-shadow: 0 2px 24px rgba(0,0,0,.8), 0 0 30px rgba(124,255,107,.25); }
+    .badges { color: var(--green); font-weight: 800; text-shadow: 0 0 14px rgba(124,255,107,.35); min-height: 1.3em; }
+    .stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.6rem 1rem; margin: 1.6rem 0 1.2rem; }
+    .stat span { display: block; color: #a9bfb0; font-size: .75rem; letter-spacing: .08em; text-transform: uppercase; text-shadow: 0 1px 10px rgba(0,0,0,.9); }
+    .stat b { display: block; font-size: clamp(1.3rem, 3.2vw, 1.9rem); font-weight: 800; color: #fff; text-shadow: 0 2px 20px rgba(0,0,0,.85); }
+    .stat:nth-child(2n) { animation: bob 6s ease-in-out infinite; animation-delay: -2s; }
+    .stat:nth-child(3n) { animation: bob 6s ease-in-out infinite; animation-delay: -4s; }
+    .take { font-size: 1.15rem; color: #dff2e3; font-style: italic; text-shadow: 0 2px 16px rgba(0,0,0,.9); margin: .4rem 0; }
+    .next { color: #a9bfb0; text-shadow: 0 1px 10px rgba(0,0,0,.9); margin: .6rem 0 1.2rem; }
+    .note { color: #a9bfb0; font-size: .85rem; text-align: center; margin-top: 2.4rem; text-shadow: 0 1px 10px rgba(0,0,0,.9); }
+    @keyframes bob { 0%, 100% { translate: 0 0; } 50% { translate: 0 -7px; } }
+    @media (prefers-reduced-motion: reduce) { .oct img, .stat { animation: none !important; } }
+    @media (max-width: 720px) { .idcard { grid-template-columns: 1fr; gap: 1.4rem; text-align: center; } .stats { grid-template-columns: repeat(2, 1fr); } }
+  </style>
+</head>
+<body>
+  <div class="seabg" aria-hidden="true"></div>
+  <header class="top">
+    <a class="back" href="./">← Squeeze</a>
+    <h1>Squeeze ID</h1>
+    <p class="sub">Paste any wallet and see its Squeeze ID.</p>
+  </header>
+  <main class="iwrap">
+    <form class="find" id="find">
+      <input id="w" placeholder="Solana wallet address" autocomplete="off" spellcheck="false" />
+      <button type="submit">Look up</button>
+    </form>
+    <p class="msg" id="msg" aria-live="polite"></p>
+
+    <section class="idcard hidden" id="card">
+      <div class="oct" id="oct"></div>
+      <div>
+        <div class="kick" style="text-align:left">SQUEEZE ID</div>
+        <div class="who" id="who"></div>
+        <div class="rank" id="rank"></div>
+        <div class="badges" id="badges"></div>
+        <div class="stats" id="stats"></div>
+        <p class="take" id="take"></p>
+        <p class="next" id="next"></p>
+        <a class="cta" id="cta" href="https://t.me/SqueezeOctoBot?start=id" target="_blank" rel="noopener">🪪 Get your full Squeeze ID in Telegram</a>
+      </div>
+    </section>
+
+    <p class="note">Only public data: balances and history from the blockchain, and the public game leaderboards. Your Telegram account stays private.<br>Your full card (member since, raids, ✅ verified, Share on X) lives in our Telegram bot.</p>
+  </main>
+
+  <script src="config.js"></script>
+  <script>
+  (function () {
+    var C = window.SQUEEZE_CONFIG || {};
+    var API = (C.WORKER_URL || "https://squeeze-state.inferno2199.workers.dev").replace(/\/$/, "") + "/tg/idpublic";
+    var $ = function (id) { return document.getElementById(id); };
+    var esc = function (t) { return String(t == null ? "" : t).replace(/[&<>"]/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]; }); };
+    var WALLET_RE = /^[1-9A-HJ-NP-Za-km-z]{32,44}$/;
+    function tok(n) {
+      n = Number(n) || 0;
+      if (n >= 1e9) return +(n / 1e9).toFixed(2) + "B";
+      if (n >= 1e6) return +(n / 1e6).toFixed(2) + "M";
+      if (n >= 1e3) return +(n / 1e3).toFixed(1) + "k";
+      return String(Math.round(n));
+    }
+    var day = function (ms) { return new Date(ms).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" }); };
+
+    function render(d) {
+      var o = d.main
+        ? '<img src="' + esc(d.main.image) + '" alt="' + esc(d.main.name) + '" /><div class="cap">' + esc(d.main.name) + (d.main.num ? " · # " + esc(d.main.num) : "") + " · " + esc(d.main.rarity) + "</div>"
+        : '<div class="miss"><div>Octopus missing<br><a href="https://generator.squeezeocto.com/" target="_blank" rel="noopener">make one →</a></div></div>';
+      $("oct").innerHTML = o;
+      $("who").textContent = d.wallet.slice(0, 4) + "…" + d.wallet.slice(-4) + (d.best && d.best.handle ? "  ·  @" + d.best.handle : "");
+      $("rank").textContent = d.rank ? d.rank.emoji + " " + d.rank.name : "No rank yet";
+      $("badges").textContent = (d.badges || []).map(function (b) { return b.emoji + " " + b.name; }).join("  ·  ");
+      var H = d.holding;
+      var stats = [
+        ["$SQUEEZE", d.squeeze == null ? (d.launched ? "—" : "after launch") : tok(d.squeeze)],
+        H ? (H.neverSold ? ["Holding · 💎 never sold", H.days + " days"] : ["First bought · sold " + H.sold + "×", day(H.since)]) : ["Holding", "—"],
+        ["$PUMP rewards", d.rewardsPump == null ? "—" : tok(d.rewardsPump)],
+        ["Squad (octopuses)", d.squad == null ? "—" : String(d.squad)],
+        ["Best Hold", d.best && d.best.hold != null ? tok(d.best.hold) : "—"],
+        ["Best Says", d.best && d.best.says != null ? tok(d.best.says) : "—"],
+      ];
+      if (d.holding && d.holding.burned > 0) stats.push(["🔥 Burned", tok(d.holding.burned)]);
+      $("stats").innerHTML = stats.map(function (s) { return '<div class="stat"><span>' + esc(s[0]) + "</span><b>" + esc(s[1]) + "</b></div>"; }).join("");
+      $("take").textContent = d.take ? "🐙 “" + d.take + "”" : "";
+      var nx = [];
+      if (d.next) nx.push(d.next.emoji + " " + d.next.name + " at " + tok(d.next.min || 1) + " $SQUEEZE" + (d.next.days ? " + " + d.next.days + " days" : ""));
+      if (d.nextBadge) nx.push(d.nextBadge.emoji + " " + d.nextBadge.name + " at " + d.nextBadge.nfts + " NFTs");
+      $("next").textContent = nx.length ? "⬆️ Next: " + nx.join(" · ") : "";
+      $("card").classList.remove("hidden");
+    }
+
+    function look(w) {
+      $("msg").textContent = "";
+      if (!WALLET_RE.test(w)) { $("msg").textContent = "That doesn't look like a Solana wallet address."; return; }
+      $("msg").style.color = "#cfe9d2"; $("msg").textContent = "Looking it up…";
+      fetch(API + "?wallet=" + encodeURIComponent(w)).then(function (r) { return r.json(); }).then(function (d) {
+        if (!d || d.error) throw new Error((d && d.error) || "Couldn't load that wallet.");
+        $("msg").textContent = ""; $("msg").style.color = "";
+        render(d);
+        try { history.replaceState(null, "", "?w=" + encodeURIComponent(w)); } catch (e) {}
+      }).catch(function (e) { $("msg").style.color = ""; $("msg").textContent = e.message || "Couldn't load that wallet."; });
+    }
+    $("find").onsubmit = function (e) { e.preventDefault(); look($("w").value.trim()); };
+    var start = new URLSearchParams(location.search).get("w");
+    if (start) { $("w").value = start; look(start); }
+    window.__renderId = render; // voor een snelle controle met voorbeeldgegevens
+  })();
+  </script>
+</body>
+</html>
