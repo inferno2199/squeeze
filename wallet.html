@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>Squeeze's wallet ($SQUEEZE)</title>
+  <meta name="description" content="Squeeze trades his own bag. Every trade, in the open: what he did, at what price, and why." />
+  <meta name="theme-color" content="#030604" />
+  <meta property="og:title" content="Squeeze's wallet" />
+  <meta property="og:description" content="Every trade of Squeeze the octopus, in the open." />
+  <meta property="og:image" content="https://squeezeocto.com/assets/og.png" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <link rel="icon" href="assets/icon.png" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="play/play.css" />
+  <style>
+    .wwrap { position: relative; z-index: 1; width: min(860px, calc(100% - 32px)); margin: 1rem auto 3rem; display: grid; gap: 1rem; }
+    .wcard { background: var(--card); border: 1px solid var(--line); border-radius: 18px; padding: 1.1rem 1.2rem; backdrop-filter: blur(6px); }
+    .wcard h2 { margin: 0 0 .6rem; font-size: 1.15rem; }
+    .addr { display: flex; flex-wrap: wrap; gap: .5rem; align-items: center; }
+    .addr code { font-size: .85rem; background: rgba(124,255,107,.08); border: 1px solid var(--line); border-radius: 10px; padding: .35rem .55rem; overflow-wrap: anywhere; }
+    .addr a, .tx a { color: var(--green); font-weight: 700; text-decoration: none; }
+    .nums { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: .7rem; }
+    .num { background: rgba(255,255,255,.03); border: 1px solid rgba(255,255,255,.06); border-radius: 14px; padding: .7rem .8rem; }
+    .num span { display: block; color: var(--muted); font-size: .8rem; }
+    .num b { font-size: 1.15rem; font-variant-numeric: tabular-nums; }
+    .up { color: var(--green); } .down { color: #ff8a7a; }
+    .trades { list-style: none; margin: 0; padding: 0; display: grid; gap: .55rem; }
+    .trade { display: grid; grid-template-columns: auto 1fr auto; gap: .2rem .7rem; align-items: start; padding: .7rem .8rem; border-radius: 14px; background: rgba(255,255,255,.03); border: 1px solid rgba(255,255,255,.06); }
+    .ico { font-size: 1.35rem; line-height: 1.2; }
+    .what { font-weight: 700; }
+    .why { color: var(--muted); font-size: .9rem; grid-column: 2 / 4; }
+    .when { color: var(--muted); font-size: .8rem; text-align: right; white-space: nowrap; }
+    .tx { grid-column: 2 / 4; font-size: .85rem; }
+    .empty { color: var(--muted); text-align: center; padding: 1.2rem .5rem; }
+    .foot { text-align: center; color: var(--muted); font-size: .9rem; margin: 0; }
+    @media (max-width: 520px) { .trade { grid-template-columns: auto 1fr; } .when { grid-column: 2; text-align: left; } }
+  </style>
+</head>
+<body>
+  <div class="seabg" aria-hidden="true"></div>
+
+  <header class="top">
+    <a class="back" href="./">← Squeeze</a>
+    <h1>Squeeze's wallet</h1>
+    <p class="sub">He trades his own bag. Every trade, in the open.</p>
+  </header>
+
+  <main class="wwrap">
+    <section class="wcard">
+      <h2>🐙 His wallet</h2>
+      <div class="addr" id="addr"><span class="muted">Loading…</span></div>
+    </section>
+
+    <section class="wcard">
+      <h2>📊 Holdings & results</h2>
+      <div class="nums">
+        <div class="num"><span>$SQUEEZE</span><b id="n-sq">–</b></div>
+        <div class="num"><span>Worth now</span><b id="n-val">–</b></div>
+        <div class="num"><span>Profit taken</span><b id="n-real">–</b></div>
+        <div class="num"><span>Open result</span><b id="n-open">–</b></div>
+        <div class="num"><span>🔥 Burned by him</span><b id="n-burn">–</b></div>
+      </div>
+    </section>
+
+    <section class="wcard">
+      <h2>🧾 Trades</h2>
+      <ul class="trades" id="trades"><li class="empty">Loading…</li></ul>
+    </section>
+
+    <p class="foot"><i>Squeeze trades his own bag. Not advice.</i></p>
+  </main>
+
+  <script src="config.js"></script>
+  <script>
+  (function () {
+    var C = window.SQUEEZE_CONFIG || {};
+    var API = (C.WORKER_URL || "https://squeeze-state.inferno2199.workers.dev").replace(/\/$/, "");
+    var $ = function (id) { return document.getElementById(id); };
+    var esc = function (t) { return String(t == null ? "" : t).replace(/[&<>"]/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]; }); };
+
+    function tok(n) {
+      n = Number(n) || 0;
+      if (n >= 1e9) return +(n / 1e9).toFixed(2) + "B";
+      if (n >= 1e6) return +(n / 1e6).toFixed(2) + "M";
+      if (n >= 1e3) return +(n / 1e3).toFixed(1) + "k";
+      return n > 0 && n < 10 ? String(+n.toPrecision(3)) : String(Math.round(n));
+    }
+    function usd(v, signed) {
+      if (v == null || !isFinite(v)) return "–";
+      var s = signed && v > 0 ? "+" : v < 0 ? "−" : "";
+      var a = Math.abs(v);
+      return s + "$" + (a >= 1000 ? Math.round(a).toLocaleString("en-US") : a.toFixed(2));
+    }
+    function price(p) {
+      p = Number(p);
+      if (!(p > 0)) return "";
+      if (p >= 1) return "$" + p.toFixed(2);
+      var d = Math.min(12, Math.max(2, 2 - Math.floor(Math.log10(p)) + 1));
+      return "$" + p.toFixed(d).replace(/0+$/, "");
+    }
+    var pct = function (v) { return v == null || !isFinite(v) ? "" : Math.round(v) + "%"; };
+    var signClass = function (v) { return v > 0 ? "up" : v < 0 ? "down" : ""; };
+
+    // waarom? in gewone woorden
+    function why(t) {
+      var w = t.why || {};
+      if (w.rule === "dip-1h") return "Price dropped " + pct(w.changePct) + " in 1 hour, so he bought the dip.";
+      if (w.rule === "dip-24h") return "Price dropped " + pct(w.changePct) + " in 24 hours, so he bought a little.";
+      if (w.rule === "quiet-dip") return "Quiet chart and the price was " + pct(w.changePct) + " in 6 hours, so he added a little.";
+      if (w.rule === "take-profit") return "His own tokens were up " + (w.gainPct != null ? "+" + Math.round(w.gainPct) + "%" : "") + ", so he took a little profit.";
+      if (w.rule === "ath") return "New all-time high, so he burned part of his own tokens.";
+      return "";
+    }
+    var ICON = { buy: "🐙", sell: "💰", burn: "🔥" };
+    function what(t) {
+      var p = t.priceUsd ? " at " + price(t.priceUsd) : "";
+      if (t.type === "buy") return "Bought " + tok(t.tokens) + " $SQUEEZE for " + usd(t.usd) + p;
+      if (t.type === "sell") return "Sold " + tok(t.tokens) + " $SQUEEZE for " + usd(t.usd) + p;
+      if (t.type === "burn") return "Burned " + tok(t.tokens) + " $SQUEEZE" + (t.usd ? " (≈ " + usd(t.usd) + ")" : "");
+      return "";
+    }
+    function when(ms) {
+      var d = new Date(ms);
+      return d.toLocaleDateString("en-GB", { day: "numeric", month: "short" }) + " · " + d.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" });
+    }
+
+    function render(d) {
+      if (d.address) {
+        $("addr").innerHTML = "<code>" + esc(d.address) + "</code> <a href=\"https://solscan.io/account/" + encodeURIComponent(d.address) + "\" target=\"_blank\" rel=\"noopener\">View on Solscan ↗</a>";
+      } else {
+        $("addr").innerHTML = "<span class=\"muted\">His wallet isn't set up yet.</span>";
+      }
+      $("n-sq").textContent = d.squeeze != null ? tok(d.squeeze) : "–";
+      $("n-val").textContent = usd(d.valueUsd);
+      $("n-real").textContent = usd(d.realizedUsd, true);
+      $("n-real").className = signClass(d.realizedUsd);
+      $("n-open").textContent = usd(d.unrealizedUsd, true);
+      $("n-open").className = signClass(d.unrealizedUsd);
+      $("n-burn").textContent = tok(d.burnedTokens || 0);
+      var list = d.trades || [];
+      if (!list.length) {
+        $("trades").innerHTML = "<li class=\"empty\">Squeeze hasn't made his first trade yet. 🐙</li>";
+        return;
+      }
+      $("trades").innerHTML = list.map(function (t) {
+        var tx = t.sig ? "<div class=\"tx\"><a href=\"https://solscan.io/tx/" + encodeURIComponent(t.sig) + "\" target=\"_blank\" rel=\"noopener\">Transaction ↗</a></div>" : "";
+        return "<li class=\"trade\"><div class=\"ico\">" + (ICON[t.type] || "🐙") + "</div>" +
+          "<div class=\"what\">" + esc(what(t)) + "</div><div class=\"when\">" + esc(when(t.t)) + "</div>" +
+          "<div class=\"why\">" + esc(why(t)) + "</div>" + tx + "</li>";
+      }).join("");
+    }
+
+    function load() {
+      fetch(API + "/agent", { cache: "no-store" }).then(function (r) { return r.json(); }).then(function (d) {
+        if (d && d.error) throw new Error(d.error);
+        render(d || {});
+      }).catch(function () {
+        if (!$("trades").querySelector(".trade")) $("trades").innerHTML = "<li class=\"empty\">Couldn't load his wallet right now. Try again in a minute.</li>";
+        if ($("addr").textContent === "Loading…") $("addr").innerHTML = "<span class=\"muted\">–</span>";
+      });
+    }
+    window.__renderWallet = render; // voor een snelle controle met voorbeeldgegevens
+    load();
+    setInterval(load, 60000);
+  })();
+  </script>
+</body>
+</html>
