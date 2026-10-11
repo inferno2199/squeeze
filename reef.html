@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>The Reef ($SQUEEZE)</title>
+  <meta name="description" content="Every Squeeze Squad octopus, swimming live. The Reef lives with the $SQUEEZE chart." />
+  <meta name="theme-color" content="#030604" />
+  <meta property="og:title" content="The Reef · Squeeze Squad" />
+  <meta property="og:description" content="Every Squeeze Squad octopus, swimming live." />
+  <meta property="og:image" content="https://squeezeocto.com/assets/og.png" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <link rel="icon" href="assets/icon.png" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&display=swap" rel="stylesheet" />
+  <style>
+    :root { --green: #7cff6b; --text: #f3f7f2; --muted: #a9bfb0; --font: "Bricolage Grotesque", ui-rounded, system-ui, sans-serif; }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; height: 100%; overflow: hidden; background: #030604; color: var(--text); font-family: var(--font); }
+    #reef { position: fixed; inset: 0; width: 100%; height: 100%; display: block; touch-action: manipulation; }
+    .top { position: fixed; top: 0; left: 0; right: 0; z-index: 2; text-align: center; padding: .7rem 16px 0; pointer-events: none; }
+    .top a, .top button { pointer-events: auto; }
+    .back { position: absolute; left: 16px; top: .9rem; color: var(--muted); text-decoration: none; font-weight: 700; text-shadow: 0 1px 10px rgba(0,0,0,.9); }
+    h1 { margin: 0; font-size: clamp(1.5rem, 5vw, 2.3rem); font-weight: 800; text-shadow: 0 2px 22px rgba(0,0,0,.8), 0 0 30px rgba(124,255,107,.2); }
+    .sub { margin: .1rem 0 0; color: var(--muted); font-weight: 600; font-size: .92rem; text-shadow: 0 1px 10px rgba(0,0,0,.9); }
+    .dock { position: fixed; left: 0; right: 0; bottom: max(14px, env(safe-area-inset-bottom)); z-index: 2; display: flex; justify-content: center; gap: .6rem; pointer-events: none; }
+    .dock button { pointer-events: auto; font: 800 1rem var(--font); border: 0; border-radius: 999px; padding: .75rem 1.4rem; cursor: pointer; background: var(--green); color: #031006; box-shadow: 0 0 26px rgba(124,255,107,.4); }
+    .card { position: fixed; left: 50%; bottom: calc(max(14px, env(safe-area-inset-bottom)) + 4rem); transform: translate(-50%, 20px); z-index: 3; text-align: center; opacity: 0; pointer-events: none; transition: opacity .25s, transform .25s; text-shadow: 0 2px 14px rgba(0,0,0,.95); min-width: 220px; max-width: calc(100% - 32px); }
+    .card.on { opacity: 1; transform: translate(-50%, 0); pointer-events: auto; }
+    .card b { display: block; font-size: 1.35rem; }
+    .card .num { color: var(--muted); font-weight: 700; }
+    .card a { display: inline-block; margin-top: .35rem; color: var(--green); font-weight: 800; text-decoration: none; }
+    .note { position: fixed; left: 50%; top: 45%; transform: translate(-50%, -50%); z-index: 2; text-align: center; color: var(--muted); font-weight: 700; text-shadow: 0 2px 14px rgba(0,0,0,.95); max-width: calc(100% - 32px); pointer-events: none; }
+    .note a { color: var(--green); pointer-events: auto; }
+    @media (max-width: 560px) { .top { padding-top: 2.1rem; } .back { top: .6rem; } .demo { top: .65rem; } }
+    .demo { position: fixed; right: 16px; top: .95rem; z-index: 2; color: #ffd36b; font-weight: 800; font-size: .8rem; letter-spacing: .08em; text-shadow: 0 1px 10px rgba(0,0,0,.9); }
+  </style>
+</head>
+<body>
+  <canvas id="reef" aria-label="The Reef: every Squeeze Squad octopus swimming" role="img"></canvas>
+  <header class="top">
+    <a class="back" href="./">← Squeeze</a>
+    <h1>The Reef</h1>
+    <p class="sub" id="sub">Every Squeeze Squad octopus, swimming live.</p>
+  </header>
+  <div class="demo" id="demo" hidden>DEMO</div>
+  <p class="note" id="note" hidden></p>
+  <div class="card" id="card" aria-live="polite"><b id="cname"></b><span class="num" id="cnum"></span><br><a id="clink" href="#" target="_blank" rel="noopener">View this NFT ↗</a></div>
+  <div class="dock"><button id="feed" type="button">🍤 Feed</button></div>
+  <script src="config.js"></script>
+  <script src="play/reef.js"></script>
+  <script src="ink.js" data-page="reef" defer></script>
+</body>
+</html>
