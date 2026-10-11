@@ -527,7 +527,7 @@
       var tx = tgt ? tgt.x : f.tx, ty = tgt ? tgt.y : f.ty;
       if (tgt && td < 18 * U * f.d + 10) { tgt.eaten = true; bubbleUp(f.x, f.y - 10 * U, 3); }
       var dx = tx - f.x, dy = ty - f.y, dist = Math.hypot(dx, dy) || 1;
-      var speed = (tgt ? 130 : 58) * U * f.sp * (reduced ? 0.5 : 1) * (0.7 + 0.3 * f.d);
+      var speed = (tgt ? 100 : 40) * U * f.sp * (reduced ? 0.5 : 1) * (0.7 + 0.3 * f.d);
       if (!tgt && dist < 30 * U) {
         f.wait -= dt;
         if (f.wait <= 0) pickTarget(f);
