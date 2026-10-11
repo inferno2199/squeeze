@@ -13,7 +13,7 @@ window.SQUEEZE_CONFIG = {
 
   // Socials (leeg = niet tonen)
   X_URL: "https://x.com/SqueezeOcto",
-  TELEGRAM_URL: "https://t.me/SqueezeOcto Community",
+  TELEGRAM_URL: "",   // leeg = de link uit de bot (/menu → Token & wallets → Set Telegram link)
 
   // Cloudflare Turnstile ("ben je een mens?") voor de spellen. Leeg = uit.
   TURNSTILE_SITE_KEY: "0x4AAAAAAFP8QC6dZrVG0T5L",

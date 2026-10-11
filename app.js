@@ -12,15 +12,16 @@
   const params = new URLSearchParams(location.search);
   const DEV = params.has("dev");
   const FORCE_DEMO = params.has("demo");
-  // Geen CA in config.js? Dan halen we hem bij de Worker (ingesteld via de Telegram-bot).
-  if (!(C.MINT || "").trim() && C.WORKER_URL && !FORCE_DEMO) {
+  // CA en Telegram-link uit de Worker (ingesteld via /menu in de Telegram-bot); config.js gaat voor als daar iets staat.
+  if (C.WORKER_URL && !FORCE_DEMO && (!(C.MINT || "").trim() || !(C.TELEGRAM_URL || "").trim())) {
     try {
       const ctl = new AbortController();
       const to = setTimeout(() => ctl.abort(), 2500);
       const r = await fetch(C.WORKER_URL.replace(/\/$/, "") + "/settings", { cache: "no-store", signal: ctl.signal });
       clearTimeout(to);
       const d = await r.json();
-      if (d && /^[1-9A-HJ-NP-Za-km-z]{32,44}$/.test(d.mint || "")) C.MINT = d.mint;
+      if (!(C.MINT || "").trim() && d && /^[1-9A-HJ-NP-Za-km-z]{32,44}$/.test(d.mint || "")) C.MINT = d.mint;
+      if (!(C.TELEGRAM_URL || "").trim() && d && /^https:\/\/t\.me\/[A-Za-z0-9_]{5,32}$/.test(d.telegram || "")) C.TELEGRAM_URL = d.telegram;
     } catch (e) {}
   }
   const MINT = (C.MINT || "").trim();
