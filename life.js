@@ -43,7 +43,7 @@
   var FLOOR = { crab: 1, lobster: 1, shrimp: 1 };
 
   // ---------- wat ze zeggen ----------
-  var SOLO = ["Squeeze?", "has anyone seen Squeeze? 🐙", "gm! 🐙", "just keep swimming", "blub blub", "$SQUEEZE spotted 👀", "is this the way to the Reef?", "I heard Squeeze has rings now 💍", "nice website", "hi! just passing", "where's the party?"];
+  var SOLO = ["Squeeze?", "has anyone seen Squeeze? 🐙", "gm! 🐙", "just keep swimming", "blub blub", "$SQUEEZE spotted 👀", "is this the way to the Reef?", "I heard Squeeze has rings now 💍", "nice website", "hi! just passing", "where's the party?", "has anyone seen the ink? 🖋", "I smell ink somewhere… 👀", "Squeeze hid something again, didn't he"];
   var FLOORSAY = ["click clack", "sideways is the best way 🦀", "*snip snip*", "hop hop!"];
   var PAIRS = [
     ["where's Squeeze?", "napping on the chart 😴"],
@@ -54,12 +54,20 @@
     ["is the chart green today?", "greener than seaweed 🌿"],
     ["Squeeze said hi", "Squeeze says hi to everyone"],
     ["are we there yet?", "we live in the ocean, buddy"],
+    ["did you find the ink?", "shhh, I'm looking 🖋"],
+    ["I saw a tiny ink spot!", "where?? tell me!"],
   ];
+  var POKE = ["hey!", "that tickles! 😆", "don't poke the fish 😤", "rude!", "eek!", "boop?", "I'm working here!", "again! again!"];
+  var PEEK = ["you can't see me 👀", "hehe", "peekaboo!", "nope, not here", "still hiding…"];
+  var LANTERN = ["night shift 🏮", "it's dark down here", "anyone need a light?", "late night swim ✨"];
+  var MOUSE = ["where are we going?", "wait up!", "I'll follow you anywhere", "ooh, what's this?"];
   var BUMP = [["oops!", "sorry!"], ["bonk!", "ow!"], ["watch it!", "you watch it!"], ["hey!", "my bad 😅"]];
   var TRIO = [["follow me!", "ok!", "are we there yet?"], ["to the Reef!", "to the Reef!", "wait for me!"], ["left!", "no, right!", "I'm lost 🫠"]];
 
   // ---------- toestand ----------
-  var bubbles = [], swimmers = [], stars = [];
+  var bubbles = [], swimmers = [], stars = [], notes = [];
+  var mouse = { x: 0, y: 0, at: -1e9 };
+  window.addEventListener("pointermove", function (e) { if (e.pointerType === "mouse") { mouse.x = e.clientX; mouse.y = e.clientY; mouse.at = performance.now(); } }, { passive: true });
   var nextScene = rnd(6, 12);
   var T = 0;
 
@@ -74,9 +82,20 @@
     setTimeout(function () { if (swimmers.indexOf(o) >= 0) { o.say = text; o.sayT = dur || 2.6; } }, at * 1000);
   }
   var SWIMMERS = ["fish", "fish", "dolphin", "shark", "jelly", "fish"];
+  function nightTime() { var h = new Date().getHours(); return h >= 20 || h < 6; }
   function scene() {
-    var r = Math.random();
     var midY = function () { return rnd(0.22, 0.7) * H; };
+    var opts = [["solo", 22], ["pair", 15], ["bump", 12], ["trio", 7], ["chase", 10], ["peek", 8], ["conga", 7], ["big", 5]];
+    if (nightTime()) opts.push(["lantern", 9]);
+    if (performance.now() - mouse.at < 8000) opts.push(["mouse", 8]);
+    var tot = opts.reduce(function (a, o) { return a + o[1]; }, 0), roll = Math.random() * tot, kind = opts[0][0];
+    for (var q = 0; q < opts.length; q++) { roll -= opts[q][1]; if (roll <= 0) { kind = opts[q][0]; break; } }
+    if (kind === "chase") return chase(midY());
+    if (kind === "peek") return peek();
+    if (kind === "conga") return conga(midY());
+    if (kind === "lantern") return lantern();
+    if (kind === "mouse") return follow();
+    var r = { solo: 0.1, pair: 0.4, bump: 0.7, trio: 0.85, big: 0.95 }[kind];
     if (r < 0.34) { // één vriendje
       if (Math.random() < 0.22) {
         var k = pick(["crab", "lobster", "shrimp"]);
@@ -116,6 +135,90 @@
     }
   }
 
+  // haai achter een visje aan
+  function chase(y) {
+    var dir = Math.random() < 0.5 ? 1 : -1;
+    var f = addSwimmer("fish", dir, y, { v: 190 * U, fast: true });
+    var sh = addSwimmer("shark", dir, y + 10 * U, { v: 190 * U });
+    sh.x -= dir * (f.s + sh.s * 0.6);
+    talk(f, "HELP! 😱", (W * 0.25) / f.v);
+    talk(sh, pick(["I just want a hug 🥺", "come back, friend!", "I'm vegan, I swear!"]), (W * 0.25) / f.v + 1.6);
+  }
+  // verstoppertje: kijkt een paar keer vanaf de rand van het scherm, en verdwijnt dan weer
+  function peek() {
+    var side = Math.random() < 0.5 ? -1 : 1, k = pick(["fish", "jelly", "dolphin"]);
+    var o = addSwimmer(k, -side, rnd(0.3, 0.75) * H, {});
+    var out = side < 0 ? o.s * 0.15 : W - o.s * 0.15, hid = side < 0 ? -o.s * 0.7 : W + o.s * 0.7;
+    o.x = hid;
+    o.update = function (o, dt) {
+      var c = o.t % 3.2; // 3 keer kijken
+      var k2 = c < 0.5 ? c / 0.5 : c < 2 ? 1 : c < 2.5 ? 1 - (c - 2) / 0.5 : 0;
+      o.x = hid + (out - hid) * k2;
+      if (c > 0.5 && c < 0.6 && !o.saidAt) { o.say = pick(PEEK); o.sayT = 1.6; o.saidAt = 1; }
+      if (c > 2.5) o.saidAt = 0;
+      return o.t < 9.6;
+    };
+  }
+  // conga-rij met muzieknootjes
+  function conga(y) {
+    var dir = Math.random() < 0.5 ? 1 : -1, kinds = ["fish", "jelly", "dolphin", "fish", "shark", "fish", "jelly"], n = 5 + ((Math.random() * 3) | 0);
+    var gap = 0;
+    for (var i = 0; i < n; i++) {
+      var k = kinds[i % kinds.length];
+      var o = addSwimmer(k, dir, y, { v: 85 * U, conga: i });
+      gap += i ? (SIZE[kinds[(i - 1) % kinds.length]] + SIZE[k]) * U * 0.5 + 10 * U : 0;
+      o.x -= dir * gap;
+      o.baseY = y;
+      if (i === 0) talk(o, "🎵 squeeze squeeze squeeze 🎵", (W * 0.25) / o.v, 3.2);
+      if (i === n - 1) talk(o, "🎵 squeeeeeeze 🎵", (W * 0.25) / o.v + 3.4, 2.8);
+    }
+  }
+  // 's avonds: een kwal met een lampje
+  function lantern() {
+    var dir = Math.random() < 0.5 ? 1 : -1;
+    var o = addSwimmer("jelly", dir, H * 0.85, { v: 30 * U, lantern: true });
+    o.update = function (o, dt) {
+      o.x += o.dir * o.v * dt;
+      o.y -= 14 * U * dt;
+      return o.dir > 0 ? o.x < W + o.s : o.x > -o.s;
+    };
+    talk(o, pick(LANTERN), 4);
+  }
+  // zwemt even met je muis mee (computer)
+  function follow() {
+    var dir = mouse.x > W / 2 ? -1 : 1;
+    var o = addSwimmer("fish", dir, mouse.y, { v: 120 * U });
+    talk(o, pick(MOUSE), 1.5);
+    o.update = function (o, dt) {
+      if (o.t < 9) {
+        var tx = mouse.x - o.dir * 70 * U, ty = mouse.y + 30 * U;
+        o.x += (tx - o.x) * Math.min(1, dt * 1.4);
+        o.y += (ty - o.y) * Math.min(1, dt * 1.4);
+        if (Math.abs(tx - o.x) > 30) o.dir = tx > o.x ? 1 : -1;
+        if (o.t > 8.4 && !o.bye) { o.bye = 1; o.say = "ok bye! 👋"; o.sayT = 1.8; }
+        return true;
+      }
+      o.x += o.dir * 220 * U * dt;
+      return o.dir > 0 ? o.x < W + o.s : o.x > -o.s;
+    };
+  }
+
+  // aantikken: het vriendje schrikt, springt en zegt iets
+  document.addEventListener("pointerdown", function (e) {
+    if (e.target && e.target.closest && e.target.closest("a,button,input,textarea,select,label,[role=button],canvas:not([aria-hidden])")) return;
+    var hit = null, best = 1e9;
+    swimmers.forEach(function (o) {
+      var d = Math.hypot(e.clientX - o.x, e.clientY - o.y);
+      if (d < o.s * 0.55 && d < best && o.kind !== "whale") { best = d; hit = o; }
+    });
+    if (!hit) return;
+    hit.hop = 1;
+    hit.say = pick(POKE);
+    hit.sayT = 1.8;
+    hit.boost = 1.2;
+    for (var k = 0; k < 6; k++) stars.push({ x: hit.x, y: hit.y - hit.s * 0.2, vx: rnd(-70, 70) * U, vy: rnd(-90, -10) * U, age: 0 });
+  }, { passive: true });
+
   function step(dt) {
     T += dt;
     // belletjes
@@ -137,6 +240,14 @@
     }
     swimmers.forEach(function (o) {
       o.t += dt;
+      if (o.hop > 0) o.hop = Math.max(0, o.hop - dt * 2.2);
+      if (o.boost > 0) o.boost = Math.max(0, o.boost - dt);
+      if (o.sayT > 0 && o.update) o.sayT -= dt;
+      if (o.update) { o.done = !o.update(o, dt); return; }
+      if (o.conga != null) {
+        o.y = o.baseY + Math.sin(o.t * 3 - o.conga * 0.8) * 22 * U;
+        if (o.conga === 0 && Math.random() < dt * 2.5) notes.push({ x: o.x, y: o.y - o.s * 0.5, vy: -40 * U, vx: rnd(-15, 15) * U, age: 0, c: pick(["♪", "♫", "♬"]) });
+      }
       if (o.bump && !o.bumped && o.mate && Math.abs(o.x - o.mate.x) < (o.s + o.mate.s) * 0.42) {
         // bots! sterretjes, iets zeggen, en terug zwemmen
         o.bumped = o.mate.bumped = true;
@@ -151,10 +262,12 @@
         o.back -= dt;
         if (o.back <= 0) { o.dir = -o.dir; o.v *= 1.3; }
         o.x -= o.dir * 30 * U * dt; // even achteruit stuiteren
-      } else o.x += o.dir * o.v * dt;
+      } else o.x += o.dir * o.v * (1 + (o.boost || 0) * 1.5) * dt;
       if (o.sayT > 0) o.sayT -= dt;
     });
-    swimmers = swimmers.filter(function (o) { return o.dir > 0 ? o.x < W + o.s * 1.2 : o.x > -o.s * 1.2; });
+    swimmers = swimmers.filter(function (o) { return o.update ? !o.done : o.dir > 0 ? o.x < W + o.s * 1.2 : o.x > -o.s * 1.2; });
+    notes.forEach(function (n) { n.age += dt; n.y += n.vy * dt; n.x += n.vx * dt; });
+    notes = notes.filter(function (n) { return n.age < 2.2; });
     stars.forEach(function (s) { s.age += dt; s.x += s.vx * dt; s.y += s.vy * dt; s.vy += 120 * U * dt; });
     stars = stars.filter(function (s) { return s.age < 0.9; });
   }
@@ -194,15 +307,36 @@
       if (!(im.complete && im.naturalWidth)) return;
       var h = (im.naturalHeight / im.naturalWidth) * o.s;
       var bob = FLOOR[o.kind] ? -Math.abs(Math.sin(o.t * (o.kind === "shrimp" ? 5 : 9))) * (o.kind === "shrimp" ? 22 : 3) * U : Math.sin(o.t * 2 + o.ph) * 7 * U;
+      if (o.hop) bob -= Math.sin(o.hop * Math.PI) * 40 * U; // geschrokken sprongetje
+      if (o.lantern) { // warm lampje
+        var lx = o.x + o.s * 0.05, ly = o.y + bob + o.s * 0.55;
+        var g = ctx.createRadialGradient(lx, ly, 0, lx, ly, o.s * 1.6);
+        g.addColorStop(0, "rgba(255,210,120,.45)");
+        g.addColorStop(1, "rgba(255,210,120,0)");
+        ctx.fillStyle = g;
+        ctx.fillRect(lx - o.s * 1.6, ly - o.s * 1.6, o.s * 3.2, o.s * 3.2);
+        ctx.fillStyle = "#ffd98a";
+        ctx.beginPath();
+        ctx.arc(lx, ly, 5 * U, 0, 6.28);
+        ctx.fill();
+      }
       ctx.save();
       ctx.globalAlpha = o.alpha;
       ctx.translate(o.x, o.y + bob);
       if (!FLOOR[o.kind] && o.dir < 0) ctx.scale(-1, 1); // de plaatjes kijken naar rechts
-      ctx.rotate(FLOOR[o.kind] ? Math.sin(o.t * 10) * 0.04 : Math.sin(o.t * 2.4 + o.ph) * 0.05);
+      ctx.rotate(FLOOR[o.kind] ? Math.sin(o.t * 10) * 0.04 : Math.sin(o.t * (o.fast ? 14 : 2.4) + o.ph) * (o.fast ? 0.12 : 0.05));
       ctx.drawImage(im, -o.s / 2, -h / 2, o.s, h);
       ctx.restore();
       if (o.say && o.sayT > 0) bubbleText(o.x, o.y + bob - h / 2 - 6, o.say);
     });
+    ctx.font = "700 " + Math.round(18 * U + 4) + "px system-ui, sans-serif";
+    ctx.textAlign = "center";
+    notes.forEach(function (n) {
+      ctx.globalAlpha = 1 - n.age / 2.2;
+      ctx.fillStyle = "#dcffd5";
+      ctx.fillText(n.c, n.x, n.y);
+    });
+    ctx.globalAlpha = 1;
     ctx.fillStyle = "#ffe36b";
     stars.forEach(function (s) {
       ctx.globalAlpha = 1 - s.age / 0.9;
@@ -224,5 +358,5 @@
     requestAnimationFrame(frame);
   }
   requestAnimationFrame(frame);
-  window.__life = { scene: scene, swimmers: function () { return swimmers; }, tick: function (n) { for (var i = 0; i < n; i++) step(0.05); draw(); } }; // voor een snelle controle
+  window.__life = { chase: chase, peek: peek, conga: conga, lantern: lantern, follow: follow, mouse: mouse, scene: scene, swimmers: function () { return swimmers; }, tick: function (n) { for (var i = 0; i < n; i++) step(0.05); draw(); } }; // voor een snelle controle
 })();
