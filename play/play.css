@@ -351,3 +351,19 @@ form button {
 .game-card .win { color: var(--green); font-weight: 800; }
 .game-card .go { margin-top: 0.4rem; align-self: flex-start; padding: 0.55rem 1.1rem; border-radius: 999px; background: var(--green); color: var(--deep); font-weight: 800; }
 .hub-note { position: relative; z-index: 1; text-align: center; color: var(--muted); margin: 0 1rem 2rem; }
+
+/* ===== nieuwe stijl (2026-10-11): geen vakjes, alles zweeft los over de zee; zachte schaduw voor de leesbaarheid ===== */
+.card { background: none; border: 0; backdrop-filter: none; padding: 0.4rem 0.2rem; }
+.card h2 { font-size: 0.85rem; letter-spacing: 0.14em; text-transform: uppercase; color: var(--green); text-shadow: 0 0 18px rgba(124, 255, 107, 0.35); }
+.card, .card p, .board li, .muted, .clock, .stats, .sub, .top h1, .hint, .says-status, label { text-shadow: 0 2px 14px rgba(0, 0, 0, 0.85); }
+.board li { border-bottom: 1px solid rgba(124, 255, 107, 0.14); }
+.board li.me { background: none; color: var(--green); }
+.split li { background: none; border: 0; }
+.game-card { background: none; border: 0; padding: 0.6rem; text-shadow: 0 2px 14px rgba(0, 0, 0, 0.85); }
+.game-card:hover { transform: translateY(-4px); }
+.game-card .art img { filter: drop-shadow(0 8px 24px rgba(0, 0, 0, 0.6)); animation: sqzbob 6s ease-in-out infinite; }
+.game-card:nth-child(2) .art img { animation-delay: -3s; }
+.game-card .go { box-shadow: 0 0 26px rgba(124, 255, 107, 0.4); }
+input { background: rgba(3, 12, 8, 0.35); border: 0; border-bottom: 2px solid rgba(124, 255, 107, 0.55); border-radius: 0; }
+@keyframes sqzbob { 0%, 100% { translate: 0 0; } 50% { translate: 0 -7px; } }
+@media (prefers-reduced-motion: reduce) { .game-card .art img { animation: none; } }

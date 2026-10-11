@@ -484,3 +484,13 @@ a:focus-visible, button:focus-visible, input:focus-visible {
   order: 5;
 }
 .play-link:hover { background: rgba(124, 255, 107, 0.12); }
+
+/* ===== nieuwe stijl (2026-10-11): geen kaders, alles zweeft los over de zee ===== */
+.perk { border: 0; padding: 0.2rem 0; text-shadow: 0 2px 14px rgba(0, 0, 0, 0.85); }
+.ca { background: none; border: 0; padding: 0.2rem 0; text-shadow: 0 2px 14px rgba(0, 0, 0, 0.85); }
+.links a { border: 0; text-shadow: 0 2px 14px rgba(0, 0, 0, 0.85); }
+.links a:hover { color: var(--pump); }
+.play-link { border: 0; background: none; padding: 0.35rem 0.4rem; text-shadow: 0 0 16px rgba(124, 255, 107, 0.35), 0 2px 12px rgba(0, 0, 0, 0.85); }
+.play-link:hover { background: none; text-decoration: underline; text-underline-offset: 4px; }
+.stats div + div { border-left: 0; }
+.stats, .line, .status { text-shadow: 0 2px 14px rgba(0, 0, 0, 0.85); }

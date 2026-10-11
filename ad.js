@@ -13,7 +13,7 @@
       var css = document.createElement("style");
       css.textContent =
         ".sqz-ad{display:flex;align-items:center;gap:.6rem;max-width:100%;box-sizing:border-box;padding:.55rem .6rem .55rem .9rem;" +
-        "border-radius:999px;background:rgba(3,12,8,.82);border:1px solid rgba(124,255,107,.28);color:#f3f7f2;" +
+        "border-radius:999px;background:rgba(3,12,8,.45);border:0;color:#f3f7f2;text-shadow:0 1px 10px rgba(0,0,0,.8);" +
         "font:600 .9rem ui-rounded,system-ui,sans-serif;backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px)}" +
         ".sqz-ad a{color:#7cff6b;text-decoration:none;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}" +
         ".sqz-ad small{opacity:.6;font-weight:500;white-space:nowrap}" +
