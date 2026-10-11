@@ -175,6 +175,9 @@ body.ready .stage-wrap { opacity: 1; transform: none; }
   border-radius: 50%;
   background: rgba(244, 251, 242, 0.93);
 }
+/* een vriendje zegt iets terug */
+.bubble.reply { background: #dcffd5; font-size: 0.85rem; max-width: min(44%, 200px); }
+.bubble.reply::after { border-color: #dcffd5 transparent transparent transparent; }
 @media (prefers-reduced-motion: reduce) {
   .bubble { transition: opacity 0.2s ease; transform: none; }
 }
@@ -432,7 +435,7 @@ body.ready .stage-wrap { opacity: 1; transform: none; }
     min-height: calc(100dvh - 5rem);
     padding-bottom: 1.5rem;
   }
-  .ad-slot { grid-column: 2; }
+  .ad-slot { grid-column: 1 / -1; } /* advertentie in het midden van de pagina */
   .stage-wrap {
     width: 100%;
     height: calc(100vh - 7rem);

@@ -44,10 +44,10 @@
       Object.assign(this.state, st);
     }
 
-    // zeg iets uit een categorie (vars = invulwoorden)
-    say(cat, vars = {}, delay = 0) {
+    // zeg iets uit een categorie (vars = invulwoorden); after = wordt even later aangeroepen als hij echt iets zei
+    say(cat, vars = {}, delay = 0, after = null) {
       if (delay > 0) {
-        setTimeout(() => this.say(cat, vars, 0), delay);
+        setTimeout(() => this.say(cat, vars, 0, after), delay);
         return;
       }
       const now = performance.now() / 1000;
@@ -58,7 +58,30 @@
       const text = this._pick(cat, { rings: this.state.rings, next: this.state.rings + 1, ...vars });
       if (!text) return false;
       this._show(text, THOUGHT.has(cat), p);
+      if (after) setTimeout(after, 2300);
       return true;
+    }
+
+    // een vriendje zegt iets terug: klein ballonnetje bij het vriendje (pos() = {x, y} in de stage, of null als hij weg is)
+    reply(text, pos) {
+      const p = pos && pos();
+      if (!text || !p) return;
+      if (!this.rel) {
+        this.rel = document.createElement("div");
+        this.rel.className = "bubble reply";
+        this.rel.setAttribute("aria-hidden", "true");
+        this.wrap.appendChild(this.rel);
+      }
+      const el = this.rel;
+      clearTimeout(this._relT);
+      el.classList.remove("show");
+      el.textContent = text;
+      const W = this.wrap.clientWidth;
+      el.style.left = Math.max(6, Math.min(p.x - 20, W - el.offsetWidth - 6)) + "px";
+      el.style.top = Math.max(4, p.y - el.offsetHeight - 30) + "px";
+      void el.offsetWidth;
+      el.classList.add("show");
+      this._relT = setTimeout(() => el.classList.remove("show"), Math.min(4500, 2200 + text.length * 50));
     }
 
     // ---------- intern ----------

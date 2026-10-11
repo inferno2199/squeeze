@@ -12,15 +12,16 @@
       if (!a || !a.url || !a.label) return;
       var css = document.createElement("style");
       css.textContent =
-        ".sqz-ad{display:flex;align-items:center;gap:.6rem;max-width:100%;box-sizing:border-box;padding:.55rem .6rem .55rem .9rem;" +
-        "border-radius:999px;background:rgba(3,12,8,.45);border:0;color:#f3f7f2;text-shadow:0 1px 10px rgba(0,0,0,.8);" +
-        "font:600 .9rem ui-rounded,system-ui,sans-serif;backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px)}" +
+        // geen balk: los zwevende tekst in het midden, met een kruisje om weg te klikken
+        ".sqz-ad{display:flex;align-items:center;justify-content:center;gap:.6rem;max-width:100%;box-sizing:border-box;padding:.4rem .5rem;" +
+        "background:none;border:0;color:#f3f7f2;text-shadow:0 1px 12px rgba(0,0,0,.95),0 0 18px rgba(0,0,0,.6);" +
+        "font:700 .95rem ui-rounded,system-ui,sans-serif}" +
         ".sqz-ad a{color:#7cff6b;text-decoration:none;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}" +
         ".sqz-ad small{opacity:.6;font-weight:500;white-space:nowrap}" +
-        ".sqz-ad button{margin-left:auto;background:none;border:0;color:#8fa596;font-size:1.05rem;cursor:pointer;padding:0 .3rem}" +
+        ".sqz-ad button{background:none;border:0;color:#a9bfb0;font-size:1.15rem;cursor:pointer;padding:0 .3rem;text-shadow:inherit}" +
         ".sqz-ad-float{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(env(safe-area-inset-bottom,0px) + 12px);" +
-        "z-index:50;width:min(92vw,460px)}" +
-        "[data-ad-slot] .sqz-ad{margin:1rem auto 0;width:min(100%,460px)}";
+        "z-index:50;width:max-content;max-width:92vw}" +
+        "[data-ad-slot] .sqz-ad{margin:1rem auto 0;width:max-content;max-width:min(100%,460px)}";
       document.head.appendChild(css);
       var box = document.createElement("div");
       box.className = "sqz-ad";

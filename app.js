@@ -431,7 +431,12 @@
   const friends = window.Friends
     ? new window.Friends(sq, {
         reducedMotion: reduced,
-        onSay: (cat, vars, delay) => talk && talk.say(cat, vars, delay),
+        onSay: (cat, vars, delay, a) => {
+          if (!talk) return;
+          const R = (window.SQUEEZE_REPLIES || {})[a && a.kind];
+          const back = R && Math.random() < 0.6 ? () => talk.reply(R[(Math.random() * R.length) | 0], () => friends.screenPos(a)) : null;
+          talk.say(cat, vars, delay, back);
+        },
       })
     : null;
 

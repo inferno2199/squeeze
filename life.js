@@ -1,0 +1,228 @@
+// life.js — wat leven in de zee op elke pagina (niet de hoofdsite, die heeft het al):
+// luchtbelletjes die opstijgen, en af en toe een vriendje (of 2-3) dat voorbij zwemt en iets zegt,
+// met elkaar praat of tegen elkaar botst. Alles achter de inhoud, nooit klikbaar.
+// Gebruik: <script src="https://squeezeocto.com/life.js" defer></script>   (data-friends="few" = minder vaak, voor de spellen)
+(function () {
+  "use strict";
+  var me = document.currentScript;
+  var FEW = me && me.getAttribute("data-friends") === "few";
+  var BASE = new URL("assets/friends/", (me && me.src) || location.href).href;
+  var reduced = window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  var cv = document.createElement("canvas");
+  cv.setAttribute("aria-hidden", "true");
+  var bg = document.querySelector(".seabg, .bg, #seabg");
+  // pagina met een vaste zee-laag: net daarboven (de inhoud ligt op laag 1); anders achter alles
+  cv.style.cssText = "position:fixed;inset:0;width:100%;height:100%;pointer-events:none;z-index:" + (bg ? 0 : -1);
+  if (bg && bg.parentNode) bg.parentNode.insertBefore(cv, bg.nextSibling);
+  else document.body.insertBefore(cv, document.body.firstChild);
+  var ctx = cv.getContext("2d");
+  var W = 0, H = 0, DPR = 1, U = 1;
+  function resize() {
+    DPR = Math.min(2, window.devicePixelRatio || 1);
+    W = window.innerWidth;
+    H = window.innerHeight;
+    cv.width = Math.round(W * DPR);
+    cv.height = Math.round(H * DPR);
+    ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+    U = Math.max(0.6, Math.min(1.1, W / 900));
+  }
+  window.addEventListener("resize", resize);
+  resize();
+
+  var rnd = function (a, b) { return a + Math.random() * (b - a); };
+  var pick = function (a) { return a[(Math.random() * a.length) | 0]; };
+  var IMG = {};
+  ["fish", "dolphin", "shark", "jelly", "whale", "crab", "lobster", "shrimp", "minnow"].forEach(function (k) {
+    var i = new Image();
+    i.src = BASE + k + ".png";
+    IMG[k] = i;
+  });
+  var SIZE = { fish: 74, dolphin: 150, shark: 175, jelly: 70, whale: 400, crab: 74, lobster: 84, shrimp: 52, minnow: 30 };
+  var SWIM = { fish: 95, dolphin: 150, shark: 80, jelly: 35, whale: 45, crab: 60, lobster: 50, shrimp: 70, minnow: 120 };
+  var FLOOR = { crab: 1, lobster: 1, shrimp: 1 };
+
+  // ---------- wat ze zeggen ----------
+  var SOLO = ["Squeeze?", "has anyone seen Squeeze? 🐙", "gm! 🐙", "just keep swimming", "blub blub", "$SQUEEZE spotted 👀", "is this the way to the Reef?", "I heard Squeeze has rings now 💍", "nice website", "hi! just passing", "where's the party?"];
+  var FLOORSAY = ["click clack", "sideways is the best way 🦀", "*snip snip*", "hop hop!"];
+  var PAIRS = [
+    ["where's Squeeze?", "napping on the chart 😴"],
+    ["did you buy $SQUEEZE?", "obviously 🐙"],
+    ["race you!", "you're on!"],
+    ["nice fins", "nice… everything"],
+    ["heard about the Ink Hunt?", "I'm looking everywhere 🖋"],
+    ["is the chart green today?", "greener than seaweed 🌿"],
+    ["Squeeze said hi", "Squeeze says hi to everyone"],
+    ["are we there yet?", "we live in the ocean, buddy"],
+  ];
+  var BUMP = [["oops!", "sorry!"], ["bonk!", "ow!"], ["watch it!", "you watch it!"], ["hey!", "my bad 😅"]];
+  var TRIO = [["follow me!", "ok!", "are we there yet?"], ["to the Reef!", "to the Reef!", "wait for me!"], ["left!", "no, right!", "I'm lost 🫠"]];
+
+  // ---------- toestand ----------
+  var bubbles = [], swimmers = [], stars = [];
+  var nextScene = rnd(6, 12);
+  var T = 0;
+
+  function addSwimmer(kind, dir, y, opts) {
+    var s = SIZE[kind] * U;
+    var o = { kind: kind, dir: dir, x: dir > 0 ? -s : W + s, y: y, s: s, v: SWIM[kind] * U * rnd(0.85, 1.15), ph: rnd(0, 6), say: null, sayT: 0, t: 0, alpha: kind === "whale" ? 0.45 : 0.95 };
+    for (var k in opts) o[k] = opts[k];
+    swimmers.push(o);
+    return o;
+  }
+  function talk(o, text, at, dur) {
+    setTimeout(function () { if (swimmers.indexOf(o) >= 0) { o.say = text; o.sayT = dur || 2.6; } }, at * 1000);
+  }
+  var SWIMMERS = ["fish", "fish", "dolphin", "shark", "jelly", "fish"];
+  function scene() {
+    var r = Math.random();
+    var midY = function () { return rnd(0.22, 0.7) * H; };
+    if (r < 0.34) { // één vriendje
+      if (Math.random() < 0.22) {
+        var k = pick(["crab", "lobster", "shrimp"]);
+        var f = addSwimmer(k, Math.random() < 0.5 ? 1 : -1, H - SIZE[k] * U * 0.55, {});
+        talk(f, pick(FLOORSAY), rnd(2, 4));
+      } else {
+        var o = addSwimmer(pick(SWIMMERS), Math.random() < 0.5 ? 1 : -1, midY(), {});
+        talk(o, pick(SOLO), (W * 0.35) / o.v);
+      }
+    } else if (r < 0.6) { // twee die praten
+      var dir = Math.random() < 0.5 ? 1 : -1, y = midY(), k1 = pick(SWIMMERS);
+      var a = addSwimmer(k1, dir, y, {});
+      var b = addSwimmer(k1 === "jelly" ? "jelly" : pick(["fish", "fish", "dolphin"]), dir, y + rnd(50, 90) * U, { v: a.v });
+      b.x -= dir * (a.s + 60 * U);
+      var p = pick(PAIRS), t0 = (W * 0.3) / a.v;
+      talk(a, p[0], t0);
+      talk(b, p[1], t0 + 2.4);
+    } else if (r < 0.8) { // twee die botsen
+      var y2 = midY(), kk = pick(["fish", "fish", "dolphin", "jelly"]);
+      var l = addSwimmer(kk, 1, y2, { bump: true });
+      var rr = addSwimmer(kk, -1, y2, { bump: true, v: l.v });
+      l.mate = rr;
+      rr.mate = l;
+    } else if (r < 0.93) { // drie achter elkaar
+      var d3 = Math.random() < 0.5 ? 1 : -1, y3 = midY(), lines = pick(TRIO);
+      for (var i = 0; i < 3; i++) {
+        var m = addSwimmer("fish", d3, y3 + Math.sin(i * 2) * 26 * U, { v: SWIM.fish * U });
+        m.x -= d3 * i * 95 * U;
+        talk(m, lines[i], (W * 0.3) / m.v + i * 2);
+      }
+    } else { // soms een walvis ver weg, of een school visjes
+      if (Math.random() < 0.5) addSwimmer("whale", Math.random() < 0.5 ? 1 : -1, rnd(0.25, 0.5) * H, {});
+      else {
+        var d5 = Math.random() < 0.5 ? 1 : -1, y5 = midY();
+        for (var j = 0; j < 9; j++) { var s5 = addSwimmer("minnow", d5, y5 + rnd(-40, 40) * U, { v: SWIM.minnow * U }); s5.x -= d5 * rnd(0, 160) * U; }
+      }
+    }
+  }
+
+  function step(dt) {
+    T += dt;
+    // belletjes
+    var want = (W * H) / (reduced ? 90000 : 30000);
+    if (bubbles.length < want && Math.random() < dt * 4) bubbles.push({ x: rnd(0, W), y: H + 10, r: rnd(1.5, 4.5) * U, vy: -rnd(18, 42) * U, ph: rnd(0, 6) });
+    for (var i = 0; i < bubbles.length; i++) {
+      var b = bubbles[i];
+      b.y += b.vy * dt;
+      b.x += Math.sin(T * 1.6 + b.ph) * 10 * U * dt;
+    }
+    bubbles = bubbles.filter(function (b) { return b.y > -10; });
+    // vriendjes
+    if (!reduced) {
+      nextScene -= dt;
+      if (nextScene <= 0 && !swimmers.length) {
+        scene();
+        nextScene = FEW ? rnd(60, 120) : rnd(22, 50);
+      }
+    }
+    swimmers.forEach(function (o) {
+      o.t += dt;
+      if (o.bump && !o.bumped && o.mate && Math.abs(o.x - o.mate.x) < (o.s + o.mate.s) * 0.42) {
+        // bots! sterretjes, iets zeggen, en terug zwemmen
+        o.bumped = o.mate.bumped = true;
+        var cx = (o.x + o.mate.x) / 2;
+        for (var k = 0; k < 8; k++) stars.push({ x: cx, y: o.y, vx: rnd(-60, 60) * U, vy: rnd(-70, 10) * U, age: 0 });
+        var line = pick(BUMP);
+        o.say = line[0]; o.sayT = 2.2;
+        talk(o.mate, line[1], 1.1, 2.2);
+        o.back = o.mate.back = 0.5;
+      }
+      if (o.back > 0) {
+        o.back -= dt;
+        if (o.back <= 0) { o.dir = -o.dir; o.v *= 1.3; }
+        o.x -= o.dir * 30 * U * dt; // even achteruit stuiteren
+      } else o.x += o.dir * o.v * dt;
+      if (o.sayT > 0) o.sayT -= dt;
+    });
+    swimmers = swimmers.filter(function (o) { return o.dir > 0 ? o.x < W + o.s * 1.2 : o.x > -o.s * 1.2; });
+    stars.forEach(function (s) { s.age += dt; s.x += s.vx * dt; s.y += s.vy * dt; s.vy += 120 * U * dt; });
+    stars = stars.filter(function (s) { return s.age < 0.9; });
+  }
+
+  function bubbleText(x, y, text) {
+    ctx.font = "700 " + Math.round(13 * U + 2) + "px 'Bricolage Grotesque', ui-rounded, system-ui, sans-serif";
+    var w = ctx.measureText(text).width + 20, h = 26 * U + 4;
+    var bx = Math.max(6, Math.min(W - w - 6, x - w / 2)), by = Math.max(6, y - h);
+    ctx.fillStyle = "rgba(244,251,242,.95)";
+    ctx.beginPath();
+    if (ctx.roundRect) ctx.roundRect(bx, by, w, h, 13);
+    else ctx.rect(bx, by, w, h);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.moveTo(x - 6, by + h - 1);
+    ctx.lineTo(x + 6, by + h - 1);
+    ctx.lineTo(x, by + h + 8);
+    ctx.fill();
+    ctx.fillStyle = "#07140c";
+    ctx.textAlign = "left";
+    ctx.textBaseline = "middle";
+    ctx.fillText(text, bx + 10, by + h / 2 + 1);
+  }
+
+  function draw() {
+    ctx.clearRect(0, 0, W, H);
+    ctx.strokeStyle = "rgba(220,255,240,.38)";
+    ctx.lineWidth = 1;
+    bubbles.forEach(function (b) {
+      ctx.beginPath();
+      ctx.arc(b.x, b.y, b.r, 0, 6.28);
+      ctx.stroke();
+    });
+    // ver weg eerst (walvis), dan de rest
+    swimmers.slice().sort(function (a, b) { return (a.kind === "whale" ? 0 : 1) - (b.kind === "whale" ? 0 : 1); }).forEach(function (o) {
+      var im = IMG[o.kind];
+      if (!(im.complete && im.naturalWidth)) return;
+      var h = (im.naturalHeight / im.naturalWidth) * o.s;
+      var bob = FLOOR[o.kind] ? -Math.abs(Math.sin(o.t * (o.kind === "shrimp" ? 5 : 9))) * (o.kind === "shrimp" ? 22 : 3) * U : Math.sin(o.t * 2 + o.ph) * 7 * U;
+      ctx.save();
+      ctx.globalAlpha = o.alpha;
+      ctx.translate(o.x, o.y + bob);
+      if (!FLOOR[o.kind] && o.dir < 0) ctx.scale(-1, 1); // de plaatjes kijken naar rechts
+      ctx.rotate(FLOOR[o.kind] ? Math.sin(o.t * 10) * 0.04 : Math.sin(o.t * 2.4 + o.ph) * 0.05);
+      ctx.drawImage(im, -o.s / 2, -h / 2, o.s, h);
+      ctx.restore();
+      if (o.say && o.sayT > 0) bubbleText(o.x, o.y + bob - h / 2 - 6, o.say);
+    });
+    ctx.fillStyle = "#ffe36b";
+    stars.forEach(function (s) {
+      ctx.globalAlpha = 1 - s.age / 0.9;
+      ctx.beginPath();
+      for (var i = 0; i < 10; i++) {
+        var a = (i / 10) * 6.283, rr = (i % 2 ? 2.5 : 6) * U;
+        ctx.lineTo(s.x + Math.cos(a) * rr, s.y + Math.sin(a) * rr);
+      }
+      ctx.fill();
+    });
+    ctx.globalAlpha = 1;
+  }
+
+  var last = performance.now();
+  function frame(now) {
+    var dt = Math.min(0.05, (now - last) / 1000);
+    last = now;
+    if (!document.hidden) { step(dt); draw(); }
+    requestAnimationFrame(frame);
+  }
+  requestAnimationFrame(frame);
+  window.__life = { scene: scene, swimmers: function () { return swimmers; }, tick: function (n) { for (var i = 0; i < n; i++) step(0.05); draw(); } }; // voor een snelle controle
+})();

@@ -166,10 +166,19 @@
         dolphin: ["f_dolphin", 1000, 1],
         shark: ["f_shark", 1600, 1],
       };
-      if (a.kind === "crab" && a.steal) return this.onSay("f_crabSteal", {}, 300);
-      if (a.kind === "jelly" && a.drift && Math.random() < 0.6) return this.onSay("f_jellyDrift", {}, 3000);
+      if (a.kind === "crab" && a.steal) return this.onSay("f_crabSteal", {}, 300, a);
+      if (a.kind === "jelly" && a.drift && Math.random() < 0.6) return this.onSay("f_jellyDrift", {}, 3000, a);
       const m = map[a.kind];
-      if (m && Math.random() < m[2]) this.onSay(m[0], {}, m[1]);
+      if (m && Math.random() < m[2]) this.onSay(m[0], {}, m[1], a);
+    }
+
+    // waar staat dit vriendje nu op het scherm (in de stage)? null als hij weg of buiten beeld is
+    screenPos(a) {
+      if (!this.active.includes(a) || !Number.isFinite(a.x) || !Number.isFinite(a.y)) return null;
+      const sq = this.sq, sc = sq._sc || 1;
+      const x = sq.w / 2 + a.x * sc, y = sq.h * 0.47 + a.y * sc;
+      if (x < 10 || x > sq.w - 10 || y < 10 || y > sq.h - 10) return null;
+      return { x, y: y - (SIZE[a.kind] || 200) * sc * 0.45 }; // net boven het vriendje
     }
 
     _seal(on) {

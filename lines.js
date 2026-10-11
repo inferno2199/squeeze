@@ -193,3 +193,14 @@ window.SQUEEZE_LINES = {
     "party at {mcap}!",
   ],
 };
+
+// wat de vriendjes terugzeggen tegen Squeeze (hoofdsite)
+window.SQUEEZE_REPLIES = {
+  fish: ["hi Squeeze! 🐟", "can't stop, gotta swim!", "blub blub", "nice rings, buddy", "late for school!"],
+  shrimp: ["hop hop!", "tiny but mighty 💪", "wheee", "don't step on me!"],
+  lobster: ["*clack clack*", "watch the claws 🦞", "snip snip", "who you calling red?"],
+  dolphin: ["eee-eee! 🐬", "race you!", "flip time!", "catch me if you can"],
+  shark: ["just passing… 🦈", "relax, I'm vegan", "nice tentacles", "don't mind me"],
+  crab: ["finders keepers! 🦀", "shiny!!", "mine now!", "you'll never catch me"],
+  jelly: ["bloop ✨", "glowing tonight", "drifting by…", "hi Squeezy"],
+};
