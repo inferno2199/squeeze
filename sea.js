@@ -37,7 +37,7 @@
       this.droughtT = on ? 1 : 0;
     }
     setCombo(n) {
-      this.combo = clamp(n / 8, 0, 1);
+      this.combo = clamp(n / 40, 0, 1);
     }
     // wolkje belletjes vanaf Squeeze (n = aantal buys)
     puff(n = 1) {

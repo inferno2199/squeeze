@@ -309,51 +309,62 @@
     }
   }
 
+  // de schat van burns op de bodem: echte plaatjes (stapeltjes goud, schatkisten, losse munten), half in het zand
+  var GOLD = img("assets/reef-gold.png"), CHEST = img("assets/reef-chest.png"), COIN = img("assets/reef-coin.png");
+  var CHEST_X = [0.24, 0.76, 0.5, 0.08, 0.92, 0.37];
+  function treasureSpot(i, chest) { // vaste, verspreide plekken langs de bodem (niet elke keer anders); verder weg = kleiner en hoger
+    if (chest) return { x: W * CHEST_X[i % CHEST_X.length], s: 1, back: 0 };
+    var u = ((i * 0.618034 + 0.31) % 1);
+    var back = ((i * 53) % 10) / 10; // 0 = vooraan, 1 = achteraan
+    return { x: W * (0.04 + u * 0.92), s: (0.55 + ((i * 37) % 10) / 20) * (1 - back * 0.35), back: back };
+  }
   function drawTreasure() {
     var L = data.live || {};
     var burned = Number(L.burned) || 0;
     var cfg = data.cfg || {};
-    var piles = clamp(Math.floor(burned / (cfg.goldStep || 1e6)), 0, 24);
+    var piles = clamp(Math.floor(burned / (cfg.goldStep || 1e6)), 0, 12);
     var chests = clamp(Math.floor(burned / (cfg.chestStep || 1e7)), 0, 6);
     if (!piles && !chests) return;
-    var base = H - 18 * U;
-    for (var i = 0; i < piles; i++) {
-      var x = W * (0.06 + ((i * 0.618) % 1) * 0.88);
-      var s = (14 + (i % 3) * 5) * U;
-      ctx.fillStyle = "#b8860b";
-      ctx.beginPath();
-      ctx.ellipse(x, base, s * 1.5, s * 0.55, 0, Math.PI, 0);
-      ctx.fill();
-      for (var k = 0; k < 5; k++) {
-        var cx2 = x + (k - 2) * s * 0.45, cy2 = base - s * 0.25 - (k % 2) * s * 0.3;
-        var g = ctx.createRadialGradient(cx2 - s * 0.1, cy2 - s * 0.1, 0, cx2, cy2, s * 0.32);
-        g.addColorStop(0, "#fff3a8");
-        g.addColorStop(1, "#d4a017");
+    var floor = H - 6 * U;
+    var items = [];
+    for (var c = 0; c < chests; c++) items.push({ im: CHEST, w: 150, i: c, chest: true });
+    for (var i = 0; i < piles; i++) items.push({ im: i % 3 === 2 ? COIN : GOLD, w: i % 3 === 2 ? 34 : 110, i: i });
+    items.forEach(function (it) { it.sp = treasureSpot(it.i, it.chest); });
+    items.sort(function (a, b) { return b.sp.back - a.sp.back; }); // achteraan eerst
+    items.forEach(function (it) {
+      if (!(it.im.complete && it.im.naturalWidth)) return;
+      var sp = it.sp;
+      var w = it.w * U * sp.s, h = (it.im.naturalHeight / it.im.naturalWidth) * w;
+      var x = sp.x, y = floor - sp.back * 34 * U - h + h * 0.08;
+      var floorY = y + h * 0.92;
+      // zachte schaduw eronder
+      var sh = ctx.createRadialGradient(x, floorY, 0, x, floorY, w * 0.6);
+      sh.addColorStop(0, "rgba(0,8,6,.55)");
+      sh.addColorStop(1, "rgba(0,8,6,0)");
+      ctx.fillStyle = sh;
+      ctx.fillRect(x - w * 0.7, floorY - w * 0.22, w * 1.4, w * 0.4);
+      ctx.drawImage(it.im, x - w / 2, y, w, h);
+      if (it.chest) { // warme gloed en af en toe een belletje uit de kist
+        var g = ctx.createRadialGradient(x, y + h * 0.35, 0, x, y + h * 0.35, w * 0.7);
+        g.addColorStop(0, "rgba(255,215,110," + (0.16 + 0.07 * Math.sin(T * 1.7 + it.i)) + ")");
+        g.addColorStop(1, "rgba(255,215,110,0)");
         ctx.fillStyle = g;
-        ctx.beginPath();
-        ctx.ellipse(cx2, cy2, s * 0.32, s * 0.2, 0, 0, 6.28);
-        ctx.fill();
+        ctx.fillRect(x - w, y - w * 0.4, w * 2, w * 1.5);
+        if (!reduced && Math.random() < 0.004) bubbleUp(x, y + h * 0.3, 2);
       }
-    }
-    for (var c = 0; c < chests; c++) {
-      var x2 = W * (0.12 + c * 0.15 + 0.04 * Math.sin(c * 3));
-      var w = 56 * U, h = 38 * U;
-      var y = base - h;
-      ctx.fillStyle = "#6b3e1f";
-      ctx.fillRect(x2 - w / 2, y, w, h);
-      ctx.fillStyle = "#8a5228";
-      ctx.beginPath();
-      ctx.ellipse(x2, y, w / 2, h * 0.32, 0, Math.PI, 0);
-      ctx.fill();
-      ctx.fillStyle = "#e0b33a";
-      ctx.fillRect(x2 - w / 2, y - 2 * U, w, 5 * U);
-      ctx.fillRect(x2 - 4 * U, y - 4 * U, 8 * U, 12 * U);
-      var glow = ctx.createRadialGradient(x2, y, 0, x2, y, w);
-      glow.addColorStop(0, "rgba(255,220,90," + (0.18 + 0.08 * Math.sin(T * 2 + c)) + ")");
-      glow.addColorStop(1, "rgba(255,220,90,0)");
-      ctx.fillStyle = glow;
-      ctx.fillRect(x2 - w, y - w, w * 2, w * 2);
-    }
+      // glinstering
+      var tw = Math.sin(T * 2.3 + it.i * 1.7);
+      if (tw > 0.93) {
+        var gx = x + Math.sin(it.i * 7.1) * w * 0.25, gy = y + h * (it.chest ? 0.32 : 0.45);
+        var k = (tw - 0.93) / 0.07;
+        ctx.strokeStyle = "rgba(255,250,215," + (0.9 * k) + ")";
+        ctx.lineWidth = 1.5 * U;
+        ctx.beginPath();
+        ctx.moveTo(gx - 7 * U * k, gy); ctx.lineTo(gx + 7 * U * k, gy);
+        ctx.moveTo(gx, gy - 7 * U * k); ctx.lineTo(gx, gy + 7 * U * k);
+        ctx.stroke();
+      }
+    });
   }
 
   function drawEgg(e, dt) {
@@ -398,10 +409,27 @@
   }
 
   var FILTER_OK = "filter" in ctx;
+  // elk plaatje één keer verkleinen (max 256px) en kleuren: tekenen gaat dan veel lichter (ook met 150 grote NFT's)
+  var SPR = {};
+  function sprite(f) {
+    var src = f.img;
+    if (!(src.complete && src.naturalWidth)) return null;
+    var key = src.src + "|" + (f.hue || 0);
+    if (SPR[key]) return SPR[key];
+    var k = Math.min(1, 256 / Math.max(src.naturalWidth, src.naturalHeight));
+    var c = document.createElement("canvas");
+    c.width = Math.max(1, Math.round(src.naturalWidth * k));
+    c.height = Math.max(1, Math.round(src.naturalHeight * k));
+    var g = c.getContext("2d");
+    if (f.hue && FILTER_OK) g.filter = "hue-rotate(" + f.hue + "deg)";
+    g.drawImage(src, 0, 0, c.width, c.height);
+    SPR[key] = c;
+    return c;
+  }
   function drawFish(f) {
     var base = SIZE[f.size] * U * f.d;
-    var im = f.img;
-    var ready = im.complete && im.naturalWidth;
+    var im = sprite(f);
+    var ready = !!im;
     var bob = Math.sin(T * 1.6 * f.sp + f.ph);
     var push = Math.sin(T * 2.4 * f.sp + f.ph); // tentakels duwen: samenknijpen en uitrekken
     var sx = 1 + push * 0.05, sy = 1 - push * 0.07;
@@ -419,15 +447,9 @@
     var fk = f.faceK < 0 ? Math.min(-0.35, f.faceK) : Math.max(0.35, f.faceK); // nooit plat als een plankje
     ctx.scale(fk * sx * scale, sy * scale);
     var w = base, h = base;
-    if (ready) h = (im.naturalHeight / im.naturalWidth) * w;
+    if (ready) h = (im.height / im.width) * w;
     var flash = A === "flash" && k < 1.2;
-    if (FILTER_OK) {
-      var fl = [];
-      if (f.hue) fl.push("hue-rotate(" + f.hue + "deg)");
-      if (flash) fl.push("hue-rotate(" + Math.round(k * 900) + "deg) saturate(3) brightness(1.2)");
-      if (night > 0.05) fl.push("brightness(" + (1 + 0.25 * night).toFixed(2) + ")");
-      ctx.filter = fl.length ? fl.join(" ") : "none";
-    }
+    if (FILTER_OK && flash) ctx.filter = "hue-rotate(" + Math.round(k * 900) + "deg) saturate(3) brightness(1.2)"; // alleen tijdens het flitsen
     if (f.cut) {
       if (ready) ctx.drawImage(im, -w / 2, -h / 2, w, h);
     } else {
@@ -438,8 +460,8 @@
       ctx.arc(0, 0, r, 0, 6.28);
       ctx.clip();
       if (ready) {
-        var s2 = Math.max((r * 2) / im.naturalWidth, (r * 2) / im.naturalHeight);
-        ctx.drawImage(im, -im.naturalWidth * s2 / 2, -im.naturalHeight * s2 / 2, im.naturalWidth * s2, im.naturalHeight * s2);
+        var s2 = Math.max((r * 2) / im.width, (r * 2) / im.height);
+        ctx.drawImage(im, -im.width * s2 / 2, -im.height * s2 / 2, im.width * s2, im.height * s2);
       }
       ctx.restore();
       ctx.filter = "none";
@@ -453,7 +475,7 @@
       ctx.ellipse(-r * 0.42, -r * 0.5, r * 0.22, r * 0.12, -0.6, 0, 6.28);
       ctx.fill();
     }
-    if (FILTER_OK) ctx.filter = "none";
+    if (FILTER_OK && flash) ctx.filter = "none";
     if (flash && !FILTER_OK) { // reserve zonder filters: een gekleurde gloed
       ctx.globalCompositeOperation = "lighter";
       ctx.fillStyle = "hsla(" + Math.round(k * 900) % 360 + ",100%,60%,.35)";
@@ -504,14 +526,14 @@
       var tx = tgt ? tgt.x : f.tx, ty = tgt ? tgt.y : f.ty;
       if (tgt && td < 18 * U * f.d + 10) { tgt.eaten = true; bubbleUp(f.x, f.y - 10 * U, 3); }
       var dx = tx - f.x, dy = ty - f.y, dist = Math.hypot(dx, dy) || 1;
-      var speed = (tgt ? 70 : 26) * U * f.sp * (reduced ? 0.5 : 1) * (0.7 + 0.3 * f.d);
+      var speed = (tgt ? 130 : 58) * U * f.sp * (reduced ? 0.5 : 1) * (0.7 + 0.3 * f.d);
       if (!tgt && dist < 30 * U) {
         f.wait -= dt;
         if (f.wait <= 0) pickTarget(f);
       }
       var ax = (dx / dist) * speed, ay = (dy / dist) * speed;
-      f.vx = lerp(f.vx, ax / 10, dt * 1.2);
-      f.vy = lerp(f.vy, ay / 10, dt * 1.2);
+      f.vx = lerp(f.vx, ax / 10, Math.min(1, dt * 2));
+      f.vy = lerp(f.vy, ay / 10, Math.min(1, dt * 2));
       f.x += f.vx * dt * 10;
       f.y += f.vy * dt * 10;
       if (Math.abs(f.vx) > 1.4) f.face = f.vx > 0 ? -1 : 1; // pas omdraaien als hij echt de andere kant op zwemt

@@ -330,16 +330,15 @@
     const p = snap.price;
     const delta = s.prevPrice ? (p / s.prevPrice - 1) * 100 : 0;
     const m5 = isFinite(snap.m5) ? snap.m5 : delta;
-    const tot = (snap.buysM5 || 0) + (snap.sellsM5 || 0);
-    const pressure = tot ? snap.buysM5 / tot : 0.5;
     const newBuys =
       s.prevBuysH1 != null && snap.buysH1 != null ? Math.max(0, snap.buysH1 - s.prevBuysH1) : 0;
     const dVol = s.prevVolH1 != null && snap.volH1 != null ? snap.volH1 - s.prevVolH1 : 0;
 
-    // combo + inkt
-    const up = delta > 0.05 || (delta > -0.05 && newBuys > 0 && pressure > 0.55);
-    if (up) s.combo = Math.min(s.combo + 1, 99);
-    else if (delta < -0.3) s.combo = 0;
+    // combo = buys op rij (sinds de laatste echte dip): elke nieuwe buy +1, terug naar 0 als de prijs meer dan 0,3% zakt
+    const buysIn = Math.max(newBuys, s.prevBuysM5 != null && snap.buysM5 != null ? Math.max(0, snap.buysM5 - s.prevBuysM5) : 0);
+    if (delta < -0.3) s.combo = 0;
+    else if (buysIn > 0) s.combo = Math.min(s.combo + buysIn, 999);
+    // inkt
     if (dVol >= rules.inkUsd && newBuys > 0 && delta >= 0) ev.push("ink");
     if (dVol >= rules.whaleUsd && newBuys > 0) ev.push("whale");
 
@@ -446,7 +445,7 @@
     sq.setPrice(s.priceInput);
     sq.setCombo(s.combo);
     setCombo(s.combo);
-    if (s.combo >= 10 && lastCombo < 10 && !instant) sq.euphoria(3);
+    if (s.combo >= 50 && lastCombo < 50 && !instant) sq.euphoria(3);
     lastCombo = s.combo;
     sq.setDrought(!!s.drought);
     if (friends) {
@@ -468,9 +467,9 @@
         if (events.includes("wake")) talk.say("wake", {}, 500);
         if (!talkPrev.drought && s.drought) talk.say("sleep", {}, 800);
         const c = s.combo || 0;
-        if (c >= 10 && talkPrev.combo < 10) talk.say("combo10", { combo: c });
-        else if (c >= 5 && talkPrev.combo < 5) talk.say("combo5", { combo: c });
-        else if (c >= 3 && talkPrev.combo < 3) talk.say("combo3", { combo: c });
+        if (c >= 50 && talkPrev.combo < 50) talk.say("combo10", { combo: c });
+        else if (c >= 25 && talkPrev.combo < 25) talk.say("combo5", { combo: c });
+        else if (c >= 10 && talkPrev.combo < 10) talk.say("combo3", { combo: c });
         const pi = s.priceInput || 0;
         if (pi >= 0.5 && talkPrev.price < 0.5) talk.say("pump");
         if (pi <= -0.5 && talkPrev.price > -0.5) talk.say("dump");
@@ -783,7 +782,7 @@
         apply(s, ["ath"]);
       }
       if (act === "ink") apply(s, ["ink"]);
-      if (act === "combo") { s.combo++; s.lastBuys = 2; apply(s, ["buy"]); }
+      if (act === "combo") { s.combo += 5; s.lastBuys = 5; apply(s, ["buy"]); }
       if (act === "buy") { s.lastBuys = 3; apply(s, ["buy"]); }
       if (act.startsWith("f-") && friends) {
         const kind = act.slice(2);

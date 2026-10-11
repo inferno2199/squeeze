@@ -498,7 +498,7 @@
       this.mood.target = clamp(m, 0, 1);
     }
     setCombo(n) {
-      this.frenzy.target = clamp(n / 6, 0, 1);
+      this.frenzy.target = clamp(n / 30, 0, 1); // combo = buys op rij
     }
     setRings(n) {
       this.rings = Math.max(0, n | 0);

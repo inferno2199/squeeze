@@ -61,7 +61,7 @@
         if (Math.random() < 0.5) this.try("shark", 360);
         else if (Math.random() < 0.6) this.try("crab", 300, { steal: true });
       }
-      if (p.combo < 5 && combo >= 5) this.try("minnow", 180);
+      if (p.combo < 25 && combo >= 25) this.try("minnow", 180);
       if (!p.drought && drought) this._seal(true);
       if (p.drought && !drought) this._seal(false);
       this.prev = { price: priceInput, combo, drought };
