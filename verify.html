@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>Verify your Squeeze ID</title>
+  <meta name="description" content="Prove your wallet is yours with one free signature. No transaction, nothing leaves your wallet." />
+  <meta name="theme-color" content="#030604" />
+  <meta name="robots" content="noindex" />
+  <link rel="icon" href="assets/icon.png" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="play/play.css" />
+  <style>
+    /* geen vakjes: alles zweeft los over de zee, met een zachte gloed voor de leesbaarheid */
+    .vwrap { position: relative; z-index: 1; min-height: 100vh; display: grid; place-items: center; padding: 24px 16px 48px; box-sizing: border-box; text-align: center; }
+    .vin { width: min(560px, 100%); }
+    .kicker { color: var(--green); font-weight: 800; letter-spacing: .14em; font-size: .85rem; text-shadow: 0 0 18px rgba(124,255,107,.35); }
+    .vin h1 { margin: .3rem 0 .6rem; font-size: clamp(2rem, 7vw, 3rem); font-weight: 800; letter-spacing: -.02em; text-shadow: 0 2px 24px rgba(0,0,0,.6); }
+    .lead { color: #dfeee2; font-size: 1.05rem; line-height: 1.5; text-shadow: 0 1px 12px rgba(0,0,0,.8); margin: 0 auto 1.4rem; max-width: 30em; }
+    .wal { font-family: ui-monospace, Menlo, monospace; color: var(--green); font-size: 1.1rem; margin: 0 0 1.4rem; text-shadow: 0 0 14px rgba(124,255,107,.35); min-height: 1.4em; }
+    .go { font: 800 1.15rem var(--font); border: 0; border-radius: 999px; padding: 1rem 2.2rem; cursor: pointer; background: var(--green); color: #031006; box-shadow: 0 0 34px rgba(124,255,107,.45); }
+    .go:disabled { opacity: .45; cursor: default; box-shadow: none; }
+    .msg { margin: 1.2rem auto 0; max-width: 30em; font-weight: 700; min-height: 1.5em; text-shadow: 0 1px 12px rgba(0,0,0,.8); }
+    .msg.err { color: #ff9a8a; } .msg.ok { color: var(--green); }
+    .small { color: var(--muted); font-size: .9rem; line-height: 1.5; margin: 1.6rem auto 0; max-width: 32em; text-shadow: 0 1px 10px rgba(0,0,0,.8); }
+    .safe { color: #cfe9d2; font-size: .9rem; margin-top: .8rem; text-shadow: 0 1px 10px rgba(0,0,0,.8); }
+  </style>
+</head>
+<body>
+  <div class="seabg" aria-hidden="true"></div>
+  <main class="vwrap">
+    <div class="vin">
+      <div class="kicker">SQUEEZE ID</div>
+      <h1>Verify your wallet</h1>
+      <p class="lead">Connect the wallet that's on your Squeeze ID and sign one message. It's free: no transaction, nothing leaves your wallet.</p>
+      <p class="wal" id="wal">Loading…</p>
+      <button class="go" id="go" disabled>Connect & sign</button>
+      <p class="msg" id="msg" aria-live="polite"></p>
+      <p class="safe">🔒 Never share your private key or seed phrase. Nobody from Squeeze will ever ask for it.</p>
+      <p class="small">Wallet can't sign messages (for example a Pump.fun or Fomo wallet)? Go back to Telegram and tap <b>💸 Verify: tiny transfer</b>.</p>
+    </div>
+  </main>
+
+  <script src="config.js"></script>
+  <script src="https://generator.squeezeocto.com/wallet.js"></script>
+  <script>
+  (function () {
+    var C = window.SQUEEZE_CONFIG || {};
+    var API = (C.WORKER_URL || "https://squeeze-state.inferno2199.workers.dev").replace(/\/$/, "") + "/tg/idverify";
+    var code = new URLSearchParams(location.search).get("code") || new URLSearchParams(location.search).get("idv");
+    var $ = function (id) { return document.getElementById(id); };
+    var short = function (w) { return w.slice(0, 4) + "…" + w.slice(-4); };
+    var say = function (t, kind) { $("msg").textContent = t || ""; $("msg").className = "msg" + (kind ? " " + kind : ""); };
+    var info = null;
+    if (!code) { $("wal").textContent = ""; say("Open this page from your Squeeze ID in Telegram (tap ✍️ Verify).", "err"); return; }
+    fetch(API + "?code=" + encodeURIComponent(code)).then(function (r) { return r.json(); }).then(function (d) {
+      if (!d || d.error) throw new Error((d && d.error) || "This link expired.");
+      info = d;
+      $("wal").textContent = short(d.wallet);
+      $("go").disabled = false;
+    }).catch(function (e) { $("wal").textContent = ""; say(e.message, "err"); });
+    $("go").onclick = async function () {
+      if (!info) return;
+      say("");
+      $("go").disabled = true;
+      try {
+        if (!window.SqzWallet) throw new Error("Wallet tools didn't load. Refresh the page.");
+        var w = await window.SqzWallet.pick();
+        if (w.address !== info.wallet) throw new Error("Connect the wallet that's on your Squeeze ID (" + short(info.wallet) + ").");
+        var sig = await w.signMessage(info.message);
+        var r = await fetch(API, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ code: code, wallet: w.address, signature: sig }) });
+        var d = await r.json();
+        if (!r.ok || !d.ok) throw new Error(d.error || "That didn't work.");
+        say("✅ Verified! Go back to Telegram: your Squeeze ID shows the ✅ now.", "ok");
+        $("go").textContent = "Done";
+      } catch (e) {
+        say(e.message || "Something went wrong.", "err");
+        $("go").disabled = false;
+      }
+    };
+  })();
+  </script>
+</body>
+</html>
