@@ -35,13 +35,13 @@
   var rnd = function (a, b) { return a + Math.random() * (b - a); };
   var pick = function (a) { return a[(Math.random() * a.length) | 0]; };
   var IMG = {};
-  ["fish", "dolphin", "shark", "jelly", "whale", "crab", "lobster", "shrimp", "minnow"].forEach(function (k) {
+  ["fish", "dolphin", "shark", "jelly", "whale", "crab", "lobster", "shrimp", "minnow", "seal"].forEach(function (k) {
     var i = new Image();
     i.src = BASE + k + ".png";
     IMG[k] = i;
   });
-  var SIZE = { fish: 74, dolphin: 150, shark: 175, jelly: 70, whale: 400, crab: 74, lobster: 84, shrimp: 52, minnow: 30 };
-  var SWIM = { fish: 95, dolphin: 150, shark: 80, jelly: 35, whale: 45, crab: 60, lobster: 50, shrimp: 70, minnow: 120 };
+  var SIZE = { fish: 74, dolphin: 150, shark: 175, jelly: 70, whale: 400, crab: 74, lobster: 84, shrimp: 52, minnow: 30, seal: 130 };
+  var SWIM = { fish: 95, dolphin: 150, shark: 80, jelly: 35, whale: 45, crab: 60, lobster: 50, shrimp: 70, minnow: 120, seal: 90 };
   var FLOOR = { crab: 1, lobster: 1, shrimp: 1 };
 
   // ---------- wat ze zeggen ----------
@@ -87,7 +87,7 @@
   function nightTime() { var h = new Date().getHours(); return h >= 20 || h < 6; }
   function scene() {
     var midY = function () { return rnd(0.22, 0.7) * H; };
-    var opts = [["solo", 22], ["pair", 15], ["bump", 12], ["trio", 7], ["chase", 10], ["peek", 8], ["conga", 7], ["big", 5], ["pinch", 8], ["boxer", 7], ["legday", 6]];
+    var opts = [["solo", 22], ["pair", 15], ["bump", 12], ["trio", 7], ["chase", 10], ["peek", 8], ["conga", 7], ["big", 5], ["pinch", 8], ["boxer", 7], ["legday", 6], ["juggle", 7], ["approve", 7], ["lazy", 6]];
     if (nightTime()) opts.push(["lantern", 9]);
     if (performance.now() - mouse.at < 8000) opts.push(["mouse", 8]);
     // afwisselen: de laatste 6 scènes (ook op andere pagina's van de site) komen niet meteen terug
@@ -104,6 +104,9 @@
     if (kind === "pinch") return pinch();
     if (kind === "boxer") return boxer();
     if (kind === "legday") return legday();
+    if (kind === "juggle") return juggle(midY());
+    if (kind === "approve") return approve(midY());
+    if (kind === "lazy") return lazy(midY());
     if (kind === "conga") return conga(midY());
     if (kind === "lantern") return lantern();
     if (kind === "mouse") return follow();
@@ -270,6 +273,103 @@
       o.x += o.fly.vx * dt; o.y += o.fly.vy * dt; o.fly.vy += 160 * U * dt;
       o.spin = (o.spin || 0) + dt * 14;
       return o.x > -o.s * 2 && o.x < W + o.s * 2 && o.y > -o.s * 2;
+    };
+  }
+  // 🐬🦐🐬 drie dolfijnen gooien een garnaaltje met hun neus naar elkaar
+  function juggle(y) {
+    var D = Math.random() < 0.5 ? 1 : -1, ds = [], gap = SIZE.dolphin * U * 1.25;
+    for (var i = 0; i < 3; i++) {
+      var d = addSwimmer("dolphin", D, y + (i === 1 ? 26 : 0) * U, { v: 70 * U });
+      d.x -= D * i * gap;
+      ds.push(d);
+    }
+    var g = addSwimmer("shrimp", D, y, { still: true });
+    var order = [0, 1, 2, 1], step = 0, t = 0, DUR = 0.95;
+    var nose = function (d) { return { x: d.x + d.dir * d.s * 0.44, y: d.y - d.s * 0.1 }; };
+    var CATCH = ["got it!", "mine!", "catch! 🐬", "over to you!", "yeet!"];
+    var SHRIMP = ["wheeee! 🦐", "put me down!!", "best day ever!", "I'm gonna be sick 🤢", "again! again!"];
+    talk(ds[0], "wanna play catch? 🐬", 1.2, 2.2);
+    g.update = function (o, dt) {
+      var alive = ds.filter(function (d) { return swimmers.indexOf(d) >= 0; });
+      if (!alive.length) return false;
+      if (alive.length < 3) { // de eerste is al weg: het garnaaltje rijdt mee op de neus van de laatste
+        var n = nose(alive[alive.length - 1]);
+        o.x = n.x; o.y = n.y - o.s * 0.3; o.spin = 0;
+        return true;
+      }
+      t += dt;
+      if (t >= DUR) { // gevangen: knikje, en meteen door naar de volgende
+        t -= DUR;
+        step++;
+        var catcher = ds[order[step % order.length]];
+        catcher.hop = 0.5;
+        if (step % 3 === 1) { catcher.say = pick(CATCH); catcher.sayT = 1.4; }
+        if (step % 4 === 2) { o.say = pick(SHRIMP); o.sayT = 1.6; }
+      }
+      var a = nose(ds[order[step % order.length]]), b = nose(ds[order[(step + 1) % order.length]]), k = t / DUR;
+      o.x = a.x + (b.x - a.x) * k;
+      o.y = a.y + (b.y - a.y) * k - Math.sin(k * Math.PI) * 95 * U - o.s * 0.3;
+      o.spin = (o.spin || 0) + dt * 9;
+      return true;
+    };
+  }
+  // 🦭✅ seal of approval: stopt, bekijkt de site, en keurt hem goed
+  function approve(y) {
+    var D = Math.random() < 0.5 ? 1 : -1, stopX = W * rnd(0.35, 0.65), phase = 0, t0 = 0;
+    var o = addSwimmer("seal", D, y, {});
+    o.update = function (o, dt) {
+      if (phase === 0) {
+        o.x += o.dir * o.v * dt;
+        if (D > 0 ? o.x >= stopX : o.x <= stopX) { phase = 1; t0 = o.t; o.say = "hmm… 🧐"; o.sayT = 1.8; }
+        return true;
+      }
+      var k = o.t - t0;
+      if (phase === 1 && k > 2.2) { phase = 2; o.hop = 0.6; o.say = "this site has my seal of approval ✅🦭"; o.sayT = 3.4; }
+      if (phase === 2 && k > 5.8) { phase = 3; }
+      if (phase === 3) {
+        o.x += o.dir * o.v * dt;
+        return o.dir > 0 ? o.x < W + o.s : o.x > -o.s;
+      }
+      return true;
+    };
+  }
+  // 😴 de luie zeehond: drijft op zijn rug voorbij; een visje probeert hem wakker te maken
+  function lazy(y) {
+    var D = Math.random() < 0.5 ? 1 : -1, phase = 0;
+    var o = addSwimmer("seal", D, y, { v: 28 * U, flipY: true });
+    var f = null, zT = 0;
+    o.update = function (o, dt) {
+      o.x += o.dir * o.v * dt;
+      zT -= dt;
+      if (zT <= 0 && phase !== 2) { zT = 1.1; notes.push({ x: o.x + o.dir * o.s * 0.3, y: o.y - o.s * 0.3, vy: -30 * U, vx: o.dir * 8 * U, age: 0, c: "z" }); }
+      if (phase === 0 && (D > 0 ? o.x > W * 0.38 : o.x < W * 0.62)) { // een visje komt eraan
+        phase = 1;
+        f = addSwimmer("fish", -D, o.y - o.s * 0.15, { v: 0 });
+        f.x = D > 0 ? W + f.s : -f.s;
+        f.update = function (fo, dt) {
+          if (phase === 1) {
+            var tx = o.x + D * (o.s * 0.5 + fo.s * 0.6);
+            fo.x += (tx > fo.x ? 1 : -1) * Math.min(Math.abs(tx - fo.x), 130 * U * dt);
+            if (Math.abs(tx - fo.x) < 1) {
+              phase = 2; fo.t0 = fo.t;
+              fo.say = pick(["hey… you ok?", "wake up! 👋", "helloooo?"]); fo.sayT = 1.8;
+            }
+            return true;
+          }
+          if (phase === 2) {
+            fo.x = o.x + D * (o.s * 0.5 + fo.s * 0.6);
+            var k = fo.t - fo.t0;
+            if (k > 0.6 && k < 0.7) o.hop = 0.35; // aangetikt
+            if (k > 2.1 && !o.said) { o.said = 1; o.say = "5 more minutes… 😴"; o.sayT = 2.6; }
+            if (k > 5) { phase = 3; fo.say = "ok then 🤷"; fo.sayT = 1.8; fo.v = 120 * U; }
+            return true;
+          }
+          fo.x += fo.dir * fo.v * dt;
+          return fo.dir > 0 ? fo.x < W + fo.s : fo.x > -fo.s;
+        };
+      }
+      if (phase === 2) return true; // blijft drijven terwijl het visje praat
+      return o.dir > 0 ? o.x < W + o.s : o.x > -o.s;
     };
   }
   // 🏋️ leg day: squats op de bodem
@@ -479,6 +579,7 @@
       if (!FLOOR[o.kind] && o.dir < 0) ctx.scale(-1, 1); // de plaatjes kijken naar rechts
       ctx.rotate((o.spin || 0) + (FLOOR[o.kind] ? Math.sin(o.t * 10) * 0.04 : Math.sin(o.t * (o.fast ? 14 : 2.4) + o.ph) * (o.fast ? 0.12 : 0.05)));
       if (o.squat) ctx.scale(1, 1 - Math.abs(Math.sin(o.t * 3)) * 0.18); // door de knieën
+      if (o.flipY) ctx.scale(1, -1); // op zijn rug
       ctx.drawImage(im, -o.s / 2, -h / 2, o.s, h);
       ctx.restore();
       if (o.say && o.sayT > 0) bubbleText(o.x, o.y + bob - h / 2 - 6, o.say);
@@ -512,5 +613,5 @@
     requestAnimationFrame(frame);
   }
   requestAnimationFrame(frame);
-  window.__life = { chase: chase, pinch: pinch, boxer: boxer, legday: legday, peek: peek, conga: conga, lantern: lantern, follow: follow, mouse: mouse, scene: scene, swimmers: function () { return swimmers; }, tick: function (n) { for (var i = 0; i < n; i++) step(0.05); draw(); } }; // voor een snelle controle
+  window.__life = { chase: chase, pinch: pinch, boxer: boxer, legday: legday, juggle: juggle, approve: approve, lazy: lazy, peek: peek, conga: conga, lantern: lantern, follow: follow, mouse: mouse, scene: scene, swimmers: function () { return swimmers; }, tick: function (n) { for (var i = 0; i < n; i++) step(0.05); draw(); } }; // voor een snelle controle
 })();
