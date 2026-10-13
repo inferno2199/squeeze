@@ -126,7 +126,7 @@
     for (var i = 0; i < n; i++) {
       var cut = i % 7 !== 3;
       nfts.push({ id: "demo" + i, name: names[i % names.length] + (i >= names.length ? " " + (1 + ((i / names.length) | 0)) : ""), num: String(i + 1),
-        img: cut ? "assets/reef-demo.png" : "assets/squeeze_ref.jpg", cut: cut ? "assets/reef-demo.png" : null, size: i === 0 ? 7 : (i * 37) % 7, hue: cut ? (i * 47) % 360 : 0 });
+        img: cut ? "assets/reef-demo.png" : "assets/squeeze_ref.jpg", cut: cut ? "assets/reef-demo.png" : null, size: i === 0 ? 7 : (i * 37) % 7, hue: cut ? (i * 47) % 360 : 0, cit: i % 3 === 0 ? i + 1 : 0 });
     }
     nfts.push({ id: "demoegg", name: "Fresh egg", num: String(n + 1), img: "assets/reef-demo.png", cut: "assets/reef-demo.png", size: 2, egg: { taps: 3, need: 10, hatchAt: Date.now() + 864e5 } });
     var m = Q.get("mood") || "green";
@@ -200,7 +200,7 @@
   var cardTimer = null;
   function showCard(n) {
     $("cname").textContent = n.name || "Squeeze";
-    $("cnum").textContent = n.num ? "# " + n.num : "";
+    $("cnum").textContent = (n.num ? "# " + n.num : "") + (n.cit > 0 ? (n.num ? " · " : "") + "🏙 Citizen #" + n.cit : "");
     var link = $("clink");
     if (DEMO) { link.href = "#"; link.textContent = "View this NFT ↗ (demo)"; }
     else { link.href = "https://magiceden.io/item-details/" + encodeURIComponent(n.id); link.textContent = "View this NFT ↗"; }
@@ -450,6 +450,17 @@
     var w = base, h = base;
     if (ready) h = (im.height / im.width) * w;
     var flash = A === "flash" && k < 1.2;
+    // Citizen of Octopolis (de eerste 500 NFT's): een zachte groene gloed achter de octopus
+    if (f.n && f.n.cit > 0) {
+      var gr = base * (0.5 + 0.03 * Math.sin(T * 2 + f.ph));
+      var glow = ctx.createRadialGradient(0, 0, gr * 0.2, 0, 0, gr);
+      glow.addColorStop(0, "rgba(124,255,107,.30)");
+      glow.addColorStop(1, "rgba(124,255,107,0)");
+      ctx.fillStyle = glow;
+      ctx.beginPath();
+      ctx.arc(0, 0, gr, 0, 6.28);
+      ctx.fill();
+    }
     if (FILTER_OK && flash) ctx.filter = "hue-rotate(" + Math.round(k * 900) + "deg) saturate(3) brightness(1.2)"; // alleen tijdens het flitsen
     if (f.cut) {
       if (ready) ctx.drawImage(im, -w / 2, -h / 2, w, h);
@@ -477,6 +488,24 @@
       ctx.fill();
     }
     if (FILTER_OK && flash) ctx.filter = "none";
+    // Citizen: klein gouden kroontje boven het hoofd
+    if (f.n && f.n.cit > 0) {
+      var cw = base * 0.16, cy = -h * 0.5 - cw * 0.15;
+      ctx.fillStyle = "#ffd34d";
+      ctx.strokeStyle = "rgba(90,60,0,.55)";
+      ctx.lineWidth = 1 * U;
+      ctx.beginPath();
+      ctx.moveTo(-cw, cy);
+      ctx.lineTo(-cw, cy - cw * 0.7);
+      ctx.lineTo(-cw * 0.5, cy - cw * 0.3);
+      ctx.lineTo(0, cy - cw * 0.95);
+      ctx.lineTo(cw * 0.5, cy - cw * 0.3);
+      ctx.lineTo(cw, cy - cw * 0.7);
+      ctx.lineTo(cw, cy);
+      ctx.closePath();
+      ctx.fill();
+      ctx.stroke();
+    }
     if (flash && !FILTER_OK) { // reserve zonder filters: een gekleurde gloed
       ctx.globalCompositeOperation = "lighter";
       ctx.fillStyle = "hsla(" + Math.round(k * 900) % 360 + ",100%,60%,.35)";
