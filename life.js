@@ -87,14 +87,23 @@
   function nightTime() { var h = new Date().getHours(); return h >= 20 || h < 6; }
   function scene() {
     var midY = function () { return rnd(0.22, 0.7) * H; };
-    var opts = [["solo", 22], ["pair", 15], ["bump", 12], ["trio", 7], ["chase", 10], ["peek", 8], ["conga", 7], ["big", 5], ["pinch", 8]];
+    var opts = [["solo", 22], ["pair", 15], ["bump", 12], ["trio", 7], ["chase", 10], ["peek", 8], ["conga", 7], ["big", 5], ["pinch", 8], ["boxer", 7], ["legday", 6]];
     if (nightTime()) opts.push(["lantern", 9]);
     if (performance.now() - mouse.at < 8000) opts.push(["mouse", 8]);
+    // afwisselen: de laatste 6 scènes (ook op andere pagina's van de site) komen niet meteen terug
+    var recent = [];
+    try { recent = JSON.parse(sessionStorage.getItem("sqz-life-recent") || "[]"); } catch (e) {}
+    var fresh = opts.filter(function (o) { return recent.indexOf(o[0]) < 0; });
+    if (fresh.length) opts = fresh;
     var tot = opts.reduce(function (a, o) { return a + o[1]; }, 0), roll = Math.random() * tot, kind = opts[0][0];
     for (var q = 0; q < opts.length; q++) { roll -= opts[q][1]; if (roll <= 0) { kind = opts[q][0]; break; } }
+    recent.push(kind);
+    try { sessionStorage.setItem("sqz-life-recent", JSON.stringify(recent.slice(-6))); } catch (e) {}
     if (kind === "chase") return chase(midY());
     if (kind === "peek") return peek();
     if (kind === "pinch") return pinch();
+    if (kind === "boxer") return boxer();
+    if (kind === "legday") return legday();
     if (kind === "conga") return conga(midY());
     if (kind === "lantern") return lantern();
     if (kind === "mouse") return follow();
@@ -211,6 +220,76 @@
         o.y -= 55 * U * dt;
         o.fast = true;
         return o.dir > 0 ? o.x < W + o.s * 1.5 : o.x > -o.s * 1.5;
+      }
+      return true;
+    };
+  }
+  // garnaal voor de garnaal-scènes (o.still = staat stil, springt dan niet)
+  function shrimpTo(D) {
+    return addSwimmer("shrimp", D, H - SIZE.shrimp * U * 0.55, {});
+  }
+  // 🥊 de bokskampioen: een vis pest het garnaaltje… BONK!
+  function boxer() {
+    var D = Math.random() < 0.5 ? 1 : -1, stopX = D > 0 ? W * rnd(0.3, 0.42) : W * rnd(0.58, 0.7);
+    var g = shrimpTo(D);
+    var f = addSwimmer("fish", -D, g.y - 26 * U, { v: 0 });
+    f.x = D > 0 ? W + f.s : -f.s;
+    var phase = 0, t0 = 0;
+    g.update = function (o, dt) {
+      if (phase === 0) { // naar zijn plekje lopen
+        o.x += o.dir * o.v * dt;
+        if (D > 0 ? o.x >= stopX : o.x <= stopX) { o.x = stopX; phase = 1; o.still = true; }
+        return true;
+      }
+      if (phase === 1) { // de vis komt eraan en stopt vlak voor hem
+        var tx = o.x + D * (o.s * 0.5 + f.s * 0.55);
+        f.x += (tx > f.x ? 1 : -1) * Math.min(Math.abs(tx - f.x), 150 * U * dt);
+        if (Math.abs(tx - f.x) < 1) { phase = 2; t0 = o.t; f.say = pick(["haha, tiny shrimp!", "aww, look at the little guy 🤭", "hey, shrimpy!"]); f.sayT = 2; }
+        return true;
+      }
+      var k = o.t - t0;
+      if (phase === 2 && k > 2) { o.say = "…"; o.sayT = 1; phase = 3; }
+      if (phase === 3 && k > 3.1) { // BONK
+        phase = 4;
+        o.x += D * 14 * U;
+        for (var i = 0; i < 12; i++) stars.push({ x: f.x - D * f.s * 0.3, y: f.y, vx: rnd(-90, 90) * U, vy: rnd(-110, 10) * U, age: 0 });
+        f.say = "BONK! 💥"; f.sayT = 1.2;
+        f.fly = { vx: D * 520 * U, vy: -260 * U };
+      }
+      if (phase === 4 && k > 3.25 && (D > 0 ? o.x > stopX : o.x < stopX)) o.x = D > 0 ? Math.max(stopX, o.x - 90 * U * dt) : Math.min(stopX, o.x + 90 * U * dt);
+      if (phase === 4 && k > 3.9) { phase = 5; o.say = pick(["don't call me tiny 😤", "who's tiny now? 🦐", "mantis shrimp, baby 🥊"]); o.sayT = 2.6; }
+      if (phase === 5 && k > 7) { // weer verder lopen
+        o.still = false;
+        o.x += o.dir * o.v * dt;
+        return o.dir > 0 ? o.x < W + o.s : o.x > -o.s;
+      }
+      return true;
+    };
+    f.update = function (o, dt) {
+      if (!o.fly) return swimmers.indexOf(g) >= 0;
+      o.x += o.fly.vx * dt; o.y += o.fly.vy * dt; o.fly.vy += 160 * U * dt;
+      o.spin = (o.spin || 0) + dt * 14;
+      return o.x > -o.s * 2 && o.x < W + o.s * 2 && o.y > -o.s * 2;
+    };
+  }
+  // 🏋️ leg day: squats op de bodem
+  function legday() {
+    var D = Math.random() < 0.5 ? 1 : -1, stopX = W * rnd(0.25, 0.75);
+    var g = shrimpTo(D), phase = 0, t0 = 0;
+    g.update = function (o, dt) {
+      if (phase === 0) {
+        o.x += o.dir * o.v * dt;
+        if (D > 0 ? o.x >= stopX : o.x <= stopX) { phase = 1; t0 = o.t; o.squat = true; }
+        return true;
+      }
+      var k = o.t - t0;
+      var n = Math.floor(k / 1.05); // elke squat ~1 seconde
+      if (phase === 1 && n >= 1 && n <= 3 && o.count !== n) { o.count = n; o.say = n + "…"; o.sayT = 0.9; }
+      if (phase === 1 && k > 4.2) { phase = 2; o.squat = false; o.still = true; o.say = "never skip leg day 🦐💦"; o.sayT = 2.8; }
+      if (phase === 2 && k > 6.8) {
+        o.still = false;
+        o.x += o.dir * o.v * dt;
+        return o.dir > 0 ? o.x < W + o.s : o.x > -o.s;
       }
       return true;
     };
@@ -378,7 +457,9 @@
       var im = IMG[o.kind];
       if (!(im.complete && im.naturalWidth)) return;
       var h = (im.naturalHeight / im.naturalWidth) * o.s;
-      var bob = FLOOR[o.kind] ? -Math.abs(Math.sin(o.t * (o.kind === "shrimp" ? 5 : 9))) * (o.kind === "shrimp" ? 22 : 3) * U : Math.sin(o.t * 2 + o.ph) * 7 * U;
+      var bob = o.squat ? Math.abs(Math.sin(o.t * 3)) * 9 * U
+        : o.still ? 0
+        : FLOOR[o.kind] ? -Math.abs(Math.sin(o.t * (o.kind === "shrimp" ? 5 : 9))) * (o.kind === "shrimp" ? 22 : 3) * U : Math.sin(o.t * 2 + o.ph) * 7 * U;
       if (o.hop) bob -= Math.sin(o.hop * Math.PI) * 40 * U; // geschrokken sprongetje
       if (o.lantern) { // warm lampje
         var lx = o.x + o.s * 0.05, ly = o.y + bob + o.s * 0.55;
@@ -396,7 +477,8 @@
       ctx.globalAlpha = o.alpha;
       ctx.translate(o.x, o.y + bob);
       if (!FLOOR[o.kind] && o.dir < 0) ctx.scale(-1, 1); // de plaatjes kijken naar rechts
-      ctx.rotate(FLOOR[o.kind] ? Math.sin(o.t * 10) * 0.04 : Math.sin(o.t * (o.fast ? 14 : 2.4) + o.ph) * (o.fast ? 0.12 : 0.05));
+      ctx.rotate((o.spin || 0) + (FLOOR[o.kind] ? Math.sin(o.t * 10) * 0.04 : Math.sin(o.t * (o.fast ? 14 : 2.4) + o.ph) * (o.fast ? 0.12 : 0.05)));
+      if (o.squat) ctx.scale(1, 1 - Math.abs(Math.sin(o.t * 3)) * 0.18); // door de knieën
       ctx.drawImage(im, -o.s / 2, -h / 2, o.s, h);
       ctx.restore();
       if (o.say && o.sayT > 0) bubbleText(o.x, o.y + bob - h / 2 - 6, o.say);
@@ -430,5 +512,5 @@
     requestAnimationFrame(frame);
   }
   requestAnimationFrame(frame);
-  window.__life = { chase: chase, pinch: pinch, peek: peek, conga: conga, lantern: lantern, follow: follow, mouse: mouse, scene: scene, swimmers: function () { return swimmers; }, tick: function (n) { for (var i = 0; i < n; i++) step(0.05); draw(); } }; // voor een snelle controle
+  window.__life = { chase: chase, pinch: pinch, boxer: boxer, legday: legday, peek: peek, conga: conga, lantern: lantern, follow: follow, mouse: mouse, scene: scene, swimmers: function () { return swimmers; }, tick: function (n) { for (var i = 0; i < n; i++) step(0.05); draw(); } }; // voor een snelle controle
 })();
