@@ -1,11 +1,13 @@
 // life.js — wat leven in de zee op elke pagina (niet de hoofdsite, die heeft het al):
 // luchtbelletjes die opstijgen, en af en toe een vriendje (of 2-3) dat voorbij zwemt en iets zegt,
 // met elkaar praat of tegen elkaar botst. Alles achter de inhoud, nooit klikbaar.
-// Gebruik: <script src="https://squeezeocto.com/life.js" defer></script>   (data-friends="few" = minder vaak, voor de spellen)
+// Gebruik: <script src="https://squeezeocto.com/life.js" defer></script>   (data-friends="few" = minder vaak, voor de spellen;
+//          data-bubbles="off" = geen eigen belletjes, voor de hoofdsite)
 (function () {
   "use strict";
   var me = document.currentScript;
   var FEW = me && me.getAttribute("data-friends") === "few";
+  var NOBUB = me && me.getAttribute("data-bubbles") === "off"; // hoofdsite: sea.js heeft al eigen belletjes
   var BASE = new URL("assets/friends/", (me && me.src) || location.href).href;
   var reduced = window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches;
 
@@ -223,7 +225,7 @@
     T += dt;
     // belletjes
     var want = (W * H) / (reduced ? 90000 : 30000);
-    if (bubbles.length < want && Math.random() < dt * 4) bubbles.push({ x: rnd(0, W), y: H + 10, r: rnd(1.5, 4.5) * U, vy: -rnd(18, 42) * U, ph: rnd(0, 6) });
+    if (!NOBUB && bubbles.length < want && Math.random() < dt * 4) bubbles.push({ x: rnd(0, W), y: H + 10, r: rnd(1.5, 4.5) * U, vy: -rnd(18, 42) * U, ph: rnd(0, 6) });
     for (var i = 0; i < bubbles.length; i++) {
       var b = bubbles[i];
       b.y += b.vy * dt;
