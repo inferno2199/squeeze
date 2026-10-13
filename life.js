@@ -551,13 +551,18 @@
     var dir = mouse.x > W / 2 ? -1 : 1;
     var o = addSwimmer("fish", dir, mouse.y, { v: 120 * U });
     talk(o, pick(MOUSE), 1.5);
+    var nextLine = 8, lines = MOUSE.concat(["this is fun!", "faster! 😆", "are we lost?", "where to now?"]);
     o.update = function (o, dt) {
-      if (o.t < 9) {
+      // blijft volgen zolang je beweegt (max 30 s); staat je muis 5 s stil (na minstens 8 s), dan zwaait hij en gaat hij
+      var idle = (performance.now() - mouse.at) / 1000;
+      var stay = o.t < 30 && (o.t < 8 || idle < 5);
+      if (stay || o.t - (o.byeAt || o.t) < 1.6) {
         var tx = mouse.x - o.dir * 70 * U, ty = mouse.y + 30 * U;
         o.x += (tx - o.x) * Math.min(1, dt * 1.4);
         o.y += (ty - o.y) * Math.min(1, dt * 1.4);
         if (Math.abs(tx - o.x) > 30) o.dir = tx > o.x ? 1 : -1;
-        if (o.t > 8.4 && !o.bye) { o.bye = 1; o.say = "ok bye! 👋"; o.sayT = 1.8; }
+        if (stay && o.t > nextLine) { nextLine = o.t + rnd(6, 9); o.say = pick(lines); o.sayT = 1.8; }
+        if (!stay && !o.byeAt) { o.byeAt = o.t; o.say = "ok bye! 👋"; o.sayT = 1.8; }
         return true;
       }
       o.x += o.dir * 220 * U * dt;
