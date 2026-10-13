@@ -87,13 +87,14 @@
   function nightTime() { var h = new Date().getHours(); return h >= 20 || h < 6; }
   function scene() {
     var midY = function () { return rnd(0.22, 0.7) * H; };
-    var opts = [["solo", 22], ["pair", 15], ["bump", 12], ["trio", 7], ["chase", 10], ["peek", 8], ["conga", 7], ["big", 5]];
+    var opts = [["solo", 22], ["pair", 15], ["bump", 12], ["trio", 7], ["chase", 10], ["peek", 8], ["conga", 7], ["big", 5], ["pinch", 8]];
     if (nightTime()) opts.push(["lantern", 9]);
     if (performance.now() - mouse.at < 8000) opts.push(["mouse", 8]);
     var tot = opts.reduce(function (a, o) { return a + o[1]; }, 0), roll = Math.random() * tot, kind = opts[0][0];
     for (var q = 0; q < opts.length; q++) { roll -= opts[q][1]; if (roll <= 0) { kind = opts[q][0]; break; } }
     if (kind === "chase") return chase(midY());
     if (kind === "peek") return peek();
+    if (kind === "pinch") return pinch();
     if (kind === "conga") return conga(midY());
     if (kind === "lantern") return lantern();
     if (kind === "mouse") return follow();
@@ -137,14 +138,82 @@
     }
   }
 
-  // haai achter een visje aan
+  // haai achter een visje aan… en vlak voor de rand komt het visje terug met al zijn vriendjes: nu rent de haai 😂
+  var GANG = ["GET HIM! 😤", "CHAAARGE! 🐟", "nobody chases our friend!", "we ride at dawn!", "go go go!"];
   function chase(y) {
     var dir = Math.random() < 0.5 ? 1 : -1;
     var f = addSwimmer("fish", dir, y, { v: 190 * U, fast: true });
     var sh = addSwimmer("shark", dir, y + 10 * U, { v: 190 * U });
     sh.x -= dir * (f.s + sh.s * 0.6);
+    f.revenge = sh;
     talk(f, "HELP! 😱", (W * 0.25) / f.v);
     talk(sh, pick(["I just want a hug 🥺", "come back, friend!", "I'm vegan, I swear!"]), (W * 0.25) / f.v + 1.6);
+  }
+  function revenge(f) {
+    var sh = f.revenge;
+    f.revenge = null;
+    if (swimmers.indexOf(sh) < 0) return;
+    var back = -f.dir;
+    f.dir = back; f.v = 175 * U;
+    f.say = "BOYS! GET HIM! 😤"; f.sayT = 2.4;
+    sh.dir = back; sh.v = 235 * U;
+    talk(sh, "HELP! 😱", 0.7, 2.2);
+    talk(sh, pick(["I SAID I'M VEGAN!!", "it was a joke!! 😭", "mommy!! 🦈"]), 3.2, 2.4);
+    var edge = back > 0 ? -1 : W + 1, n = 8 + ((Math.random() * 4) | 0);
+    for (var i = 0; i < n; i++) {
+      var g = addSwimmer(i % 4 === 3 ? "minnow" : "fish", back, f.y + rnd(-90, 90) * U, { v: rnd(190, 230) * U });
+      g.x = edge - back * (g.s + i * rnd(30, 55) * U);
+      if (i === 1 || i === 4) talk(g, pick(GANG), 0.9 + i * 0.5, 2);
+    }
+  }
+  // een krab (of kreeft) loopt over de bodem, een dolfijn komt hallo zeggen… en de krab knijpt in zijn neus 🦀🐬
+  function pinch() {
+    var D = Math.random() < 0.5 ? 1 : -1, ck = Math.random() < 0.7 ? "crab" : "lobster";
+    var c = addSwimmer(ck, D, H - SIZE[ck] * U * 0.55, {});
+    var d = addSwimmer("dolphin", -D, H * 0.5, { v: 0 });
+    d.x = D > 0 ? W + d.s : -d.s;
+    var phase = 0, t1 = 0, nose = function () { return { x: d.x + d.dir * d.s * 0.46, y: d.y + d.s * 0.04 }; };
+    d.update = function (o, dt) {
+      if (swimmers.indexOf(c) < 0) return false;
+      if (phase === 0) { // wachten tot de krab goed in beeld is
+        if (D > 0 ? c.x > W * 0.3 : c.x < W * 0.7) phase = 1;
+        return true;
+      }
+      if (phase === 1) { // naar de krab toe zwemmen, neus net boven zijn klauwen
+        var tx = c.x + D * o.s * 0.46, ty = c.y - c.s * 0.42 - o.s * 0.04;
+        var dx = tx - o.x, dy = ty - o.y, dist = Math.sqrt(dx * dx + dy * dy), step = 170 * U * dt;
+        if (dist <= step + 2 * U) {
+          o.x = tx; o.y = ty; phase = 2; t1 = o.t; c.v = 0;
+          o.say = "hellooo! 👋"; o.sayT = 1.6;
+        } else { o.x += (dx / dist) * step; o.y += (dy / dist) * step; }
+        return true;
+      }
+      if (phase === 2) { // even praten… en dan SNAP
+        var k = o.t - t1;
+        if (k > 0.9 && !c.said) { c.said = 1; c.say = pick(["hi! 🙂", "oh hello", "…hi?"]); c.sayT = 1.2; }
+        if (k > 1.9) {
+          phase = 3;
+          c.say = "*SNAP* 🦀"; c.sayT = 1.2;
+          c.update = function (c, dt) { // hangt aan de neus van de dolfijn
+            var n = nose();
+            c.x = n.x; c.y = n.y + c.s * 0.42 + Math.sin(c.t * 9) * 3 * U;
+            if (c.t > 0 && !c.hold && phase === 4 && o.t - t1 > 4.1) { c.hold = 1; c.say = pick(["not letting go 😤", "mine now", "nope 🦀"]); c.sayT = 2; }
+            return swimmers.indexOf(o) >= 0;
+          };
+          o.dir = D; // omdraaien en wegwezen
+        }
+        return true;
+      }
+      if (phase >= 3) { // weg, met de krab aan zijn neus
+        if (phase === 3 && o.t - t1 > 2.6) { phase = 4; o.say = "OW OW OW OW OW 😭"; o.sayT = 3.2; }
+        if (phase === 3) return true; // heel even stil van de schrik
+        o.x += o.dir * 240 * U * dt;
+        o.y -= 55 * U * dt;
+        o.fast = true;
+        return o.dir > 0 ? o.x < W + o.s * 1.5 : o.x > -o.s * 1.5;
+      }
+      return true;
+    };
   }
   // verstoppertje: kijkt een paar keer vanaf de rand van het scherm, en verdwijnt dan weer
   function peek() {
@@ -242,6 +311,7 @@
     }
     swimmers.forEach(function (o) {
       o.t += dt;
+      if (o.revenge && (o.dir > 0 ? o.x > W * 0.86 : o.x < W * 0.14)) revenge(o);
       if (o.hop > 0) o.hop = Math.max(0, o.hop - dt * 2.2);
       if (o.boost > 0) o.boost = Math.max(0, o.boost - dt);
       if (o.sayT > 0 && o.update) o.sayT -= dt;
@@ -360,5 +430,5 @@
     requestAnimationFrame(frame);
   }
   requestAnimationFrame(frame);
-  window.__life = { chase: chase, peek: peek, conga: conga, lantern: lantern, follow: follow, mouse: mouse, scene: scene, swimmers: function () { return swimmers; }, tick: function (n) { for (var i = 0; i < n; i++) step(0.05); draw(); } }; // voor een snelle controle
+  window.__life = { chase: chase, pinch: pinch, peek: peek, conga: conga, lantern: lantern, follow: follow, mouse: mouse, scene: scene, swimmers: function () { return swimmers; }, tick: function (n) { for (var i = 0; i < n; i++) step(0.05); draw(); } }; // voor een snelle controle
 })();
