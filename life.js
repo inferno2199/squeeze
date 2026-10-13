@@ -87,7 +87,7 @@
   function nightTime() { var h = new Date().getHours(); return h >= 20 || h < 6; }
   function scene() {
     var midY = function () { return rnd(0.22, 0.7) * H; };
-    var opts = [["solo", 22], ["pair", 15], ["bump", 12], ["trio", 7], ["chase", 10], ["peek", 8], ["conga", 7], ["big", 5], ["pinch", 8], ["boxer", 7], ["legday", 6], ["juggle", 7], ["approve", 7], ["lazy", 6]];
+    var opts = [["solo", 22], ["pair", 15], ["bump", 12], ["trio", 7], ["chase", 10], ["peek", 8], ["conga", 7], ["big", 5], ["pinch", 8], ["boxer", 7], ["legday", 6], ["juggle", 7], ["approve", 7], ["lazy", 6], ["whaleplay", 6], ["jellyhug", 6], ["pumpthief", 6]];
     if (nightTime()) opts.push(["lantern", 9]);
     if (performance.now() - mouse.at < 8000) opts.push(["mouse", 8]);
     // afwisselen: de laatste 6 scènes (ook op andere pagina's van de site) komen niet meteen terug
@@ -107,6 +107,9 @@
     if (kind === "juggle") return juggle(midY());
     if (kind === "approve") return approve(midY());
     if (kind === "lazy") return lazy(midY());
+    if (kind === "whaleplay") return whalePlay();
+    if (kind === "jellyhug") return jellyHug(midY());
+    if (kind === "pumpthief") return pumpThief(midY());
     if (kind === "conga") return conga(midY());
     if (kind === "lantern") return lantern();
     if (kind === "mouse") return follow();
@@ -372,6 +375,115 @@
       return o.dir > 0 ? o.x < W + o.s : o.x > -o.s;
     };
   }
+  // 🐋 een walvis zwemt dichtbij voorbij; kleine visjes botsen steeds tegen hem aan: "we wanna play!"
+  function whalePlay() {
+    var D = Math.random() < 0.5 ? 1 : -1;
+    var w = addSwimmer("whale", D, H * rnd(0.42, 0.52), { v: 32 * U, alpha: 0.95 });
+    w.s = SIZE.whale * U * 0.8;
+    w.x = D > 0 ? -w.s : W + w.s;
+    var PLAY = ["we wanna play!", "play with us!", "tag, you're it!", "hiii big guy!", "boop!"];
+    var kids = [], next = 2.5, said = 0, n = 0;
+    w.update = function (o, dt) {
+      o.x += o.dir * o.v * dt;
+      next -= dt;
+      var onScreen = D > 0 ? o.x > W * 0.15 && o.x < W * 0.8 : o.x < W * 0.85 && o.x > W * 0.2;
+      if (next <= 0 && onScreen && n < 9) { // een visje (of twee) komt aanstormen
+        next = rnd(0.8, 1.6);
+        n++;
+        var side = Math.random() < 0.5 ? -1 : 1;
+        var k = addSwimmer(Math.random() < 0.6 ? "minnow" : "fish", -side, o.y + rnd(-0.18, 0.18) * o.s, { v: 0 });
+        k.x = side < 0 ? -k.s : W + k.s;
+        k.st = 0;
+        if (n % 2 === 1) { k.say = pick(PLAY); k.sayT = 1.8; }
+        kids.push(k);
+        k.update = function (q, dt) {
+          if (q.st === 0) { // naar de walvis toe, BOTS
+            var tx = o.x - q.dir * o.s * 0.42;
+            q.x += q.dir * 230 * U * dt;
+            if (q.dir > 0 ? q.x >= tx : q.x <= tx) {
+              q.st = 1; q.back = 0.45;
+              for (var i = 0; i < 5; i++) stars.push({ x: q.x + q.dir * q.s * 0.4, y: q.y, vx: rnd(-50, 50) * U, vy: rnd(-60, 10) * U, age: 0 });
+              o.hop = 0.2;
+            }
+            return true;
+          }
+          if (q.st === 1) { // terugstuiteren, en dan weg
+            q.back -= dt;
+            q.x -= q.dir * 120 * U * dt;
+            if (q.back <= 0) { q.st = 2; q.dir = -q.dir; }
+            return true;
+          }
+          q.x += q.dir * 160 * U * dt;
+          return q.x > -q.s * 2 && q.x < W + q.s * 2;
+        };
+      }
+      if (n >= 5 && !said) { said = 1; o.say = pick(["…kids, I'm 200 years old 🐋", "not now, I'm migrating 😮‍💨", "five more minutes…"]); o.sayT = 3; }
+      if (n >= 9 && said === 1 && next < 0.2) { said = 2; o.say = "…ok fine, ONE game 🐋💙"; o.sayT = 3; }
+      return o.dir > 0 ? o.x < W + o.s : o.x > -o.s;
+    };
+  }
+  // 🪼⚡ de kwallenknuffel: "I love you, jelly!"… ZAP
+  function jellyHug(y) {
+    var D = Math.random() < 0.5 ? 1 : -1, stopX = W * rnd(0.4, 0.6), phase = 0, t0 = 0;
+    var j = addSwimmer("jelly", D, y, { v: 75 * U });
+    var f = addSwimmer("fish", -D, y + 6 * U, { v: 0 });
+    f.x = D > 0 ? W + f.s : -f.s;
+    j.update = function (o, dt) {
+      if (phase === 0) {
+        o.x += o.dir * o.v * dt;
+        if (D > 0 ? o.x >= stopX : o.x <= stopX) phase = 1;
+        return true;
+      }
+      if (phase === 5) { o.x += o.dir * SWIM.jelly * U * dt; return o.dir > 0 ? o.x < W + o.s : o.x > -o.s; }
+      return true;
+    };
+    f.update = function (o, dt) {
+      if (phase === 1) { // erheen zwemmen
+        var tx = j.x + D * (j.s * 0.42 + o.s * 0.42);
+        o.x += (tx > o.x ? 1 : -1) * Math.min(Math.abs(tx - o.x), 140 * U * dt);
+        if (Math.abs(tx - o.x) < 1) { phase = 2; t0 = o.t; o.say = "I love you, jelly! 💛"; o.sayT = 1.8; }
+        return true;
+      }
+      var k = o.t - t0;
+      if (phase === 2 && k > 1.6) { phase = 3; o.x -= D * 10 * U; o.hop = 0.3; } // knuffel!
+      if (phase === 3 && k > 2.1) { // ZAP
+        phase = 4;
+        for (var i = 0; i < 14; i++) stars.push({ x: (o.x + j.x) / 2, y: o.y, vx: rnd(-120, 120) * U, vy: rnd(-120, 40) * U, age: 0 });
+        j.say = "bzzzt ⚡"; j.sayT = 1.2;
+        o.zap = 1.1;
+        o.x += D * 26 * U;
+      }
+      if (o.zap > 0) o.zap -= dt;
+      if (phase === 4 && k > 3.4) { phase = 5; o.say = "…worth it 😵‍💫"; o.sayT = 2.4; o.v = 70 * U; }
+      if (phase === 5) {
+        o.x += o.dir * o.v * dt;
+        o.spin = Math.sin(o.t * 6) * 0.35; // duizelig
+        return o.dir > 0 ? o.x < W + o.s * 1.5 : o.x > -o.s * 1.5;
+      }
+      return true;
+    };
+  }
+  // 💰 de $PUMP-dief: een visje gapt de $PUMP-rewards uit een wallet… en iemand brengt ze netjes terug
+  var PUMP_WALLETS = ["Squeeze's wallet", "the burn wallet", "the Hold prize wallet", "the Says prize wallet", "The Jar"];
+  function pumpThief(y) {
+    var D = Math.random() < 0.5 ? 1 : -1, wal = pick(PUMP_WALLETS);
+    var thief = addSwimmer("fish", D, y, { v: 175 * U, fast: true, carry: "💰" });
+    talk(thief, pick(["yoink! 🤭 $PUMP from " + wal, "free $PUMP from " + wal + "! 🏃", "nobody saw that 🤫"]), (W * 0.2) / thief.v, 2.6);
+    var wait = 0;
+    thief.update = function (o, dt) {
+      var gone = o.dir > 0 ? o.x > W + o.s * 1.2 : o.x < -o.s * 1.2;
+      if (!gone) { o.x += o.dir * o.v * dt; return true; }
+      wait += dt; // even later (onzichtbaar wachten, zodat er geen andere scène tussen komt)
+      if (wait < 1.8) return true;
+      // de held brengt het terug, en de dief zwemt beschaamd mee
+      var hero = addSwimmer(pick(["dolphin", "seal", "dolphin"]), -D, y + 10 * U, { v: 85 * U, carry: "💰" });
+      talk(hero, pick(["returning the $PUMP to " + wal + " 😇", "nice try! back to " + wal + " 💚", "found it! this belongs to " + wal]), (W * 0.25) / hero.v, 3);
+      var sorry = addSwimmer("fish", -D, y + 40 * U, { v: 85 * U });
+      sorry.x += D * hero.s * 0.9;
+      talk(sorry, "sorry… 😅", (W * 0.25) / hero.v + 3.2, 2);
+      return false;
+    };
+  }
   // 🏋️ leg day: squats op de bodem
   function legday() {
     var D = Math.random() < 0.5 ? 1 : -1, stopX = W * rnd(0.25, 0.75);
@@ -574,7 +686,7 @@
         ctx.fill();
       }
       ctx.save();
-      ctx.globalAlpha = o.alpha;
+      ctx.globalAlpha = o.zap > 0 ? (Math.sin(o.zap * 40) > 0 ? 1 : 0.25) : o.alpha; // ZAP: knipperen
       ctx.translate(o.x, o.y + bob);
       if (!FLOOR[o.kind] && o.dir < 0) ctx.scale(-1, 1); // de plaatjes kijken naar rechts
       ctx.rotate((o.spin || 0) + (FLOOR[o.kind] ? Math.sin(o.t * 10) * 0.04 : Math.sin(o.t * (o.fast ? 14 : 2.4) + o.ph) * (o.fast ? 0.12 : 0.05)));
@@ -582,6 +694,12 @@
       if (o.flipY) ctx.scale(1, -1); // op zijn rug
       ctx.drawImage(im, -o.s / 2, -h / 2, o.s, h);
       ctx.restore();
+      if (o.carry) { // iets in de bek (de $PUMP-buidel)
+        ctx.font = Math.round(26 * U + 4) + "px system-ui, sans-serif";
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+        ctx.fillText(o.carry, o.x + (o.dir > 0 ? 1 : -1) * o.s * 0.5, o.y + bob + o.s * 0.08);
+      }
       if (o.say && o.sayT > 0) bubbleText(o.x, o.y + bob - h / 2 - 6, o.say);
     });
     ctx.font = "700 " + Math.round(18 * U + 4) + "px system-ui, sans-serif";
@@ -613,5 +731,5 @@
     requestAnimationFrame(frame);
   }
   requestAnimationFrame(frame);
-  window.__life = { chase: chase, pinch: pinch, boxer: boxer, legday: legday, juggle: juggle, approve: approve, lazy: lazy, peek: peek, conga: conga, lantern: lantern, follow: follow, mouse: mouse, scene: scene, swimmers: function () { return swimmers; }, tick: function (n) { for (var i = 0; i < n; i++) step(0.05); draw(); } }; // voor een snelle controle
+  window.__life = { chase: chase, pinch: pinch, boxer: boxer, legday: legday, juggle: juggle, approve: approve, lazy: lazy, whalePlay: whalePlay, jellyHug: jellyHug, pumpThief: pumpThief, peek: peek, conga: conga, lantern: lantern, follow: follow, mouse: mouse, scene: scene, swimmers: function () { return swimmers; }, tick: function (n) { for (var i = 0; i < n; i++) step(0.05); draw(); } }; // voor een snelle controle
 })();
