@@ -19,14 +19,21 @@
   if (bg && bg.parentNode) bg.parentNode.insertBefore(cv, bg.nextSibling);
   else document.body.insertBefore(cv, document.body.firstChild);
   var ctx = cv.getContext("2d");
+  // de tekstwolkjes op een eigen laag BOVEN de inhoud, zodat je ze altijd kunt lezen (de dieren zelf blijven erachter)
+  var top = document.createElement("canvas");
+  top.setAttribute("aria-hidden", "true");
+  top.style.cssText = "position:fixed;inset:0;width:100%;height:100%;pointer-events:none;z-index:40";
+  document.body.appendChild(top);
+  var tctx = top.getContext("2d");
   var W = 0, H = 0, DPR = 1, U = 1;
   function resize() {
     DPR = Math.min(2, window.devicePixelRatio || 1);
     W = window.innerWidth;
     H = window.innerHeight;
-    cv.width = Math.round(W * DPR);
-    cv.height = Math.round(H * DPR);
+    cv.width = top.width = Math.round(W * DPR);
+    cv.height = top.height = Math.round(H * DPR);
     ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+    tctx.setTransform(DPR, 0, 0, DPR, 0, 0);
     U = Math.max(0.6, Math.min(1.1, W / 900));
   }
   window.addEventListener("resize", resize);
@@ -641,6 +648,7 @@
   }
 
   function bubbleText(x, y, text) {
+    var ctx = tctx; // bovenste laag
     ctx.font = "700 " + Math.round(13 * U + 2) + "px 'Bricolage Grotesque', ui-rounded, system-ui, sans-serif";
     var w = ctx.measureText(text).width + 20, h = 26 * U + 4;
     var bx = Math.max(6, Math.min(W - w - 6, x - w / 2)), by = Math.max(6, y - h);
@@ -662,6 +670,7 @@
 
   function draw() {
     ctx.clearRect(0, 0, W, H);
+    tctx.clearRect(0, 0, W, H);
     ctx.strokeStyle = "rgba(220,255,240,.38)";
     ctx.lineWidth = 1;
     bubbles.forEach(function (b) {

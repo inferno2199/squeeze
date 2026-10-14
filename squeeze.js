@@ -1472,12 +1472,16 @@
       // knipoog: alleen als het plaatje er is, niet bij verdriet, slaap of sterren-ogen
       const winking = this.winkT > 0 && img.eyes_wink && expr !== "sad" && swapK < 0.5 && d < 0.3 && this.euph.v < 0.05;
       const E = winking ? { im: img.eyes_wink, w: EYE.happy.w, fy: WINK_FY } : EYE[expr];
+      // waar de pupillen echt staan (zo tekent het plaatje ze): pupilY + (2·fy − 1)·hoogte, mee geschaald met knipperen
+      let realPupilY = pupilY;
       {
         const ew = E.w * lerp(1, surprise, 0.6);
         const eh = (E.im.height / E.im.width) * ew;
+        const ky = winking ? 1 : Math.max(0.04, eyeK);
+        realPupilY = pupilY + (2 * E.fy - 1) * eh * ky;
         ctx.save();
         ctx.translate(lx, pupilY);
-        ctx.scale(1, winking ? 1 : Math.max(0.04, eyeK));
+        ctx.scale(1, ky);
         ctx.drawImage(E.im, -ew / 2, -eh * (1 - E.fy), ew, eh);
         ctx.restore();
       }
@@ -1488,7 +1492,7 @@
         const spin = this.reduced ? 0 : Math.sin(this.t * 3) * 0.3;
         const pulse = 1 + (this.reduced ? 0 : Math.sin(this.t * 10) * 0.12);
         const cx = expr === "happy" ? [(0.245 - 0.5) * ew, (0.759 - 0.5) * ew] : [-86, 86];
-        for (const px of cx) this._star(lx + px, pupilY, 54 * e * pulse, spin, e);
+        for (const px of cx) this._star(lx + px, realPupilY, 54 * e * pulse, spin, e); // op de pupillen, niet erboven
       }
 
       // ---- mond: knijpt kort samen en springt dan in de nieuwe vorm ----
