@@ -27,7 +27,7 @@
 
   // 🗓 seizoen (2026-10-14): Squeeze verkleedt zich mee met het seizoen dat in de generator-bot aan staat
   // (/admin → 🗓 Seasons). Testen: ?season=halloween|christmas|newyear|valentine|easter|summer
-  const SEASON_KEYS = ["halloween", "christmas", "newyear", "valentine", "easter", "summer"];
+  const SEASON_KEYS = ["halloween", "christmas", "newyear", "valentine", "easter", "stpatrick", "summer"];
   let SEASON = (() => { try { const q = new URLSearchParams(location.search).get("season"); return SEASON_KEYS.includes(q) ? q : null; } catch (e) { return null; } })();
   if (!SEASON && !/[?&]season=/.test(location.search)) {
     fetch("https://generator.squeezeocto.com/api/info").then((r) => r.json()).then((j) => {
@@ -1499,6 +1499,18 @@
           ctx.fillStyle = "#ffb3d1"; ctx.beginPath(); ctx.ellipse(0, -110, 22, 90, 0, 0, Math.PI * 2); ctx.fill();
           ctx.restore();
         }
+      } else if (SEASON === "stpatrick") {
+        // groene kabouterhoed met gouden gesp en een klavertje
+        ctx.translate(10, TOP + 50);
+        ctx.rotate(-0.1 + Math.sin(t * 1.3) * 0.03);
+        ctx.scale(1.3, 1.3);
+        ctx.fillStyle = "#1f8f3a";
+        ctx.beginPath(); ctx.ellipse(0, 0, 150, 30, 0, 0, Math.PI * 2); ctx.fill(); // rand
+        ctx.beginPath(); ctx.moveTo(-85, -4); ctx.lineTo(-70, -150); ctx.quadraticCurveTo(0, -170, 70, -150); ctx.lineTo(85, -4); ctx.closePath(); ctx.fill();
+        ctx.fillStyle = "#14261a"; ctx.fillRect(-82, -48, 164, 30); // band
+        ctx.fillStyle = "#ffcf33"; ctx.fillRect(-20, -54, 40, 42); ctx.fillStyle = "#14261a"; ctx.fillRect(-10, -44, 20, 22); // gesp
+        ctx.fillStyle = "#7cff6b";
+        for (let k = 0; k < 3; k++) { const a = -Math.PI / 2 + (k * Math.PI * 2) / 3; ctx.beginPath(); ctx.arc(60 + Math.cos(a) * 12, -110 + Math.sin(a) * 12, 11, 0, Math.PI * 2); ctx.fill(); }
       } else if (SEASON === "summer") {
         // zonnebril op de ogen (ogen zitten rond y = -190)
         ctx.translate(0, -195);

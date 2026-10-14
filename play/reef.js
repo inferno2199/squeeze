@@ -46,7 +46,7 @@
   // ---------- toestand ----------
   var data = { nfts: [], live: {}, cfg: { max: 150, goldStep: 1e6, chestStep: 1e7 } };
   // 🗓 seizoen (aan/uit in de generator-bot: /admin → 🗓 Seasons). Testen: reef.html?demo=1&season=halloween
-  var SEASONS = ["halloween", "christmas", "newyear", "valentine", "easter", "summer"];
+  var SEASONS = ["halloween", "christmas", "newyear", "valentine", "easter", "stpatrick", "summer"];
   var season = SEASONS.indexOf(Q.get("season")) >= 0 ? Q.get("season") : null;
   if (!season && !Q.get("season")) {
     fetch("https://generator.squeezeocto.com/api/info").then(function (r) { return r.json(); })
@@ -428,6 +428,15 @@
       }
     }
     // in het water: sneeuw (kerst), vonkjes (oud & nieuw), hartjes (valentijn)
+    if (season === "stpatrick") { // klavertjes die rustig dwarrelen
+      for (var c = 0; c < 26; c++) {
+        var cx = ((c * 0.7548777) % 1) * W + Math.sin(T * 0.6 + c) * 24 * U;
+        var ck = ((T * (0.015 + (c % 4) * 0.005) + c * 0.21) % 1), cy = H * ck, cr = (5 + (c % 3) * 2) * U;
+        ctx.globalAlpha = Math.sin(ck * Math.PI) * 0.85; ctx.fillStyle = "#3fd16a";
+        for (var q = 0; q < 4; q++) { var qa = T * 0.5 + c + (q * Math.PI) / 2; ctx.beginPath(); ctx.arc(cx + Math.cos(qa) * cr, cy + Math.sin(qa) * cr, cr * 0.9, 0, Math.PI * 2); ctx.fill(); }
+      }
+      ctx.globalAlpha = 1;
+    }
     if (season === "christmas" || season === "newyear" || season === "valentine") {
       for (var j = 0; j < 40; j++) {
         var sx = ((j * 0.7548777) % 1) * W + Math.sin(T * 0.5 + j) * 20 * U;
