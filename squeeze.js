@@ -1507,7 +1507,7 @@
       const mw = MO.w;
       const mh = (MO.im.height / MO.im.width) * mw;
       ctx.save();
-      ctx.translate(lx * 0.7, -45 + ly * 0.7); // v2: onder de (grotere) ogen
+      ctx.translate(lx * 0.7, -7 + ly * 0.7); // v2: onder de (grotere) ogen; 2026-10-14 38 lager (raakte de ogen), zoals de nieuwe profielfoto
       ctx.scale(
         (1 + talk * 0.3) * (1 - 0.18 * swapK),
         (1 + talk) * (1 - 0.25 * this.charge) * (1 - 0.55 * swapK)
