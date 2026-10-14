@@ -24,6 +24,18 @@
     eyes_wink: "assets/eyes_wink.png", // optioneel: knipoog (rechteroog dicht)
   };
   const OPTIONAL = new Set(["eyes_wink"]); // ontbreekt het plaatje, dan gewoon zonder
+
+  // 🗓 seizoen (2026-10-14): Squeeze verkleedt zich mee met het seizoen dat in de generator-bot aan staat
+  // (/admin → 🗓 Seasons). Testen: ?season=halloween|christmas|newyear|valentine|easter|summer
+  const SEASON_KEYS = ["halloween", "christmas", "newyear", "valentine", "easter", "summer"];
+  let SEASON = (() => { try { const q = new URLSearchParams(location.search).get("season"); return SEASON_KEYS.includes(q) ? q : null; } catch (e) { return null; } })();
+  if (!SEASON && !/[?&]season=/.test(location.search)) {
+    fetch("https://generator.squeezeocto.com/api/info").then((r) => r.json()).then((j) => {
+      SEASON = SEASON_KEYS.includes(j && j.season) ? j.season : null;
+      try { window.dispatchEvent(new CustomEvent("sqz-season", { detail: SEASON })); } catch (e) {}
+    }).catch(() => {});
+  }
+  window.sqzSeason = () => SEASON;
   const WINK_FY = 0.69; // hoogte van de pupil van het open oog in eyes_wink.png (zelfde uitsnede als eyes_happy)
 
   // Wereld = pixels van body.png, oorsprong midden-onder van het hoofd.
@@ -954,6 +966,7 @@
       const pose = this._pose();
       this._drawOcto(pose);
       this._drawFace(pose.m, Math.abs(this.turn.v));
+      this._drawSeason();
       this._drawToy();
       this._drawFx();
       ctx.restore();
@@ -1417,6 +1430,86 @@
       ctx.shadowColor = `rgba(${GREEN},0.8)`;
       ctx.shadowBlur = 30 * this._sc * 2;
       ctx.stroke();
+      ctx.restore();
+    }
+
+    // 🗓 seizoensaccessoire op het hoofd (vectoren, beweegt mee met het lijf); oorsprong = midden-onder van het hoofd
+    _drawSeason() {
+      if (!SEASON) return;
+      const { ctx } = this;
+      const t = this.reduced ? 0 : this.t;
+      const TOP = -372; // bovenkant van het hoofd
+      ctx.save();
+      ctx.lineJoin = "round";
+      ctx.lineCap = "round";
+      if (SEASON === "halloween") {
+        // heksenhoed, een beetje scheef en wiebelend
+        ctx.translate(22, TOP + 58);
+        ctx.rotate(-0.12 + Math.sin(t * 1.3) * 0.03);
+        ctx.scale(1.4, 1.4);
+        ctx.fillStyle = "#2a1640";
+        ctx.beginPath(); ctx.ellipse(0, 0, 175, 34, 0, 0, Math.PI * 2); ctx.fill(); // rand
+        ctx.beginPath(); ctx.moveTo(-105, -6); ctx.quadraticCurveTo(-60, -150, 20, -255); ctx.quadraticCurveTo(48, -270, 70, -238);
+        ctx.quadraticCurveTo(40, -200, 52, -150); ctx.quadraticCurveTo(80, -70, 105, -6); ctx.closePath(); ctx.fill(); // punt
+        ctx.fillStyle = "#ff8a1f";
+        ctx.beginPath(); ctx.moveTo(-100, -12); ctx.quadraticCurveTo(0, -40, 100, -12); ctx.lineTo(96, -44); ctx.quadraticCurveTo(0, -72, -96, -44); ctx.closePath(); ctx.fill(); // band
+        ctx.fillStyle = "#7cff6b";
+        ctx.fillRect(-14, -52, 28, 30); ctx.fillStyle = "#2a1640"; ctx.fillRect(-7, -45, 14, 16); // gesp
+      } else if (SEASON === "christmas") {
+        ctx.translate(0, TOP + 62);
+        ctx.rotate(Math.sin(t * 1.2) * 0.03);
+        ctx.scale(1.35, 1.35);
+        ctx.fillStyle = "#e3262e";
+        ctx.beginPath(); ctx.moveTo(-130, 0); ctx.quadraticCurveTo(-40, -230, 120, -180); ctx.quadraticCurveTo(190, -150, 175, -60);
+        ctx.quadraticCurveTo(120, -140, 60, -120); ctx.quadraticCurveTo(110, -60, 130, 0); ctx.closePath(); ctx.fill();
+        ctx.fillStyle = "#fff";
+        ctx.beginPath(); ctx.ellipse(0, 0, 150, 34, 0, 0, Math.PI * 2); ctx.fill(); // bont
+        ctx.beginPath(); ctx.arc(176, -52, 30, 0, Math.PI * 2); ctx.fill(); // pompon
+      } else if (SEASON === "newyear") {
+        ctx.translate(-50, TOP + 40);
+        ctx.rotate(-0.22 + Math.sin(t * 1.5) * 0.04);
+        ctx.scale(1.3, 1.3);
+        ctx.fillStyle = "#ffcf33";
+        ctx.beginPath(); ctx.moveTo(-70, 0); ctx.lineTo(0, -210); ctx.lineTo(70, 0); ctx.closePath(); ctx.fill();
+        ctx.strokeStyle = "#ff4fa3"; ctx.lineWidth = 14;
+        for (const k of [0.3, 0.55, 0.8]) { ctx.beginPath(); ctx.moveTo(-70 * k, -210 * (1 - k)); ctx.lineTo(70 * k, -210 * (1 - k)); ctx.stroke(); }
+        ctx.fillStyle = "#7cff6b";
+        ctx.beginPath(); ctx.arc(0, -218, 22, 0, Math.PI * 2); ctx.fill();
+      } else if (SEASON === "valentine") {
+        // strik op het hoofd + hartjes die opstijgen
+        ctx.save(); ctx.translate(95, TOP + 75); ctx.rotate(0.25); ctx.scale(1.7, 1.7);
+        ctx.fillStyle = "#e3263f";
+        ctx.beginPath(); ctx.moveTo(0, 0); ctx.quadraticCurveTo(-70, -60, -80, 0); ctx.quadraticCurveTo(-70, 60, 0, 0); ctx.fill();
+        ctx.beginPath(); ctx.moveTo(0, 0); ctx.quadraticCurveTo(70, -60, 80, 0); ctx.quadraticCurveTo(70, 60, 0, 0); ctx.fill();
+        ctx.beginPath(); ctx.arc(0, 0, 20, 0, Math.PI * 2); ctx.fill(); ctx.restore();
+        for (let i = 0; i < 3; i++) {
+          const k = (t * 0.25 + i / 3) % 1;
+          const x = -200 + i * 190 + Math.sin(t + i) * 20, y = TOP - k * 220;
+          ctx.globalAlpha = Math.sin(k * Math.PI);
+          ctx.fillStyle = "#ff4f7a";
+          ctx.save(); ctx.translate(x, y); ctx.scale(1.8, 1.8);
+          ctx.beginPath(); ctx.moveTo(0, 22); ctx.bezierCurveTo(-40, -8, -18, -36, 0, -14); ctx.bezierCurveTo(18, -36, 40, -8, 0, 22); ctx.fill();
+          ctx.restore();
+        }
+        ctx.globalAlpha = 1;
+      } else if (SEASON === "easter") {
+        for (const sx of [-1, 1]) {
+          ctx.save(); ctx.translate(sx * 70, TOP + 30); ctx.rotate(sx * (0.22 + Math.sin(t * 2 + sx) * 0.05));
+          ctx.fillStyle = "#fff"; ctx.beginPath(); ctx.ellipse(0, -110, 42, 120, 0, 0, Math.PI * 2); ctx.fill();
+          ctx.fillStyle = "#ffb3d1"; ctx.beginPath(); ctx.ellipse(0, -110, 22, 90, 0, 0, Math.PI * 2); ctx.fill();
+          ctx.restore();
+        }
+      } else if (SEASON === "summer") {
+        // zonnebril op de ogen (ogen zitten rond y = -190)
+        ctx.translate(0, -195);
+        ctx.fillStyle = "rgba(15,20,30,0.92)";
+        for (const sx of [-1, 1]) { ctx.beginPath(); ctx.ellipse(sx * 88, 0, 82, 58, 0, 0, Math.PI * 2); ctx.fill(); }
+        ctx.strokeStyle = "#ff8a1f"; ctx.lineWidth = 12;
+        for (const sx of [-1, 1]) { ctx.beginPath(); ctx.ellipse(sx * 88, 0, 82, 58, 0, 0, Math.PI * 2); ctx.stroke(); }
+        ctx.beginPath(); ctx.moveTo(-10, -10); ctx.quadraticCurveTo(0, -24, 10, -10); ctx.stroke();
+        ctx.fillStyle = "rgba(255,255,255,0.35)";
+        for (const sx of [-1, 1]) { ctx.beginPath(); ctx.ellipse(sx * 88 - 30, -22, 18, 10, -0.5, 0, Math.PI * 2); ctx.fill(); }
+      }
       ctx.restore();
     }
 

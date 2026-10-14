@@ -45,6 +45,13 @@
 
   // ---------- toestand ----------
   var data = { nfts: [], live: {}, cfg: { max: 150, goldStep: 1e6, chestStep: 1e7 } };
+  // 🗓 seizoen (aan/uit in de generator-bot: /admin → 🗓 Seasons). Testen: reef.html?demo=1&season=halloween
+  var SEASONS = ["halloween", "christmas", "newyear", "valentine", "easter", "summer"];
+  var season = SEASONS.indexOf(Q.get("season")) >= 0 ? Q.get("season") : null;
+  if (!season && !Q.get("season")) {
+    fetch("https://generator.squeezeocto.com/api/info").then(function (r) { return r.json(); })
+      .then(function (j) { season = SEASONS.indexOf(j && j.season) >= 0 ? j.season : null; }).catch(function () {});
+  }
   var fish = []; // zwemmende octopussen
   var eggs = []; // eitjes op de bodem
   var whales = [], jellies = [], parts = [], food = [], bubbles = [];
@@ -368,6 +375,77 @@
     });
   }
 
+  // ---------- 🗓 seizoensversiering (vectoren, geen plaatjes) ----------
+  function drawPumpkin(x, floorY, r, i) {
+    ctx.save();
+    ctx.translate(x, floorY - r * 0.8);
+    var sh = ctx.createRadialGradient(0, r * 0.75, 0, 0, r * 0.75, r * 1.4);
+    sh.addColorStop(0, "rgba(0,8,6,.5)"); sh.addColorStop(1, "rgba(0,8,6,0)");
+    ctx.fillStyle = sh; ctx.fillRect(-r * 1.5, r * 0.4, r * 3, r * 0.8);
+    ctx.fillStyle = "#e8741c";
+    for (var k = -1; k <= 1; k++) { ctx.beginPath(); ctx.ellipse(k * r * 0.42, 0, r * 0.62, r * 0.8, 0, 0, Math.PI * 2); ctx.fill(); }
+    ctx.fillStyle = "#c95a10";
+    ctx.beginPath(); ctx.ellipse(0, 0, r * 0.3, r * 0.78, 0, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = "#3f7d22"; ctx.fillRect(-r * 0.08, -r * 1.02, r * 0.16, r * 0.3); // steeltje
+    // uitgesneden gezichtje dat zacht gloeit
+    var glow = 0.75 + 0.25 * Math.sin(T * 3 + i * 1.7);
+    ctx.fillStyle = "rgba(255," + Math.round(200 + 40 * glow) + ",80," + glow + ")";
+    ctx.beginPath(); ctx.moveTo(-r * 0.42, -r * 0.18); ctx.lineTo(-r * 0.18, -r * 0.18); ctx.lineTo(-r * 0.3, -r * 0.42); ctx.closePath(); ctx.fill();
+    ctx.beginPath(); ctx.moveTo(r * 0.42, -r * 0.18); ctx.lineTo(r * 0.18, -r * 0.18); ctx.lineTo(r * 0.3, -r * 0.42); ctx.closePath(); ctx.fill();
+    ctx.beginPath(); ctx.moveTo(-r * 0.45, r * 0.12); ctx.quadraticCurveTo(0, r * 0.55, r * 0.45, r * 0.12);
+    ctx.lineTo(r * 0.25, r * 0.2); ctx.lineTo(r * 0.12, r * 0.08); ctx.lineTo(0, r * 0.22); ctx.lineTo(-r * 0.12, r * 0.08); ctx.lineTo(-r * 0.25, r * 0.2); ctx.closePath(); ctx.fill();
+    var g = ctx.createRadialGradient(0, 0, 0, 0, 0, r * 2.2);
+    g.addColorStop(0, "rgba(255,160,50," + 0.18 * glow + ")"); g.addColorStop(1, "rgba(255,160,50,0)");
+    ctx.fillStyle = g; ctx.fillRect(-r * 2.2, -r * 2.2, r * 4.4, r * 4.4);
+    ctx.restore();
+  }
+  function drawEasterEgg(x, floorY, r, i) {
+    var cols = ["#ff8fc8", "#8fd3ff", "#ffe066", "#a6f58f", "#c8a2ff"];
+    ctx.save(); ctx.translate(x, floorY - r); ctx.rotate(Math.sin(i * 2.3) * 0.3);
+    ctx.fillStyle = cols[i % cols.length]; ctx.beginPath(); ctx.ellipse(0, 0, r * 0.75, r, 0, 0, Math.PI * 2); ctx.fill();
+    ctx.strokeStyle = "rgba(255,255,255,.85)"; ctx.lineWidth = r * 0.14;
+    ctx.beginPath(); ctx.moveTo(-r * 0.7, -r * 0.1); ctx.quadraticCurveTo(0, r * 0.15, r * 0.7, -r * 0.1); ctx.stroke();
+    ctx.restore();
+  }
+  function drawStarfish(x, floorY, r, i) {
+    ctx.save(); ctx.translate(x, floorY - r * 0.4); ctx.rotate(i);
+    ctx.fillStyle = ["#ff7a59", "#ffb347", "#ff5f8a"][i % 3];
+    ctx.beginPath();
+    for (var k = 0; k < 10; k++) { var a = (k / 10) * Math.PI * 2, rr = k % 2 ? r * 0.4 : r; ctx.lineTo(Math.cos(a) * rr, Math.sin(a) * rr * 0.55); }
+    ctx.closePath(); ctx.fill(); ctx.restore();
+  }
+  function drawSeason() {
+    if (!season) return;
+    var floor = H - 6 * U;
+    var n = 5;
+    if (season === "halloween" || season === "easter" || season === "summer") {
+      for (var i = 0; i < n; i++) {
+        var u = ((i * 0.618034 + 0.12) % 1), back = ((i * 37) % 10) / 10;
+        var x = W * (0.06 + u * 0.88), fy = floor - back * 30 * U, r = (season === "halloween" ? 34 : 18) * U * (1 - back * 0.3);
+        if (season === "halloween") drawPumpkin(x, fy, r, i);
+        else if (season === "easter") drawEasterEgg(x, fy, r, i);
+        else drawStarfish(x, fy, r, i);
+      }
+    }
+    // in het water: sneeuw (kerst), vonkjes (oud & nieuw), hartjes (valentijn)
+    if (season === "christmas" || season === "newyear" || season === "valentine") {
+      for (var j = 0; j < 40; j++) {
+        var sx = ((j * 0.7548777) % 1) * W + Math.sin(T * 0.5 + j) * 20 * U;
+        var k = ((T * (0.02 + (j % 5) * 0.006) + j * 0.137) % 1);
+        var sy = season === "valentine" ? H * (1 - k) : H * k; // hartjes stijgen, sneeuw en vonkjes dalen
+        ctx.globalAlpha = Math.sin(k * Math.PI) * (season === "newyear" ? 0.6 + 0.4 * Math.sin(T * 8 + j) : 0.85);
+        if (season === "christmas") { ctx.fillStyle = "#fff"; ctx.beginPath(); ctx.arc(sx, sy, (2 + (j % 3)) * U, 0, Math.PI * 2); ctx.fill(); }
+        else if (season === "newyear") { ctx.fillStyle = ["#ffcf33", "#ff4fa3", "#7cff6b"][j % 3]; ctx.fillRect(sx, sy, 4 * U, 4 * U); }
+        else {
+          var hr = (6 + (j % 4) * 2) * U; ctx.fillStyle = "#ff4f7a";
+          ctx.beginPath(); ctx.moveTo(sx, sy + hr); ctx.bezierCurveTo(sx - hr * 1.8, sy - hr * 0.4, sx - hr * 0.8, sy - hr * 1.6, sx, sy - hr * 0.6);
+          ctx.bezierCurveTo(sx + hr * 0.8, sy - hr * 1.6, sx + hr * 1.8, sy - hr * 0.4, sx, sy + hr); ctx.fill();
+        }
+      }
+      ctx.globalAlpha = 1;
+    }
+  }
+
   function drawEgg(e, dt) {
     var need = (e.n.egg && e.n.egg.need) || 50, taps = (e.n.egg && e.n.egg.taps) || 0;
     var k = clamp(taps / need, 0, 1);
@@ -602,6 +680,7 @@
       ctx.restore();
     });
     drawTreasure();
+    drawSeason();
     // nacht: donker water (achter de octopussen; zij blijven licht en gloeien)
     if (night > 0.02) {
       ctx.fillStyle = "rgba(0,6,22," + 0.6 * night + ")";
