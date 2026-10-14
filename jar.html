@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>Crack the Jar · Octopolis</title>
+  <meta name="description" content="Citizens of Octopolis: crack your own lock, win the whole Jar. New locks every Monday." />
+  <meta name="theme-color" content="#030604" />
+  <link rel="icon" href="assets/icon.png" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="play/play.css?v=20261011d" />
+  <style>
+    /* alles zweeft los over de zee, net als verify.html */
+    .jwrap { position: relative; z-index: 1; min-height: 100vh; display: grid; grid-template-columns: minmax(0, 1fr); justify-items: center; align-items: start; padding: 18px 16px 56px; text-align: center; }
+    .jin { width: min(560px, 100%); }
+    .back { color: var(--muted); text-decoration: none; font-weight: 700; display: inline-block; margin: 0 0 .6rem; }
+    .kicker { color: var(--green); font-weight: 800; letter-spacing: .14em; font-size: .85rem; text-shadow: 0 0 18px rgba(124,255,107,.35); }
+    h1 { margin: .2rem 0 .3rem; font-size: clamp(2rem, 8vw, 3rem); font-weight: 800; letter-spacing: -.02em; text-shadow: 0 2px 24px rgba(0,0,0,.6); }
+    .pot { font-size: 1.25rem; font-weight: 800; color: var(--green); margin: 0 0 1rem; text-shadow: 0 0 18px rgba(124,255,107,.35); }
+    .lead { color: #dfeee2; line-height: 1.5; text-shadow: 0 1px 12px rgba(0,0,0,.8); margin: 0 auto 1.2rem; max-width: 30em; }
+    .go { font: 800 1.1rem var(--font); border: 0; border-radius: 999px; padding: .95rem 2rem; cursor: pointer; background: var(--green); color: #031006; box-shadow: 0 0 30px rgba(124,255,107,.4); }
+    .go:disabled { opacity: .45; cursor: default; box-shadow: none; }
+    .ghost { font: 700 1rem var(--font); border: 1px solid var(--line); border-radius: 999px; padding: .75rem 1.3rem; cursor: pointer; background: rgba(3,12,8,.55); color: var(--text); }
+    .msg { margin: 1rem auto 0; max-width: 30em; font-weight: 700; min-height: 1.5em; text-shadow: 0 1px 12px rgba(0,0,0,.8); }
+    .msg.err { color: #ff9a8a; } .msg.ok { color: var(--green); }
+    .small { color: var(--muted); font-size: .9rem; line-height: 1.5; margin: 1.4rem auto 0; max-width: 32em; text-shadow: 0 1px 10px rgba(0,0,0,.8); }
+    .small a { color: var(--green); }
+    .hidden { display: none !important; }
+    .cits { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; margin: 0 0 1rem; }
+    .cits button { font: 800 .95rem var(--font); border-radius: 999px; padding: .4rem .9rem; border: 1px solid var(--line); background: rgba(3,12,8,.55); color: var(--text); cursor: pointer; }
+    .cits button.on { background: var(--green); color: #031006; }
+    .hints { text-align: left; margin: 0 auto 1rem; max-width: 26em; color: #dfeee2; text-shadow: 0 1px 10px rgba(0,0,0,.8); line-height: 1.55; }
+    .hints b { color: var(--green); }
+    .tries { margin: 0 auto 1rem; font-size: 1.35rem; letter-spacing: .1em; line-height: 1.6; }
+    .tries div { display: inline-block; background: rgba(232,250,238,.88); border-radius: 12px; padding: 2px 10px; margin: 3px 0; color: #031006; }
+    .tries div { white-space: nowrap; }
+    .tries { display: flex; flex-direction: column; align-items: center; }
+    .slots { display: flex; gap: 8px; justify-content: center; margin: .2rem 0 .9rem; }
+    .slot { width: 52px; height: 52px; border-radius: 14px; border: 2px dashed rgba(124,255,107,.55); display: grid; place-items: center; font-size: 1.8rem; background: rgba(232,250,238,.82); }
+    .keys { display: grid; grid-template-columns: repeat(4, 64px); gap: 10px; justify-content: center; margin: 0 0 1rem; }
+    .keys button { height: 64px; font-size: 2rem; border-radius: 16px; border: 2px solid rgba(124,255,107,.55); background: rgba(232,250,238,.92); cursor: pointer; transition: transform .08s; box-shadow: 0 4px 14px rgba(0,0,0,.35); }
+    .keys button:active { transform: scale(.92); }
+    .row { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
+    .left { color: #dfeee2; margin: .9rem 0 0; text-shadow: 0 1px 10px rgba(0,0,0,.8); }
+    .legend { color: var(--muted); font-size: .9rem; margin: 0 0 1rem; }
+    @media (max-width: 420px) { .tries { font-size: 1.1rem; letter-spacing: .03em; } }
+    @media (max-width: 380px) { .keys { grid-template-columns: repeat(4, 56px); } .keys button { height: 56px; } .slot { width: 46px; height: 46px; } }
+  </style>
+</head>
+<body>
+  <div class="seabg" aria-hidden="true"></div>
+  <main class="jwrap">
+    <div class="jin">
+      <a class="back" href="games.html">← Games</a>
+      <div class="kicker">OCTOPOLIS</div>
+      <h1>Crack the Jar 🫙🔐</h1>
+      <p class="pot" id="pot">The Jar: …</p>
+
+      <section id="intro">
+        <p class="lead">Only for the <b>Citizens of Octopolis</b> (the first 500 Squeeze Squad NFTs, with the green stamp). Every Citizen has its own lock of 5 symbols. You get 2 tries a day and a new hint every day. First to crack their lock takes the whole Jar! 👀</p>
+        <button class="go" id="login">Connect wallet & sign in</button>
+        <p class="small">One free signature, no transaction: nothing leaves your wallet. Your wallet can't sign (Pump.fun, Fomo)? Play in Telegram: send <b>/jar</b> to <a href="https://t.me/SqueezeOctoBot?start=jar" target="_blank" rel="noopener">@SqueezeOctoBot</a>.</p>
+      </section>
+
+      <section id="game" class="hidden">
+        <div class="cits" id="cits"></div>
+        <p class="legend">🟢 right spot · 🟡 in your lock, other spot · ⚫ not in your lock<br>A symbol can appear more than once 👀</p>
+        <div class="hints" id="hints"></div>
+        <div class="tries" id="tries"></div>
+        <div id="play">
+          <div class="slots" id="slots"></div>
+          <div class="keys" id="keys"></div>
+          <div class="row">
+            <button class="ghost" id="undo">⌫ Undo</button>
+            <button class="go" id="try">🔓 Try the lock</button>
+          </div>
+          <p class="left" id="left"></p>
+        </div>
+      </section>
+
+      <p class="msg" id="msg" aria-live="polite"></p>
+      <p class="small">🔒 Never share your private key or seed phrase. Nobody from Squeeze will ever ask for it.</p>
+    </div>
+  </main>
+  <script src="config.js?v=20261011d"></script>
+  <script src="https://generator.squeezeocto.com/wallet.js?v=20261013a"></script>
+  <script>
+  (function () {
+    var C = window.SQUEEZE_CONFIG || {};
+    var API = (C.WORKER_URL || "https://squeeze-state.inferno2199.workers.dev").replace(/\/$/, "") + "/tg/jar/";
+    var $ = function (id) { return document.getElementById(id); };
+    var say = function (t, kind) { $("msg").textContent = t || ""; $("msg").className = "msg" + (kind ? " " + kind : ""); };
+    var sol = function (v) { return v == null ? "?" : (+Number(v).toFixed(v >= 10 ? 1 : 3)).toString(); };
+    var token = null, state = null, sel = [], cit = null, busy = false;
+    try { token = sessionStorage.getItem("sqz-jar-t"); } catch (e) {}
+
+    function api(path, body) {
+      var opt = body ? { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body) } : {};
+      return fetch(API + path, opt).then(function (r) { return r.json().then(function (d) { d._status = r.status; return d; }); });
+    }
+    api("info").then(function (d) {
+      $("pot").textContent = "The Jar: " + sol(d.pot) + " SOL";
+      if (!d.on) say("Crack the Jar is closed right now. Watch the Telegram group for the next round!");
+      else if (d.status !== "open") say("This week's jar was cracked" + (d.winner ? " by Citizen #" + d.winner : "") + "! New locks on Monday at " + d.startHour + ":00 (Amsterdam).", "ok");
+    }).catch(function () {});
+
+    $("login").onclick = async function () {
+      say("");
+      $("login").disabled = true;
+      try {
+        if (!window.SqzWallet) throw new Error("Wallet tools didn't load. Refresh the page.");
+        var w = await window.SqzWallet.pick();
+        var n = await api("nonce?wallet=" + encodeURIComponent(w.address));
+        if (n.error) throw new Error(n.error);
+        var sig = await w.signMessage(n.message);
+        var r = await api("login", { wallet: w.address, nonce: n.nonce, signature: sig });
+        if (!r.token) throw new Error(r.error || "Sign-in didn't work.");
+        token = r.token;
+        try { sessionStorage.setItem("sqz-jar-t", token); } catch (e) {}
+        await load();
+      } catch (e) {
+        say(/cancel|reject|denied|declined/i.test(e.message) ? "Cancelled." : e.message, "err");
+      }
+      $("login").disabled = false;
+    };
+
+    async function load() {
+      var d = await api("state?t=" + token + (cit ? "&cit=" + cit : ""));
+      show(d);
+    }
+    function show(d) {
+      if (d.login || d._status === 401) { token = null; try { sessionStorage.removeItem("sqz-jar-t"); } catch (e) {} $("intro").classList.remove("hidden"); $("game").classList.add("hidden"); return; }
+      if (d.pot != null) $("pot").textContent = "The Jar: " + sol(d.pot) + " SOL";
+      if (!d.ok) { say(d.error, d.cracked ? "ok" : "err"); $("intro").classList.add("hidden"); $("game").classList.add("hidden"); return; }
+      state = d; cit = d.cit;
+      $("intro").classList.add("hidden");
+      $("game").classList.remove("hidden");
+      // Citizens (als je er meer hebt: elk een eigen slot)
+      $("cits").innerHTML = "";
+      d.cits.forEach(function (c) {
+        var b = document.createElement("button");
+        b.textContent = "🏙 Citizen #" + c;
+        if (c === d.cit) b.className = "on";
+        b.onclick = function () { cit = c; sel = []; say(""); load(); };
+        $("cits").appendChild(b);
+      });
+      $("hints").innerHTML = "<b>💡 Hints</b><br>" + d.hints.map(function (h) { return "• " + h.replace(/[<>&]/g, ""); }).join("<br>");
+      $("tries").innerHTML = d.tries.slice(-10).map(function (t) { return "<div>" + t.g.map(function (i) { return d.symbols[i]; }).join("") + " → " + t.r.join("") + "</div>"; }).join("");
+      $("play").classList.toggle("hidden", d.cracked);
+      if (d.cracked) say("🎉 You cracked it! Squeeze is sending the Jar to your wallet.", "ok");
+      $("left").innerHTML = "Tries left today: <b>" + d.left + "</b>" + (d.bonus && d.bonus.length ? " (bonus: " + d.bonus.join(" · ") + ")" : "") +
+        (d.holdMin && !(d.bonus || []).some(function (b) { return /holder/.test(b); }) ? "<br><span style='color:var(--muted);font-size:.9rem'>🎁 +1 try a day for holders of " + (d.holdMin >= 1e6 ? d.holdMin / 1e6 + "M" : Math.round(d.holdMin / 1e3) + "k") + "+ $SQUEEZE" + (d.holdDays ? " for " + d.holdDays + "+ days" : "") + "</span>" : "");
+      $("try").disabled = d.left < 1;
+      $("try").textContent = d.left < 1 ? "⏳ Come back tomorrow" : "🔓 Try the lock";
+      draw();
+    }
+    function draw() {
+      if (!state) return;
+      var n = state.slots;
+      $("slots").innerHTML = "";
+      for (var i = 0; i < n; i++) { var s = document.createElement("div"); s.className = "slot"; s.textContent = sel[i] != null ? state.symbols[sel[i]] : ""; $("slots").appendChild(s); }
+      if (!$("keys").children.length) {
+        state.symbols.forEach(function (sym, i) {
+          var b = document.createElement("button");
+          b.textContent = sym;
+          b.setAttribute("aria-label", "symbol " + (i + 1));
+          b.onclick = function () { if (state && sel.length < state.slots) { sel.push(i); draw(); } };
+          $("keys").appendChild(b);
+        });
+      }
+    }
+    $("undo").onclick = function () { sel.pop(); draw(); };
+    $("try").onclick = async function () {
+      if (busy || !state) return;
+      if (sel.length !== state.slots) { say("Pick " + state.slots + " symbols first.", "err"); return; }
+      busy = true; $("try").disabled = true; say("");
+      try {
+        var d = await api("guess", { t: token, cit: cit, sel: sel });
+        if (d.error && d.ok) say(d.error, "err");
+        if (d.result) { say(d.crackedNow ? "🎉🎉 YOU CRACKED THE JAR! 🫙🔓" : d.result.join(" "), d.crackedNow ? "ok" : ""); sel = []; }
+        show(d);
+      } catch (e) { say("Network busy, try again.", "err"); }
+      busy = false;
+      if (state) $("try").disabled = state.left < 1;
+    };
+    if (token) load().catch(function () {});
+  })();
+  </script>
+  <script src="life.js?v=20261013j" data-friends="few" defer></script>
+</body>
+</html>
