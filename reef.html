@@ -26,6 +26,7 @@
     .sub { margin: .1rem 0 0; color: var(--muted); font-weight: 600; font-size: .92rem; text-shadow: 0 1px 10px rgba(0,0,0,.9); }
     .dock { position: fixed; left: 0; right: 0; bottom: max(14px, env(safe-area-inset-bottom)); z-index: 2; display: flex; justify-content: center; gap: .6rem; pointer-events: none; }
     .dock button { pointer-events: auto; font: 800 1rem var(--font); border: 0; border-radius: 999px; padding: .75rem 1.4rem; cursor: pointer; background: var(--green); color: #031006; box-shadow: 0 0 26px rgba(124,255,107,.4); }
+    .dock button:disabled { opacity: .6; cursor: default; box-shadow: none; }
     .card { position: fixed; left: 50%; bottom: calc(max(14px, env(safe-area-inset-bottom)) + 4rem); transform: translate(-50%, 20px); z-index: 3; text-align: center; opacity: 0; pointer-events: none; transition: opacity .25s, transform .25s; text-shadow: 0 2px 14px rgba(0,0,0,.95); min-width: 220px; max-width: calc(100% - 32px); }
     .card.on { opacity: 1; transform: translate(-50%, 0); pointer-events: auto; }
     .card b { display: block; font-size: 1.35rem; }
@@ -51,7 +52,7 @@
   <div class="card" id="card" aria-live="polite"><img id="cimg" alt="" hidden><b id="cname"></b><span class="num" id="cnum"></span><br><a id="clink" href="#" target="_blank" rel="noopener">View this NFT ↗</a></div>
   <div class="dock"><button id="feed" type="button">🍤 Feed</button></div>
   <script src="config.js?v=20261011d"></script>
-  <script src="play/reef.js?v=20261016a"></script>
+  <script src="play/reef.js?v=20261016b"></script>
   <script src="ink.js?v=20261011d" data-page="reef" defer></script>
 <!-- Cloudflare Web Analytics (bezoekers tellen, geen cookies) --><script type='module' src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "5b6397ad9cae4dcbad3dac16b14a5b70"}'></script><!-- End Cloudflare Web Analytics -->
 </body>

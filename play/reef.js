@@ -271,9 +271,22 @@
   });
 
   // ---------- voer ----------
-  $("feed").addEventListener("click", function () {
+  // 🍤 rem (2026-10-16): hooguit 3 keer voeren per minuut, en nooit meer dan 60 stukjes tegelijk (anders zat de Reef vol eten)
+  var FEED_MAX = 3, FEED_WIN = 60000, feeds = [], feedBtn = $("feed"), feedLabel = feedBtn.textContent;
+  function feedTick() {
+    var now = Date.now();
+    feeds = feeds.filter(function (t) { return now - t < FEED_WIN; });
+    var full = feeds.length >= FEED_MAX;
+    feedBtn.disabled = full;
+    feedBtn.textContent = full ? "😋 They're full! " + Math.ceil((FEED_WIN - (now - feeds[0])) / 1000) + "s" : feedLabel;
+    if (full) setTimeout(feedTick, 1000);
+  }
+  feedBtn.addEventListener("click", function () {
+    if (feedBtn.disabled) return;
+    feeds.push(Date.now());
     var cx = rnd(0.2, 0.8) * W;
-    for (var i = 0; i < 14; i++) food.push({ x: cx + rnd(-90, 90) * U, y: rnd(70, 120) * U, vy: rnd(18, 32) * U, ph: rnd(0, 6), age: 0 });
+    for (var i = 0; i < 14 && food.length < 60; i++) food.push({ x: cx + rnd(-90, 90) * U, y: rnd(70, 120) * U, vy: rnd(18, 32) * U, ph: rnd(0, 6), age: 0 });
+    feedTick();
   });
 
   // ---------- tekenen ----------
