@@ -39,7 +39,10 @@
     cv.height = Math.round(H * DPR);
     ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
     U = clamp(Math.min(W, H * 1.3) / 900, 0.45, 1.4);
+    if (W < 700) U = clamp(U * 1.6, 0.7, 1.1); // 📱 telefoon: grotere octopussen (waren piepklein, 2026-10-16)
   }
+  // 📱 telefoon: minder tegelijk, zodat ze groot genoeg blijven
+  var maxSwim = function () { var m = (data.cfg && data.cfg.max) || 150; return W < 700 ? Math.min(m, 35) : m; };
   window.addEventListener("resize", resize);
   resize();
 
@@ -86,7 +89,7 @@
 
   // welke NFT's zwemmen nu (hooguit max; om de minuut een paar wisselen)
   function syncFish() {
-    var max = (data.cfg && data.cfg.max) || 150;
+    var max = maxSwim();
     var all = data.nfts.filter(function (n) { return !n.egg; });
     var have = {};
     fish.forEach(function (f) { have[f.n.id] = f; });
@@ -109,14 +112,15 @@
       eggIds[n.id] = true;
       var e = eggs.find(function (x) { return x.n.id === n.id; });
       if (e) e.n = n;
-      else eggs.push({ n: n, x: rnd(0.12, 0.88) * W, y: H - rnd(40, 90) * U, wob: 0, ph: rnd(0, 6) });
+      // niet onder de Feed-knop in het midden (daar kon je niet op tikken)
+      else eggs.push({ n: n, x: (Math.random() < 0.5 ? rnd(0.12, 0.34) : rnd(0.66, 0.85)) * W, y: H - rnd(40, 90) * U, wob: 0, ph: rnd(0, 6) });
     });
     eggs.forEach(function (e) {
       if (!eggIds[e.n.id] && !e.hatched) hatch(e); // uitgekomen (bij de worker): octopus zwemt eruit
     });
   }
   function rotate() {
-    var max = (data.cfg && data.cfg.max) || 150;
+    var max = maxSwim();
     var all = data.nfts.filter(function (n) { return !n.egg; });
     if (all.length <= max) return;
     var live = fish.filter(function (f) { return !f.gone; });
@@ -206,6 +210,8 @@
   }
   var cardTimer = null;
   function showCard(n) {
+    var ci = $("cimg"); // de octopus zelf groot boven de naam
+    if (ci) { var src = n.cut || n.img || ""; ci.hidden = !src; if (src) ci.src = src; }
     $("cname").textContent = n.name || "Squeeze";
     $("cnum").textContent = (n.num ? "# " + n.num : "") + (n.cit > 0 ? (n.num ? " · " : "") + "🏙 Citizen #" + n.cit : "");
     var link = $("clink");

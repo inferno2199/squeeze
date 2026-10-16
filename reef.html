@@ -29,6 +29,8 @@
     .card { position: fixed; left: 50%; bottom: calc(max(14px, env(safe-area-inset-bottom)) + 4rem); transform: translate(-50%, 20px); z-index: 3; text-align: center; opacity: 0; pointer-events: none; transition: opacity .25s, transform .25s; text-shadow: 0 2px 14px rgba(0,0,0,.95); min-width: 220px; max-width: calc(100% - 32px); }
     .card.on { opacity: 1; transform: translate(-50%, 0); pointer-events: auto; }
     .card b { display: block; font-size: 1.35rem; }
+    .card img { display: block; margin: 0 auto .3rem; max-width: 160px; max-height: 160px; object-fit: contain; filter: drop-shadow(0 6px 18px rgba(0,0,0,.7)); }
+    .card img[hidden] { display: none; }
     .card .num { color: var(--muted); font-weight: 700; }
     .card a { display: inline-block; margin-top: .35rem; color: var(--green); font-weight: 800; text-decoration: none; }
     .note { position: fixed; left: 50%; top: 45%; transform: translate(-50%, -50%); z-index: 2; text-align: center; color: var(--muted); font-weight: 700; text-shadow: 0 2px 14px rgba(0,0,0,.95); max-width: calc(100% - 32px); pointer-events: none; }
@@ -46,10 +48,10 @@
   </header>
   <div class="demo" id="demo" hidden>DEMO</div>
   <p class="note" id="note" hidden></p>
-  <div class="card" id="card" aria-live="polite"><b id="cname"></b><span class="num" id="cnum"></span><br><a id="clink" href="#" target="_blank" rel="noopener">View this NFT ↗</a></div>
+  <div class="card" id="card" aria-live="polite"><img id="cimg" alt="" hidden><b id="cname"></b><span class="num" id="cnum"></span><br><a id="clink" href="#" target="_blank" rel="noopener">View this NFT ↗</a></div>
   <div class="dock"><button id="feed" type="button">🍤 Feed</button></div>
   <script src="config.js?v=20261011d"></script>
-  <script src="play/reef.js?v=20261015a"></script>
+  <script src="play/reef.js?v=20261016a"></script>
   <script src="ink.js?v=20261011d" data-page="reef" defer></script>
 <!-- Cloudflare Web Analytics (bezoekers tellen, geen cookies) --><script type='module' src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "5b6397ad9cae4dcbad3dac16b14a5b70"}'></script><!-- End Cloudflare Web Analytics -->
 </body>
