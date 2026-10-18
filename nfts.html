@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>Squeeze Squad NFTs — how it works</title>
+  <meta name="description" content="Your photo becomes your own octopus NFT. What you get: a spot in the Reef, Citizens of Octopolis, Crack the Jar, stickers, seasonal versions and more." />
+  <meta name="theme-color" content="#030604" />
+  <meta property="og:title" content="Squeeze Squad NFTs — how it works" />
+  <meta property="og:description" content="Your photo becomes your own octopus. The first 500 become Citizens of Octopolis and play for the Jar every week." />
+  <meta property="og:image" content="https://squeezeocto.com/assets/og.png" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <link rel="icon" href="assets/icon.png" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="play/play.css?v=20261011d" />
+  <style>
+    .nft { position: relative; z-index: 1; max-width: 760px; margin: 0 auto; padding: 0.5rem 16px 2.5rem; }
+    .nft .status { text-align: center; margin: 0.6rem auto 1.2rem; padding: 0.7rem 1rem; border: 1px solid var(--line); border-radius: 14px; background: var(--card); font-weight: 700; }
+    .nft .status b, .nft .hl { color: var(--green); }
+    .intro { font-size: 1.12rem; line-height: 1.55; text-align: center; margin: 0 auto 1.6rem; max-width: 620px; }
+    .h2 { text-align: center; margin: 2rem 0 0.9rem; font-size: 1.45rem; font-weight: 800; }
+    .perks { display: grid; grid-template-columns: repeat(2, 1fr); gap: 0.7rem; }
+    .perk { padding: 1rem 1.05rem; border: 1px solid var(--line); border-radius: 16px; background: var(--card); }
+    .perk.big { grid-column: 1 / -1; border-color: rgba(124, 255, 107, 0.55); }
+    .perk .ic { font-size: 1.6rem; }
+    .perk h3 { margin: 0.2rem 0 0.3rem; font-size: 1.08rem; font-weight: 800; }
+    .perk p { margin: 0; line-height: 1.5; }
+    .perk .tag { display: inline-block; margin-top: 0.45rem; font-size: 0.8rem; font-weight: 800; color: #031204; background: var(--green); border-radius: 999px; padding: 0.1rem 0.55rem; }
+    .steps { counter-reset: s; list-style: none; padding: 0; margin: 0; }
+    .steps li { counter-increment: s; position: relative; padding: 0.85rem 1rem 0.85rem 3.2rem; margin: 0 0 0.6rem; border: 1px solid var(--line); border-radius: 14px; background: var(--card); line-height: 1.5; }
+    .steps li::before { content: counter(s); position: absolute; left: 0.9rem; top: 0.8rem; width: 1.6rem; height: 1.6rem; border-radius: 50%; background: var(--green); color: #031204; font-weight: 800; display: grid; place-items: center; }
+    .odds { display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.45rem; }
+    .odds div { text-align: center; padding: 0.7rem 0.3rem; border-radius: 14px; background: var(--card); border: 1px solid var(--line); font-size: 0.92rem; line-height: 1.35; }
+    .odds b { display: block; font-size: 1.3rem; color: var(--green); }
+    .faq details { border: 1px solid var(--line); border-radius: 14px; background: var(--card); margin: 0 0 0.55rem; padding: 0.75rem 1rem; }
+    .faq summary { cursor: pointer; font-weight: 800; }
+    .faq details p { margin: 0.5rem 0 0.1rem; line-height: 1.5; color: var(--text); }
+    .muted2 { color: var(--muted); text-align: center; margin: 0.6rem 0 0; font-size: 0.95rem; }
+    .cta { display: flex; flex-wrap: wrap; justify-content: center; gap: 0.6rem; margin: 1.8rem 0 0.6rem; }
+    .cta a { display: inline-block; padding: 0.8rem 1.25rem; border-radius: 999px; font-weight: 800; text-decoration: none; background: var(--green); color: #031204; }
+    .cta a.ghost { background: transparent; color: var(--green); border: 1px solid var(--green); }
+    .nft a.inl { color: var(--green); }
+    @media (max-width: 560px) { .perks { grid-template-columns: 1fr; } .odds { grid-template-columns: repeat(2, 1fr); } }
+  </style>
+</head>
+<body>
+  <div class="seabg" aria-hidden="true"></div>
+  <header class="top">
+    <a class="back" href="./">← Squeeze</a>
+    <h1>Squeeze Squad NFTs</h1>
+    <p class="sub">Not a random picture. It's you, as an octopus.</p>
+  </header>
+
+  <main class="nft">
+    <p class="status" id="status">🥚 Minting opens soon · <b>0.30 SOL</b> per octopus</p>
+
+    <p class="intro">
+      Send a photo and our generator turns it into <span class="hl">your own baby octopus</span>: same outfit, same pose, same vibe.
+      Mint it and it becomes a real Solana NFT in the <b>Squeeze Squad</b> collection. And owning one actually does something.
+    </p>
+
+    <h2 class="h2">What you get</h2>
+    <div class="perks">
+      <div class="perk big">
+        <div class="ic">🏙</div>
+        <h3>Citizen of Octopolis (first 500 only)</h3>
+        <p>The first 500 NFTs ever become Citizens: a green passport stamp on the picture, "Citizen #" in the NFT, a glow and a crown in the Reef, and a badge on your Squeeze ID. After #500 this is gone for good.</p>
+        <span class="tag" id="citizens-tag">500 spots, ever</span>
+      </div>
+      <div class="perk big">
+        <div class="ic">🫙</div>
+        <h3>Play for the Jar every week</h3>
+        <p>Every Citizen gets its own secret code lock every Monday. A few guesses a day, hints along the way: first to crack it wins the whole Jar. The Jar fills itself with 0.05 SOL from every mint and half of all royalties. Nobody cracks it? The pot grows into next week.</p>
+        <span class="tag">More Citizens = more locks = more chances</span>
+      </div>
+      <div class="perk">
+        <div class="ic">🐠</div>
+        <h3>Your octopus lives in the Reef</h3>
+        <p>Every NFT hatches as an egg in <a class="inl" href="reef.html">the Reef</a>. The Squad taps it open, then it swims live with all the others. Hold more $SQUEEZE and it grows bigger.</p>
+      </div>
+      <div class="perk">
+        <div class="ic">🎭</div>
+        <h3>Free sticker pack</h3>
+        <p>Your octopus as a Telegram sticker pack (gm, LFG, WAGMI…), free with every mint. Use it in any chat.</p>
+      </div>
+      <div class="perk">
+        <div class="ic">🎄</div>
+        <h3>Seasonal versions</h3>
+        <p>Christmas, Valentine's, summer and more: holders can put their octopus in seasonal outfits to share. Your NFT itself never changes.</p>
+      </div>
+      <div class="perk">
+        <div class="ic">🪪</div>
+        <h3>Badges & rank</h3>
+        <p>Your octopus shows on your Squeeze ID. Hold 3+ for the 🎖 Collector badge, 10+ for 🪸 Reef Keeper.</p>
+      </div>
+      <div class="perk">
+        <div class="ic">🌈</div>
+        <h3>A chance at something rare</h3>
+        <p>1 in 100 octopuses is Legendary: galaxy, rainbow, crystal or lava skin. Rare ones get a shout-out in the group.</p>
+      </div>
+      <div class="perk">
+        <div class="ic">💎</div>
+        <h3>It's truly one of a kind</h3>
+        <p>Made from your photo, named by you. No two are the same. You can sell or trade it like any Solana NFT.</p>
+      </div>
+    </div>
+
+    <h2 class="h2">How it works</h2>
+    <ol class="steps">
+      <li><b>Send a photo</b> to the generator (Telegram or website). You, your dog, a meme: anything goes.</li>
+      <li><b>Get your octopus</b> with its rarity. Not happy? Tap ✨ Fix it, ✏️ Change something or 👕 Match outfit. Trying is free.</li>
+      <li><b>Mint it</b> for <b class="hl" id="price">0.30 SOL</b>. Pick a name, sign once with your wallet, done. <span id="price-up">The price goes up 0.05 SOL every 100 mints: early is cheapest.</span></li>
+      <li><b>Watch it hatch</b> in the Reef, grab your sticker pack, and (if you're one of the first 500) start cracking the Jar.</li>
+    </ol>
+
+    <h2 class="h2">Rarity</h2>
+    <div class="odds">
+      <div><b>79%</b>Common</div>
+      <div><b>15%</b>💎 Rare<br />spots, stripes, two-tone</div>
+      <div><b>5%</b>🌟 Epic<br />gold, chrome, neon, pearl</div>
+      <div><b>1%</b>🌈 Legendary<br />galaxy, rainbow, crystal, lava</div>
+    </div>
+    <p class="muted2">Rolled the moment your octopus is made, so you see it before you pay. Nobody can change it, not even us.</p>
+
+    <h2 class="h2">Questions</h2>
+    <div class="faq">
+      <details><summary>Can I mint more than one?</summary><p>Yes, as many as you like. Every photo gives a new octopus. Each Citizen you own is its own lock in the Jar.</p></details>
+      <details><summary>Is there a max supply?</summary><p>No. Everyone should be able to mint their own octopus. Only the first 500 become Citizens, and that's final.</p></details>
+      <details><summary>What if I mint after #500?</summary><p>You still get a full Squeeze Squad NFT: the Reef, stickers, seasonal versions, badges and rarity. Only the Citizen stamp and the Jar are for the first 500.</p></details>
+      <details><summary>Will the price go up?</summary><p>Yes, a little: +0.05 SOL every 100 mints (#1-100 cost 0.30, #101-200 cost 0.35, and so on). The earlier you mint, the less you pay.</p></details>
+      <details><summary>Can I sell it?</summary><p>Yes. It's a normal Solana NFT (Metaplex Core) in a verified collection, so you can list it on NFT marketplaces. Resales pay 7.5% royalties: half to the team, half straight into the Jar.</p></details>
+      <details><summary>Will my NFT ever change?</summary><p>No. Your picture, name and rarity stay exactly as minted. Seasonal versions are separate pictures for sharing.</p></details>
+      <details><summary>Is it safe?</summary><p>You only sign one payment in your own wallet. Every mint and every Jar payout is on the blockchain for anyone to check. Admins will never DM you first or ask for your seed phrase.</p></details>
+    </div>
+
+    <div class="cta">
+      <a href="https://t.me/SqueezeOctoGeneratorBot" target="_blank" rel="noopener">🤖 Make yours on Telegram</a>
+      <a class="ghost" href="https://generator.squeezeocto.com/" target="_blank" rel="noopener">🌐 Or on the website</a>
+    </div>
+    <p class="hub-note"><a href="reef.html" style="color:var(--green);font-weight:800;text-decoration:none">🐠 Visit the Reef: every Squeeze Squad octopus, swimming live →</a></p>
+  </main>
+
+  <script src="config.js?v=20261011d"></script>
+  <script>
+    // live: prijs, minten open of "soon", en hoeveel Citizens er nog over zijn (uit de generator)
+    (function () {
+      fetch("https://generator.squeezeocto.com/api/info").then(function (r) { return r.json(); }).then(function (d) {
+        if (!d) return;
+        var p = Number(d.price);
+        var price = p > 0 ? (p < 1 ? p.toFixed(2) : String(+p.toFixed(3))) + " SOL" : null;
+        if (price) document.getElementById("price").textContent = price;
+        var c = d.citizens || {};
+        var open = !d.mintSoon;
+        var nx = d.priceNext;
+        document.getElementById("status").innerHTML = (open ? "🟢 Minting is open" : "🥚 Minting opens soon") + (price ? " · <b>" + price + "</b> per octopus" : "") +
+          (open && c.on && c.left > 0 ? " · <b>" + c.left + "</b> of " + c.max + " Citizen spots left" : "") +
+          (open && nx && nx.inMints > 0 ? "<br><span style=\"font-weight:500\">📈 " + nx.inMints + " mint" + (nx.inMints === 1 ? "" : "s") + " left at this price, then " + Number(nx.price).toFixed(2) + " SOL</span>" : "");
+        if (nx) document.getElementById("price-up").textContent = "The price goes up " + nx.step + " SOL every " + nx.every + " mints: early is cheapest.";
+        else document.getElementById("price-up").textContent = "";
+        if (open && c.on) document.getElementById("citizens-tag").textContent = c.left > 0 ? c.left + " of " + c.max + " spots left" : "All 500 Citizens are taken";
+      }).catch(function () {});
+    })();
+  </script>
+  <script src="ink.js?v=20261011d" data-page="nfts" defer></script>
+  <script src="life.js?v=20261014a" defer></script>
+<!-- Cloudflare Web Analytics (bezoekers tellen, geen cookies) --><script type='module' src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "5b6397ad9cae4dcbad3dac16b14a5b70"}'></script><!-- End Cloudflare Web Analytics -->
+</body>
+</html>
