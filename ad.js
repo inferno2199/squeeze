@@ -24,7 +24,9 @@
         ".sqz-ad small{opacity:.6;font-weight:500;white-space:nowrap}" +
         ".sqz-ad-float{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(env(safe-area-inset-bottom,0px) + 12px);" +
         "z-index:50;width:max-content;max-width:92vw}" +
-        "[data-ad-slot] .sqz-ad{margin:1rem auto 0;width:max-content;max-width:min(100%,460px)}";
+        "[data-ad-slot] .sqz-ad{margin:1rem auto 0;width:max-content;max-width:min(100%,460px)}" +
+        // altijd boven de zee-achtergrond (op games.html lag die eroverheen)
+        "[data-ad-slot]{position:relative;z-index:2}";
       document.head.appendChild(css);
       var box = document.createElement("div");
       box.className = "sqz-ad";
