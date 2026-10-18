@@ -7,6 +7,9 @@
     .then(function (r) { return r.ok ? r.json() : null; })
     .then(function (a) {
       if (!a || !a.url || !a.label) return;
+      // data-paid-only (hoofdsite): eigen links staan al op de pagina, dus alleen echte advertenties tonen
+      var paidOnly = document.querySelector("[data-ad-slot][data-paid-only]");
+      if (paidOnly && !a.sponsored) return;
       var css = document.createElement("style");
       css.textContent =
         // geen balk: los zwevende tekst in het midden

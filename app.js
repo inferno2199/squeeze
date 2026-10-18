@@ -758,6 +758,9 @@
       apply(s, step(s, snap, rules, t0 + (Date.now() - t0) * 20));
     };
     setStatus("demo", "Preview. Squeeze goes live with the token.");
+    // nep-cijfers duidelijk als demo (review 2026-10-18): een screenshot mag nooit op een echte token lijken
+    const ml = document.getElementById("mcap-label");
+    if (ml) ml.textContent = "Market cap · demo (not live yet)";
     tick();
     setInterval(() => {
       if (!document.hidden) tick();

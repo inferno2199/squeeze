@@ -413,6 +413,7 @@ body.ready .stage-wrap { opacity: 1; transform: none; }
 .hero { order: 1; }
 .stats { order: 2; }
 .line { order: 3; }
+.start { order: 3; }
 .perk { order: 4; }
 .buy { order: 5; }
 .chart { order: 6; }
@@ -453,6 +454,7 @@ body.ready .stage-wrap { opacity: 1; transform: none; }
   .side .chart { order: 2; width: 100%; margin-top: 0.8rem; }
   .side .chart canvas { height: 70px; }
   .side .line { order: 3; margin: 0.9rem 0 0.6rem; }
+  .side .start { order: 3; }
   .side .perk { order: 3; margin-bottom: 0.9rem; }
   .side .buy { order: 4; }
   .side .links { order: 6; }
@@ -497,3 +499,15 @@ a:focus-visible, button:focus-visible, input:focus-visible {
 .play-link:hover { background: none; text-decoration: underline; text-underline-offset: 4px; }
 .stats div + div { border-left: 0; }
 .stats, .line, .status { text-shadow: 0 2px 14px rgba(0, 0, 0, 0.85); }
+
+/* "Start here" (review 2026-10-18): één zin + 3 knoppen bovenaan */
+.side .line, .line { max-width: 34rem; line-height: 1.45; }
+.line b { color: var(--pump); }
+.start { display: flex; flex-wrap: wrap; justify-content: center; gap: 0.5rem; margin: 0 0 1rem; }
+.start a {
+  padding: 0.55rem 1rem; border-radius: 999px; font-weight: 800; text-decoration: none;
+  color: var(--pump); border: 1px solid rgba(124, 255, 107, 0.55); text-shadow: 0 2px 12px rgba(0, 0, 0, 0.85);
+}
+.start a:first-child { background: var(--pump); color: #031204; text-shadow: none; border-color: var(--pump); }
+.start a:hover { background: rgba(124, 255, 107, 0.12); }
+.start a:first-child:hover { background: var(--pump); filter: brightness(1.08); }

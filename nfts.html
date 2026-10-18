@@ -183,7 +183,7 @@
         if (!d || !(Number(d.pot) >= 0)) return;
         var el = document.getElementById("jar-pot");
         el.textContent = "🫙 The Jar right now: " + (+Number(d.pot).toFixed(Number(d.pot) >= 10 ? 1 : 3)) + " SOL" +
-          (d.on ? "" : " · first round starts soon, it fills up with every mint");
+          (d.on ? "" : " · first round starts soon, it fills up with every mint (the first SOL came from the team's test mints)");
         el.hidden = false;
       }).catch(function () {});
     })();
