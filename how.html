@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>How Squeeze works ($SQUEEZE)</title>
+  <meta name="description" content="Everything about Squeeze in one place: the token, holder rewards, burns, daily games, the generator, NFTs, Squeeze ID, Ink Hunt and the Reef." />
+  <meta name="theme-color" content="#030604" />
+  <meta property="og:title" content="How Squeeze works" />
+  <meta property="og:description" content="The octopus who lives on the chart. Holder rewards, burns, daily games, your own octopus NFT and more." />
+  <meta property="og:image" content="https://squeezeocto.com/assets/og.png" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <link rel="icon" href="assets/icon.png" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="play/play.css?v=20261011d" />
+  <style>
+    .how { position: relative; z-index: 1; max-width: 760px; margin: 0 auto; padding: 0.5rem 16px 2.5rem; }
+    .how .hl { color: var(--green); }
+    .intro { font-size: 1.12rem; line-height: 1.55; text-align: center; margin: 0.4rem auto 1.2rem; max-width: 620px; }
+    .toc { display: flex; flex-wrap: wrap; justify-content: center; gap: 0.4rem; margin: 0 0 1.4rem; }
+    .toc a { padding: 0.35rem 0.75rem; border: 1px solid var(--line); border-radius: 999px; background: var(--card); color: var(--text); text-decoration: none; font-weight: 700; font-size: 0.92rem; }
+    .h2 { text-align: center; margin: 2rem 0 0.9rem; font-size: 1.45rem; font-weight: 800; scroll-margin-top: 1rem; }
+    .card { padding: 1rem 1.1rem; border: 1px solid var(--line); border-radius: 16px; background: var(--card); margin: 0 0 0.7rem; }
+    .card h3 { margin: 0.1rem 0 0.35rem; font-size: 1.1rem; font-weight: 800; }
+    .card p, .card li { margin: 0.25rem 0; line-height: 1.5; }
+    .card ul { margin: 0.3rem 0 0; padding-left: 1.15rem; }
+    .card .note { color: var(--muted); font-size: 0.93rem; }
+    .card a { color: var(--green); }
+    .grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 0.7rem; }
+    .grid .card { margin: 0; }
+    .split { display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.45rem; margin: 0.5rem 0 0.2rem; }
+    .split div { text-align: center; padding: 0.6rem 0.3rem; border-radius: 12px; background: rgba(124, 255, 107, 0.07); border: 1px solid var(--line); font-size: 0.9rem; line-height: 1.35; }
+    .split b { display: block; font-size: 1.2rem; color: var(--green); }
+    .ranks { display: flex; flex-wrap: wrap; gap: 0.35rem; margin: 0.4rem 0 0; }
+    .ranks span { padding: 0.25rem 0.6rem; border-radius: 999px; background: rgba(124, 255, 107, 0.07); border: 1px solid var(--line); font-size: 0.88rem; }
+    .faq details { border: 1px solid var(--line); border-radius: 14px; background: var(--card); margin: 0 0 0.55rem; padding: 0.75rem 1rem; }
+    .faq summary { cursor: pointer; font-weight: 800; }
+    .faq details p { margin: 0.5rem 0 0.1rem; line-height: 1.5; }
+    .faq a { color: var(--green); }
+    .cta { display: flex; flex-wrap: wrap; justify-content: center; gap: 0.6rem; margin: 1.8rem 0 0.6rem; }
+    .cta a { display: inline-block; padding: 0.8rem 1.25rem; border-radius: 999px; font-weight: 800; text-decoration: none; background: var(--green); color: #031204; }
+    .cta a.ghost { background: transparent; color: var(--green); border: 1px solid var(--green); }
+    @media (max-width: 560px) { .grid { grid-template-columns: 1fr; } .split { grid-template-columns: repeat(2, 1fr); } }
+    /* zelfde stijl als de rest van de site (play.css, 2026-10-11): geen vakjes, alles zweeft los over de zee */
+    .status, .step, .perk, .card, .odds div, .split div, .faq details, .steps li, .ranks span, .toc a { background: none !important; border: 0 !important; box-shadow: none; }
+    .perk, .card, .step { padding: 0.5rem 0.2rem !important; }
+    main p, main li, main h2, main h3, main summary, .status, .odds div, .split div, .ranks span, .toc a { text-shadow: 0 2px 14px rgba(0, 0, 0, 0.85); }
+    .faq details { border-bottom: 1px solid rgba(124, 255, 107, 0.14) !important; border-radius: 0; padding-left: 0.2rem !important; }
+    .toc a { color: var(--green) !important; padding: 0.2rem 0.4rem !important; }
+    .steps li { padding-left: 2.8rem !important; }
+    .steps li::before { left: 0.2rem !important; }
+  </style>
+</head>
+<body>
+  <div class="seabg" aria-hidden="true"></div>
+  <header class="top">
+    <a class="back" href="./">← Squeeze</a>
+    <h1>How Squeeze works</h1>
+    <p class="sub">The octopus who lives on the chart. Everything in one place.</p>
+  </header>
+
+  <main class="how">
+    <p class="intro">
+      <b>$SQUEEZE</b> is a memecoin on Solana with a living mascot. Buys feed Squeeze, records give him rings,
+      holders earn <span class="hl">$PUMP rewards</span>, the community <span class="hl">burns supply</span> with raids,
+      and there's a whole ocean to play in: daily games, your own octopus NFT, and the Reef.
+    </p>
+    <nav class="toc">
+      <a href="#token">🪙 Token</a><a href="#chart">📈 Squeeze</a><a href="#burns">🔥 Burns</a><a href="#games">🎮 Games</a>
+      <a href="#octo">🎨 Your octopus</a><a href="#id">🪪 Squeeze ID</a><a href="#ink">🖋 Ink Hunt</a><a href="#squad">🐙 The Squad</a><a href="#faq">❓ FAQ</a>
+    </nav>
+
+    <h2 class="h2" id="token">🪙 The token</h2>
+    <div class="card">
+      <ul>
+        <li><b>$SQUEEZE</b> launches on <b>Pump.fun</b>, paired with <b>$PUMP</b>.</li>
+        <li><b>3% creator fee goes back to holders</b>: Pump.fun pays holders in $PUMP automatically. No claiming, nothing to do.</li>
+        <li>No presale, no hidden wallets. At launch only the dev buy: 20% of the supply, split like this:</li>
+      </ul>
+      <div class="split">
+        <div><b>5%</b>🫧 Hold game prizes</div>
+        <div><b>5%</b>🧠 Says game prizes</div>
+        <div><b>5%</b>🔥 Burn wallet</div>
+        <div><b>5%</b>👤 Dev</div>
+      </div>
+      <p class="note">Every wallet is public: type <b>/wallets</b> in the Telegram group, or check them yourself on Solscan.</p>
+    </div>
+
+    <h2 class="h2" id="chart">📈 Squeeze lives on the chart</h2>
+    <div class="grid">
+      <div class="card"><h3>🍤 Buys feed him</h3><p>Every buy is a snack. Lots of buys in a row build a combo, and Squeeze gets excited.</p></div>
+      <div class="card"><h3>💍 Rings for records</h3><p>Every new all-time high gives Squeeze a ring. Bounce back after a dip? That's a "reclaim" ring.</p></div>
+      <div class="card"><h3>😴 He falls asleep</h3><p>No buys for 15 minutes and Squeeze dozes off. The next buy wakes him up.</p></div>
+      <div class="card"><h3>🐋 Whales and milestones</h3><p>Big buys and market-cap milestones get their own moment, on the site and in the group.</p></div>
+    </div>
+    <p class="hub-note" style="margin-top:0.8rem"><a href="./" style="color:var(--green);font-weight:800;text-decoration:none">Watch Squeeze live →</a></p>
+
+    <h2 class="h2" id="burns">🔥 Burns: the Squad shrinks the supply</h2>
+    <div class="card">
+      <ul>
+        <li><b>Raids on X:</b> share a fresh $SQUEEZE tweet in the group with <b>/raid &lt;link&gt;</b>. Everyone likes, reposts and replies. Hit the targets in time and tokens get <b>burned forever</b>.</li>
+        <li><b>The flywheel:</b> the burn wallet earns $PUMP rewards like every holder, and uses them to buy more $SQUEEZE for the next raid burns.</li>
+        <li>Every burn is posted in the group with a Solscan link. Total burned: <b>/wallets</b>.</li>
+      </ul>
+    </div>
+
+    <h2 class="h2" id="games">🎮 Daily games</h2>
+    <div class="grid">
+      <div class="card"><h3>🫧 Squeeze Hold</h3><p>Hold to squeeze, let go right before he pops. Every round gets faster.</p><p class="note">Top 5 win $PUMP every day (40/25/15/10/10% of the pool).</p></div>
+      <div class="card"><h3>🧠 Squeeze Says</h3><p>Watch the friends light up and tap them back in order. One more every round.</p><p class="note">Top 5 win $SQUEEZE every day.</p></div>
+    </div>
+    <p class="hub-note" style="margin-top:0.8rem">Free to play · winners at <span class="tz">8:00 PM CET</span> · one entry (X handle + wallet) for both · <a href="games.html" style="color:var(--green);font-weight:800;text-decoration:none">Play →</a></p>
+
+    <h2 class="h2" id="octo">🎨 Your own octopus</h2>
+    <div class="card">
+      <p>Send a photo to the generator and get <b>your own baby octopus</b>: same outfit, same pose. Make it free every day, fix it, change it, and share it.</p>
+      <ul>
+        <li>Love it? <b>Mint it as a Squeeze Squad NFT.</b> It hatches as an egg in <a href="reef.html">the Reef</a> and swims there live.</li>
+        <li>The first 500 NFTs become <b>Citizens of Octopolis</b> and play <a href="jar.html">Crack the Jar</a> for a weekly pot.</li>
+        <li>Free sticker pack, seasonal versions, badges and more.</li>
+      </ul>
+      <p class="note"><a href="nfts.html">Everything about the NFTs →</a></p>
+    </div>
+
+    <h2 class="h2" id="id">🪪 Squeeze ID</h2>
+    <div class="card">
+      <p>Your card in the Squad: your rank, how long you've held, your NFTs, your best game scores and your $PUMP rewards. Type <b>/id</b> to the bot, or look up any wallet on <a href="id.html">Squeeze ID</a>.</p>
+      <div class="ranks">
+        <span>🦠 Plankton</span><span>🦐 Shrimp · 100k</span><span>🦀 Crab · 1M</span><span>🦑 Squid · 5M</span><span>🐙 Octopus · 10M + 7 days</span><span>🌊 Kraken · 25M + 30 days</span>
+      </div>
+      <p class="note">Verify your wallet once (a free signature) to win prizes in the games, the Ink Hunt and the Jar.</p>
+    </div>
+
+    <h2 class="h2" id="ink">🖋 Ink Hunt</h2>
+    <div class="card">
+      <p>Once a day Squeeze hides a secret code somewhere: on the site, in the generator, behind a message in the group, in his diary picture or on X. Riddle hints come in the group.</p>
+      <p>First to type <b>/ink CODE</b> in the group wins. Nobody finds it? The prize grows.</p>
+    </div>
+
+    <h2 class="h2" id="squad">🐙 Meet the Squad</h2>
+    <div class="grid">
+      <div class="card"><h3>🐙 Squeeze</h3><p>The mascot. Lives on the chart, talks in the group, writes a diary every evening. A bit sleepy.</p></div>
+      <div class="card"><h3>🤓 TentaDev</h3><p>The nerdy dev octopus. Tag him with a question, a bug, or a Solscan link and he explains it. <a href="https://x.com/TheTentaDev" target="_blank" rel="noopener">@TheTentaDev</a></p></div>
+      <div class="card"><h3>👑 OctoChief</h3><p>Chief of the Squad, the founder. <a href="https://x.com/TheOctoChief" target="_blank" rel="noopener">@TheOctoChief</a></p></div>
+      <div class="card"><h3>🐠 The friends</h3><p>Fish, jelly, crab, shark, dolphins and more swim around the site. Tap them.</p></div>
+    </div>
+
+    <h2 class="h2" id="faq">❓ Questions</h2>
+    <div class="faq">
+      <details><summary>When does $SQUEEZE launch?</summary><p>Soon. The contract address (CA) will only be posted by the official bot in the group and here on the site. Join the group so you don't miss it.</p></details>
+      <details><summary>How do the $PUMP rewards work?</summary><p>$SQUEEZE is paired with $PUMP and has a 3% creator fee for holders. Pump.fun sends holders their share of $PUMP automatically. You don't have to claim anything.</p></details>
+      <details><summary>Is it safe?</summary><p>All wallets are public and every burn and prize payout is on the blockchain. Admins will never DM you first and never ask for your seed phrase. Only trust the CA from <b>/ca</b>.</p></details>
+      <details><summary>Do I need to hold $SQUEEZE to play?</summary><p>No. The games, the generator and the Reef are free for everyone. Holders get extras, like more octopuses per day in the generator and a higher rank on their Squeeze ID.</p></details>
+      <details><summary>Where can I ask something?</summary><p>In the Telegram group: tag TentaDev with your question. He knows how everything works.</p></details>
+    </div>
+
+    <div class="cta">
+      <a id="tg" href="https://t.me/SqueezeOctoSquad" target="_blank" rel="noopener">💬 Join the Telegram</a>
+      <a class="ghost" href="https://x.com/SqueezeOcto" target="_blank" rel="noopener">𝕏 Follow @SqueezeOcto</a>
+    </div>
+  </main>
+
+  <script src="config.js?v=20261011d"></script>
+  <script>
+    (function () {
+      // CET in de winter, CEST in de zomer
+      try {
+        var p = new Intl.DateTimeFormat("en-GB", { timeZone: "Europe/Amsterdam", timeZoneName: "short" })
+          .formatToParts(new Date()).find(function (x) { return x.type === "timeZoneName"; });
+        if (p && /^CES?T$/.test(p.value)) document.querySelectorAll(".tz").forEach(function (n) { n.textContent = "8:00 PM " + p.value; });
+      } catch (e) {}
+      // Telegram-link uit de bot (zelfde als de rest van de site)
+      var C = window.SQUEEZE_CONFIG || {};
+      fetch((C.WORKER_URL || "https://squeeze-state.inferno2199.workers.dev").replace(/\/$/, "") + "/settings").then(function (r) { return r.json(); }).then(function (d) {
+        if (d && /^https:\/\/t\.me\/[A-Za-z0-9_]{5,32}$/.test(d.telegram || "")) document.getElementById("tg").href = d.telegram;
+      }).catch(function () {});
+    })();
+  </script>
+  <script src="ink.js?v=20261011d" data-page="how" defer></script>
+  <script src="life.js?v=20261014a" defer></script>
+<!-- Cloudflare Web Analytics (bezoekers tellen, geen cookies) --><script type='module' src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "5b6397ad9cae4dcbad3dac16b14a5b70"}'></script><!-- End Cloudflare Web Analytics -->
+</body>
+</html>

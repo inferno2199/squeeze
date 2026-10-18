@@ -44,6 +44,14 @@
     .nft a.inl { color: var(--green); }
     .potline { margin: 0.6rem 0 0.1rem; font-size: 1.15rem; font-weight: 800; color: var(--green); text-shadow: 0 0 18px rgba(124,255,107,.35); }
     @media (max-width: 560px) { .perks { grid-template-columns: 1fr; } .odds { grid-template-columns: repeat(2, 1fr); } }
+    /* zelfde stijl als de rest van de site (play.css, 2026-10-11): geen vakjes, alles zweeft los over de zee */
+    .status, .step, .perk, .card, .odds div, .split div, .faq details, .steps li, .ranks span, .toc a { background: none !important; border: 0 !important; box-shadow: none; }
+    .perk, .card, .step { padding: 0.5rem 0.2rem !important; }
+    main p, main li, main h2, main h3, main summary, .status, .odds div, .split div, .ranks span, .toc a { text-shadow: 0 2px 14px rgba(0, 0, 0, 0.85); }
+    .faq details { border-bottom: 1px solid rgba(124, 255, 107, 0.14) !important; border-radius: 0; padding-left: 0.2rem !important; }
+    .toc a { color: var(--green) !important; padding: 0.2rem 0.4rem !important; }
+    .steps li { padding-left: 2.8rem !important; }
+    .steps li::before { left: 0.2rem !important; }
   </style>
 </head>
 <body>
@@ -142,6 +150,7 @@
       <a class="ghost" href="https://generator.squeezeocto.com/" target="_blank" rel="noopener">🌐 Or on the website</a>
     </div>
     <p class="hub-note"><a href="reef.html" style="color:var(--green);font-weight:800;text-decoration:none">🐠 Visit the Reef: every Squeeze Squad octopus, swimming live →</a></p>
+    <p class="hub-note"><a href="how.html" style="color:var(--green);font-weight:800;text-decoration:none">📖 How Squeeze works: token, burns, games and more →</a></p>
   </main>
 
   <script src="config.js?v=20261011d"></script>
