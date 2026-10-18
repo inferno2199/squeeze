@@ -7,9 +7,13 @@
     .then(function (r) { return r.ok ? r.json() : null; })
     .then(function (a) {
       if (!a || !a.url || !a.label) return;
-      // data-paid-only (hoofdsite): eigen links staan al op de pagina, dus alleen echte advertenties tonen
-      var paidOnly = document.querySelector("[data-ad-slot][data-paid-only]");
-      if (paidOnly && !a.sponsored) return;
+      // eigen link (geen betaalde advertentie) die al op de pagina staat? dan niet nog eens tonen (geen dubbele link)
+      var plain = function (t) { return String(t || "").toLowerCase().replace(/[^a-z0-9]+/g, " ").trim(); };
+      if (!a.sponsored) {
+        var mine = plain(a.label);
+        var dup = Array.prototype.some.call(document.querySelectorAll("a"), function (x) { return mine && plain(x.textContent).indexOf(mine) >= 0; });
+        if (dup) return;
+      }
       var css = document.createElement("style");
       css.textContent =
         // geen balk: los zwevende tekst in het midden

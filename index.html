@@ -18,7 +18,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="style.css?v=20261018a" />
+  <link rel="stylesheet" href="style.css?v=20261018b" />
   <link rel="preload" as="image" href="assets/sea.jpg" />
 </head>
 <body>
@@ -66,15 +66,12 @@
       </section>
 
       <p class="line"><b>Squeeze</b> is an octopus who lives on the $SQUEEZE chart. Buys feed him, records give him rings, and with no buys he falls asleep. Join his Squad!</p>
-      <nav class="start" aria-label="Start here">
-        <a href="https://generator.squeezeocto.com/" target="_blank" rel="noopener">🎨 Make your octopus</a>
-        <a id="join" href="https://t.me/SqueezeOctoSquad" target="_blank" rel="noopener">💬 Join the Squad</a>
-        <a href="how.html">📖 How it works</a>
-      </nav>
 
       <p class="perk">Paired with <b>$PUMP</b> · <b>3%</b> rewards to holders</p>
 
       <a id="buy" class="buy" href="#" target="_blank" rel="noopener">Buy on Pump.fun</a>
+      <a class="play-link" href="how.html">📖 How Squeeze works · everything in one place</a>
+      <a class="play-link" href="https://generator.squeezeocto.com/" target="_blank" rel="noopener">🎨 Turn your photo into an octopus</a>
       <a class="play-link" href="games.html">🎮 Play Squeeze games · daily prizes</a>
       <a id="nftlink" class="play-link" href="nfts.html">🥚 Squeeze Squad NFTs · minting opens at launch</a>
       <a class="play-link" href="wallet.html">📊 Squeeze's wallet · his trades</a>
@@ -118,7 +115,7 @@
         </div>
       </section>
     </div>
-    <div data-ad-slot data-paid-only class="ad-slot"></div>
+    <div data-ad-slot class="ad-slot"></div>
   </main>
 
   <footer class="legal">
@@ -133,10 +130,6 @@
   <script src="talk.js?v=20261011d"></script>
   <script src="app.js?v=20261018a"></script>
   <script>
-    // "Join the Squad" = de Telegram-link uit de bot (zelfde als de rest van de site)
-    fetch(((window.SQUEEZE_CONFIG || {}).WORKER_URL || "https://squeeze-state.inferno2199.workers.dev").replace(/\/$/, "") + "/settings").then(function (r) { return r.json(); }).then(function (d) {
-      if (d && /^https:\/\/t\.me\/[A-Za-z0-9_]{5,32}$/.test(d.telegram || "")) document.getElementById("join").href = d.telegram;
-    }).catch(function () {});
     // NFT-link volgt de generator (2026-10-18): soon = "opens at launch", open = "mint now" met de prijs
     fetch("https://generator.squeezeocto.com/api/info").then(function (r) { return r.json(); }).then(function (d) {
       var a = document.getElementById("nftlink");
@@ -145,7 +138,7 @@
       a.textContent = "🥚 Mint your Squeeze Squad NFT" + (p > 0 ? " · " + p.toFixed(2) + " SOL" : "") + " · now open";
     }).catch(function () {});
   </script>
-  <script src="ad.js?v=20261018a" defer></script>
+  <script src="ad.js?v=20261018b" defer></script>
   <script src="ink.js?v=20261011d" data-page="home" defer></script>
   <script src="life.js?v=20261014a" data-friends="few" data-bubbles="off" defer></script>
 <!-- Cloudflare Web Analytics (bezoekers tellen, geen cookies) --><script type='module' src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "5b6397ad9cae4dcbad3dac16b14a5b70"}'></script><!-- End Cloudflare Web Analytics -->
