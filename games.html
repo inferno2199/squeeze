@@ -47,7 +47,7 @@
   <p class="hub-note">One entry (X handle + wallet) works for both games.</p>
   <p class="hub-note"><a href="reef.html" style="color:var(--green);font-weight:800;text-decoration:none">🐠 Visit the Reef: every Squeeze Squad octopus, swimming live →</a></p>
   <p class="hub-note"><a href="nfts.html" style="color:var(--green);font-weight:800;text-decoration:none">🥚 Squeeze Squad NFTs: how minting, Citizens and the Jar work →</a></p>
-  <p class="hub-note"><a href="jar.html" style="color:var(--green);font-weight:800;text-decoration:none">🫙 Crack the Jar: weekly game for the Citizens of Octopolis →</a></p>
+  <p class="hub-note"><a href="jar.html" style="color:var(--green);font-weight:800;text-decoration:none">🫙 Crack the Jar: weekly game for the Citizens of Octopolis →</a><br><span id="jar-pot" style="color:var(--green);font-weight:800" hidden></span></p>
   <div data-ad-slot></div>
   <script src="ad.js?v=20261011f" defer></script>
   <script src="config.js?v=20261011d"></script>
@@ -60,6 +60,18 @@
           .formatToParts(new Date()).find(function (x) { return x.type === "timeZoneName"; });
         if (p && /^CES?T$/.test(p.value)) document.querySelectorAll(".tz").forEach(function (n) { n.textContent = "8:00 PM " + p.value; });
       } catch (e) {}
+    })();
+  </script>
+  <script>
+    // 🫙 de pot live
+    (function () {
+      var C = window.SQUEEZE_CONFIG || {};
+      fetch((C.WORKER_URL || "https://squeeze-state.inferno2199.workers.dev").replace(/\/$/, "") + "/tg/jar/info").then(function (r) { return r.json(); }).then(function (d) {
+        if (!d || !(Number(d.pot) >= 0)) return;
+        var el = document.getElementById("jar-pot");
+        el.textContent = "The Jar right now: " + (+Number(d.pot).toFixed(Number(d.pot) >= 10 ? 1 : 3)) + " SOL";
+        el.hidden = false;
+      }).catch(function () {});
     })();
   </script>
   <script src="ink.js?v=20261011d" data-page="games" defer></script>

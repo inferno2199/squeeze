@@ -42,6 +42,7 @@
     .cta a { display: inline-block; padding: 0.8rem 1.25rem; border-radius: 999px; font-weight: 800; text-decoration: none; background: var(--green); color: #031204; }
     .cta a.ghost { background: transparent; color: var(--green); border: 1px solid var(--green); }
     .nft a.inl { color: var(--green); }
+    .potline { margin: 0.6rem 0 0.1rem; font-size: 1.15rem; font-weight: 800; color: var(--green); text-shadow: 0 0 18px rgba(124,255,107,.35); }
     @media (max-width: 560px) { .perks { grid-template-columns: 1fr; } .odds { grid-template-columns: repeat(2, 1fr); } }
   </style>
 </head>
@@ -73,6 +74,7 @@
         <div class="ic">🫙</div>
         <h3>Play for the Jar every week</h3>
         <p>Every Citizen gets its own secret code lock every Monday. A few guesses a day, hints along the way: first to crack it wins the whole Jar. The Jar fills itself with 0.05 SOL from every mint and half of all royalties. Nobody cracks it? The pot grows into next week.</p>
+        <p class="potline" id="jar-pot" hidden></p>
         <span class="tag">More Citizens = more locks = more chances</span>
       </div>
       <div class="perk">
@@ -160,6 +162,19 @@
         if (nx) document.getElementById("price-up").textContent = "The price goes up " + nx.step + " SOL every " + nx.every + " mints: early is cheapest.";
         else document.getElementById("price-up").textContent = "";
         if (open && c.on) document.getElementById("citizens-tag").textContent = c.left > 0 ? c.left + " of " + c.max + " spots left" : "All 500 Citizens are taken";
+      }).catch(function () {});
+    })();
+  </script>
+  <script>
+    // 🫙 de pot live (zelfde bron als jar.html)
+    (function () {
+      var C = window.SQUEEZE_CONFIG || {};
+      var api = (C.WORKER_URL || "https://squeeze-state.inferno2199.workers.dev").replace(/\/$/, "") + "/tg/jar/info";
+      fetch(api).then(function (r) { return r.json(); }).then(function (d) {
+        if (!d || !(Number(d.pot) >= 0)) return;
+        var el = document.getElementById("jar-pot");
+        el.textContent = "🫙 The Jar right now: " + (+Number(d.pot).toFixed(Number(d.pot) >= 10 ? 1 : 3)) + " SOL";
+        el.hidden = false;
       }).catch(function () {});
     })();
   </script>
