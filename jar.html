@@ -102,7 +102,7 @@
     }
     api("info").then(function (d) {
       $("pot").textContent = "The Jar: " + sol(d.pot) + " SOL";
-      if (!d.on) say("Crack the Jar is closed right now. Watch the Telegram group for the next round!");
+      if (!d.on) say("Crack the Jar opens soon! The Jar is already filling up with every mint. Watch the Telegram group for the start.");
       else if (d.status !== "open") say("This week's jar was cracked" + (d.winner ? " by Citizen #" + d.winner : "") + "! New locks on Monday at " + d.startHour + ":00 (Amsterdam).", "ok");
     }).catch(function () {});
 

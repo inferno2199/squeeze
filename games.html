@@ -69,7 +69,7 @@
       fetch((C.WORKER_URL || "https://squeeze-state.inferno2199.workers.dev").replace(/\/$/, "") + "/tg/jar/info").then(function (r) { return r.json(); }).then(function (d) {
         if (!d || !(Number(d.pot) >= 0)) return;
         var el = document.getElementById("jar-pot");
-        el.textContent = "The Jar right now: " + (+Number(d.pot).toFixed(Number(d.pot) >= 10 ? 1 : 3)) + " SOL";
+        el.textContent = "The Jar right now: " + (+Number(d.pot).toFixed(Number(d.pot) >= 10 ? 1 : 3)) + " SOL" + (d.on ? "" : " · opens soon");
         el.hidden = false;
       }).catch(function () {});
     })();
