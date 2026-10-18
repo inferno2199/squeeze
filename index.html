@@ -72,7 +72,7 @@
       <a class="play-link" href="how.html">📖 How Squeeze works · everything in one place</a>
       <a class="play-link" href="games.html">🎮 Play Squeeze games · daily prizes</a>
       <a class="play-link" href="https://generator.squeezeocto.com/" target="_blank" rel="noopener">🎨 Turn your photo into an octopus</a>
-      <a class="play-link" href="nfts.html">🥚 Squeeze Squad NFTs · how it works</a>
+      <a id="nftlink" class="play-link" href="nfts.html">🥚 Squeeze Squad NFTs · minting opens at launch</a>
       <a class="play-link" href="wallet.html">📊 Squeeze's wallet · his trades</a>
       <a class="play-link" href="id.html">🪪 Squeeze ID · look up any wallet</a>
       <a class="play-link" href="reef.html">🐠 The Reef · the Squeeze Squad, live</a>
@@ -128,6 +128,15 @@
   <script src="lines.js?v=20261011d"></script>
   <script src="talk.js?v=20261011d"></script>
   <script src="app.js?v=20261011d"></script>
+  <script>
+    // NFT-link volgt de generator (2026-10-18): soon = "opens at launch", open = "mint now" met de prijs
+    fetch("https://generator.squeezeocto.com/api/info").then(function (r) { return r.json(); }).then(function (d) {
+      var a = document.getElementById("nftlink");
+      if (!a || !d || d.mintSoon) return;
+      var p = Number(d.price);
+      a.textContent = "🥚 Mint your Squeeze Squad NFT" + (p > 0 ? " · " + p.toFixed(2) + " SOL" : "") + " · now open";
+    }).catch(function () {});
+  </script>
   <script src="ad.js?v=20261011f" defer></script>
   <script src="ink.js?v=20261011d" data-page="home" defer></script>
   <script src="life.js?v=20261014a" data-friends="few" data-bubbles="off" defer></script>

@@ -69,7 +69,7 @@
     </p>
     <nav class="toc">
       <a href="#token">🪙 Token</a><a href="#chart">📈 Squeeze</a><a href="#burns">🔥 Burns</a><a href="#games">🎮 Games</a>
-      <a href="#octo">🎨 Your octopus</a><a href="#id">🪪 Squeeze ID</a><a href="#ink">🖋 Ink Hunt</a><a href="#squad">🐙 The Squad</a><a href="#faq">❓ FAQ</a>
+      <a href="#octo">🎨 Your octopus</a><a href="#id">🪪 Squeeze ID</a><a href="#ink">🖋 Ink Hunt</a><a href="#squad">🐙 The Squad</a><a href="#links">🔗 Official links</a><a href="#faq">❓ FAQ</a>
     </nav>
 
     <h2 class="h2" id="token">🪙 The token</h2>
@@ -147,6 +147,24 @@
       <div class="card"><h3>🐠 The friends</h3><p>Fish, jelly, crab, shark, dolphins and more swim around the site. Tap them.</p></div>
     </div>
 
+    <h2 class="h2" id="links">🔗 Official links &amp; safety</h2>
+    <div class="grid">
+      <div class="card"><h3>✅ The real ones</h3><ul>
+        <li>🌊 Site: <a href="https://squeezeocto.com/">squeezeocto.com</a></li>
+        <li>🎨 Generator: <a href="https://generator.squeezeocto.com/" target="_blank" rel="noopener">generator.squeezeocto.com</a></li>
+        <li>💬 Group: <a class="tglink" href="https://t.me/SqueezeOctoSquad" target="_blank" rel="noopener">t.me/SqueezeOctoSquad</a></li>
+        <li>𝕏 <a href="https://x.com/SqueezeOcto" target="_blank" rel="noopener">@SqueezeOcto</a> · <a href="https://x.com/TheOctoChief" target="_blank" rel="noopener">@TheOctoChief</a> · <a href="https://x.com/TheTentaDev" target="_blank" rel="noopener">@TheTentaDev</a></li>
+        <li>🤖 <a href="https://t.me/SqueezeOctoBot" target="_blank" rel="noopener">@SqueezeOctoBot</a> · <a href="https://t.me/SqueezeOctoGeneratorBot" target="_blank" rel="noopener">@SqueezeOctoGeneratorBot</a> · <a href="https://t.me/TentaDevbot" target="_blank" rel="noopener">@TentaDevbot</a></li>
+      </ul></div>
+      <div class="card"><h3>⚠️ Stay safe</h3><ul>
+        <li>Anything not on this list is fake, even if it uses our name or picture.</li>
+        <li>Admins and bots never DM you first.</li>
+        <li>Nobody will ever ask for your seed phrase or private key.</li>
+        <li>There is only one CA: from <b>/ca</b> in the group or on this site.</li>
+        <li>In the group, type <b>/links</b> to see this list.</li>
+      </ul></div>
+    </div>
+
     <h2 class="h2" id="faq">❓ Questions</h2>
     <div class="faq">
       <details><summary>When does $SQUEEZE launch?</summary><p>Soon. The contract address (CA) will only be posted by the official bot in the group and here on the site. Join the group so you don't miss it.</p></details>
@@ -174,7 +192,10 @@
       // Telegram-link uit de bot (zelfde als de rest van de site)
       var C = window.SQUEEZE_CONFIG || {};
       fetch((C.WORKER_URL || "https://squeeze-state.inferno2199.workers.dev").replace(/\/$/, "") + "/settings").then(function (r) { return r.json(); }).then(function (d) {
-        if (d && /^https:\/\/t\.me\/[A-Za-z0-9_]{5,32}$/.test(d.telegram || "")) document.getElementById("tg").href = d.telegram;
+        if (d && /^https:\/\/t\.me\/[A-Za-z0-9_]{5,32}$/.test(d.telegram || "")) {
+          document.getElementById("tg").href = d.telegram;
+          document.querySelectorAll(".tglink").forEach(function (a) { a.href = d.telegram; a.textContent = d.telegram.replace("https://", ""); });
+        }
       }).catch(function () {});
     })();
   </script>
