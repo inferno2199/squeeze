@@ -13,7 +13,7 @@
       var days = Math.floor((Date.now() - start.getTime()) / 86400000);
       var soon = days < 0, live = days >= 0 && days < 30;
       if (soon || live) {
-        var line = soon ? "🎟 30 days, 30 free mints starts " + start.toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "short" }) + "!" : "🎟 30 days, 30 free mints: on Hold and Says days, the best player wins a free Squeeze NFT mint!";
+        var line = soon ? "🎟 30 days, 30 free mints starts " + start.toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "short" }) + "!" : "🎟 30 days, 30 free mints: on Hold and Says days, the best player wins a free Squeeze NFT mint (redeem when minting opens)!";
         document.querySelectorAll(".win").forEach(function (el) { el.textContent = soon ? "Practice now · free mints from " + start.toLocaleDateString("en-GB", { day: "numeric", month: "short" }) + " 🎟" : "🎟 Win a free NFT mint on game days"; });
         document.querySelectorAll(".card.prize").forEach(function (card) {
           var p = document.createElement("p");
