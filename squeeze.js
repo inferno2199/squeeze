@@ -28,6 +28,16 @@
   // 🗓 seizoen (2026-10-14): Squeeze verkleedt zich mee met het seizoen dat in de generator-bot aan staat
   // (/admin → 🗓 Seasons). Testen: ?season=halloween|christmas|newyear|valentine|easter|summer
   const SEASON_KEYS = ["halloween", "christmas", "newyear", "valentine", "easter", "stpatrick", "summer"];
+  // 🎩 seizoenshoeden als echt 3D-plaatje (2026-10-21, wens gebruiker: de getekende hoed zag eruit als een sticker).
+  // Nog geen plaatje voor een seizoen = de oude getekende versie. Nieuwe hoed: assets/hats/<seizoen>.webp + hier erbij.
+  const HATS = { halloween: "assets/hats/halloween.webp?v=2" };
+  const HAT_IMG = {};
+  function hatImage(key) {
+    if (!HATS[key]) return null;
+    let im = HAT_IMG[key];
+    if (!im) { im = new Image(); im.src = HATS[key]; HAT_IMG[key] = im; }
+    return im.complete && im.naturalWidth ? im : null;
+  }
   let SEASON = (() => { try { const q = new URLSearchParams(location.search).get("season"); return SEASON_KEYS.includes(q) ? q : null; } catch (e) { return null; } })();
   if (!SEASON && !/[?&]season=/.test(location.search)) {
     fetch("https://generator.squeezeocto.com/api/info").then((r) => r.json()).then((j) => {
@@ -1442,7 +1452,14 @@
       ctx.save();
       ctx.lineJoin = "round";
       ctx.lineCap = "round";
-      if (SEASON === "halloween") {
+      if (SEASON === "halloween" && hatImage("halloween")) {
+        // heksenhoed als 3D-plaatje, een beetje scheef en wiebelend (rand van de hoed = onderste 20% van het plaatje)
+        const im = hatImage("halloween");
+        ctx.translate(0, TOP + 105); // recht en laag op het hoofd, rand net boven de wenkbrauwen (voorbeeld gebruiker)
+        ctx.rotate(Math.sin(t * 1.3) * 0.02);
+        const W = 520, H = W * im.naturalHeight / im.naturalWidth;
+        ctx.drawImage(im, -W / 2, -H * 0.8, W, H);
+      } else if (SEASON === "halloween") {
         // heksenhoed, een beetje scheef en wiebelend
         ctx.translate(22, TOP + 58);
         ctx.rotate(-0.12 + Math.sin(t * 1.3) * 0.03);
