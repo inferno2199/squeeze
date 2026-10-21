@@ -18,7 +18,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="style.css?v=20261018b" />
+  <link rel="stylesheet" href="style.css?v=20261021a" />
   <link rel="preload" as="image" href="assets/sea.jpg" />
 </head>
 <body>
@@ -45,6 +45,12 @@
     </div>
 
     <div class="side">
+      <!-- 2026-10-21: één duidelijke actie bovenaan (zolang de token er nog niet is) -->
+      <div class="cta">
+        <p class="pitch">Turn your photo into a baby octopus.<br /><b>Free</b>, in seconds. Friends and pets too.</p>
+        <a class="cta-main" href="https://generator.squeezeocto.com/" target="_blank" rel="noopener">🎨 Make my octopus</a>
+        <a class="cta-second" href="https://t.me/SqueezeOctoSquad" target="_blank" rel="noopener">Join the Squad on Telegram →</a>
+      </div>
       <div class="hero">
         <span class="hero-label" id="mcap-label">Market cap</span>
         <span id="stat-mcap" class="hero-value">–</span>
@@ -70,13 +76,6 @@
       <p class="perk">Paired with <b>$PUMP</b> · <b>3%</b> rewards to holders</p>
 
       <a id="buy" class="buy" href="#" target="_blank" rel="noopener">Buy on Pump.fun</a>
-      <a class="play-link" href="how.html">📖 How Squeeze works · everything in one place</a>
-      <a class="play-link" href="https://generator.squeezeocto.com/" target="_blank" rel="noopener">🎨 Turn your photo into an octopus</a>
-      <a class="play-link" href="games.html">🎮 Play Squeeze games · daily prizes</a>
-      <a id="nftlink" class="play-link" href="nfts.html">🥚 Squeeze Squad NFTs · minting opens at launch</a>
-      <a class="play-link" href="wallet.html">📊 Squeeze's wallet · his trades</a>
-      <a class="play-link" href="id.html">🪪 Squeeze ID · look up any wallet</a>
-      <a class="play-link" href="reef.html">🐠 The Reef · the Squeeze Squad, live</a>
 
       <p id="status" class="status" data-kind="wait"><span class="dot"></span><span id="status-text">Loading Squeeze</span></p>
 
@@ -118,6 +117,38 @@
     <div data-ad-slot class="ad-slot"></div>
   </main>
 
+  <!-- 2026-10-21: de Squad (galerij) en wat je kunt doen, als nette kaarten in plaats van een lange lijst links -->
+  <section class="below" id="squad" aria-labelledby="squad-h">
+    <h2 id="squad-h">Meet the Squad</h2>
+    <p class="below-sub">Every octopus starts as a real photo. Same outfit, same vibe, more tentacles.</p>
+    <div class="squad-grid">
+      <figure><img src="assets/squad/curly-snack.jpg" alt="Curly Snack, a galaxy octopus" width="560" height="560" loading="lazy" /><figcaption><b>Curly Snack</b><span>🌈 Legendary · Galaxy</span></figcaption></figure>
+      <figure><img src="assets/squad/blue-ink.jpg" alt="Blue Ink, Citizen number 1 of Octopolis" width="560" height="560" loading="lazy" /><figcaption><b>Blue Ink</b><span>🏙 Citizen #1 of Octopolis</span></figcaption></figure>
+      <figure><img src="assets/squad/octochief.jpg" alt="OctoChief, the chief of the Squad" width="560" height="560" loading="lazy" /><figcaption><b>OctoChief</b><span>👑 Chief of the Squad</span></figcaption></figure>
+      <figure><img src="assets/squad/tentadev.jpg" alt="TentaDev, the dev of the Squad" width="560" height="560" loading="lazy" /><figcaption><b>TentaDev</b><span>🤓 Builds everything</span></figcaption></figure>
+      <figure><img src="assets/squad/lime-green.jpg" alt="Lime Green, an octopus from a group photo" width="560" height="560" loading="lazy" /><figcaption><b>Lime Green</b><span>👥 From a group photo</span></figcaption></figure>
+      <figure><img src="assets/squad/halloween.jpg" alt="An octopus in a witch hat in an elevator" width="560" height="560" loading="lazy" /><figcaption><b>Elevator Witch</b><span>🎃 Halloween version</span></figcaption></figure>
+    </div>
+    <a class="cta-main below-cta" href="https://generator.squeezeocto.com/" target="_blank" rel="noopener">🎨 Make yours, free</a>
+  </section>
+
+  <section class="below" id="explore" aria-labelledby="explore-h">
+    <h2 id="explore-h">What's in the Squad</h2>
+    <div class="tiles">
+      <a class="tile" href="https://generator.squeezeocto.com/" target="_blank" rel="noopener"><i>🎨</i><b>Octopus generator</b><span>Selfies, pets, your whole squad. Halloween and Reaper versions too.</span></a>
+      <a class="tile" href="games.html"><i>🎮</i><b>Daily games</b><span>Hold and Squeeze Says. Play every day for prizes.</span></a>
+      <a class="tile" href="nfts.html"><i>🥚</i><b>Squeeze Squad NFTs</b><span id="nftlink">Mint your own octopus. Minting opens soon.</span></a>
+      <a class="tile" href="reef.html"><i>🐠</i><b>The Reef</b><span>Every NFT hatches as an egg and swims here, live.</span></a>
+    </div>
+    <nav class="more-links" aria-label="More">
+      <a href="how.html">📖 How it works</a>
+      <a href="id.html">🪪 Squeeze ID</a>
+      <a href="wallet.html">📊 Squeeze's wallet</a>
+      <a href="https://t.me/SqueezeOctoSquad" target="_blank" rel="noopener">💬 Telegram</a>
+      <a href="https://x.com/SqueezeOcto" target="_blank" rel="noopener">𝕏 @SqueezeOcto</a>
+    </nav>
+  </section>
+
   <footer class="legal">
     <p>$SQUEEZE is a meme coin made for fun. It has no intrinsic value, no roadmap and no promise of profit. Nothing on this site is financial advice. Crypto is extremely volatile and you can lose everything you put in. Only use money you can afford to lose and always do your own research. Holder rewards come from trading fees, so the amount depends on volume. By buying you accept that the creator is not responsible for any losses.</p>
   </footer>
@@ -135,7 +166,7 @@
       var a = document.getElementById("nftlink");
       if (!a || !d || d.mintSoon) return;
       var p = Number(d.price);
-      a.textContent = "🥚 Mint your Squeeze Squad NFT" + (p > 0 ? " · " + p.toFixed(2) + " SOL" : "") + " · now open";
+      a.textContent = "Minting is open now" + (p > 0 ? ": " + p.toFixed(2) + " SOL" : "") + ". Mint your own octopus.";
     }).catch(function () {});
   </script>
   <script src="ad.js?v=20261018c" defer></script>
