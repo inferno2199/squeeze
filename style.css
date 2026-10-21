@@ -538,6 +538,18 @@ a:focus-visible, button:focus-visible, input:focus-visible {
 .more-links a { color: var(--pump); font-weight: 700; text-decoration: none; text-shadow: 0 2px 12px rgba(0,0,0,.85); }
 .more-links a:hover { text-decoration: underline; text-underline-offset: 4px; }
 
+/* 2026-10-21 (wens gebruiker): geen vakjes, alles zweeft los over de zee (zelfde stijl als generator, how.html, nfts.html) */
+.squad-grid figure { background: none; border: 0; border-radius: 0; overflow: visible; box-shadow: none; }
+.squad-grid figure:hover { transform: translateY(-4px); }
+.squad-grid img { border-radius: 22px; box-shadow: 0 0 0 2px rgba(124,255,107,.35), 0 0 34px rgba(124,255,107,.18), 0 18px 40px -20px rgba(0,0,0,.9); }
+.squad-grid figure:hover img { box-shadow: 0 0 0 3px rgba(124,255,107,.65), 0 0 40px rgba(124,255,107,.3), 0 18px 40px -20px rgba(0,0,0,.9); }
+.squad-grid figcaption { padding: .6rem .2rem 0; text-shadow: 0 2px 12px rgba(0,0,0,.9); }
+.tile { background: none; border: 0; box-shadow: none; padding: .6rem .4rem; text-shadow: 0 2px 14px rgba(0,0,0,.9); align-items: center; text-align: center; }
+.tile:hover { transform: translateY(-3px); }
+.tile:hover b { color: var(--pump); }
+.tile i { filter: drop-shadow(0 0 14px rgba(124,255,107,.35)); }
+.tile span { color: #b9c8bc; }
+
 @media (min-width: 900px) and (orientation: landscape) {
   .side .cta { order: -1; margin-bottom: 1.2rem; }
   .side .hero { order: 0; }
