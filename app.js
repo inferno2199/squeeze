@@ -25,6 +25,8 @@
     } catch (e) {}
   }
   const MINT = (C.MINT || "").trim();
+  // 🌐 site-fasen (2026-10-22): token live (CA staat in de groepsbot) = CA/mcap/grafiek/Buy bovenaan, de generator een plek lager
+  if ((MINT && !FORCE_DEMO) || params.get("phase") === "live") document.body.classList.add("phase-live");
   const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
   const RULES = {

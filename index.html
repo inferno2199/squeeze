@@ -18,7 +18,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="style.css?v=20261021b" />
+  <link rel="stylesheet" href="style.css?v=20261022a" />
   <link rel="preload" as="image" href="assets/sea.jpg" />
 </head>
 <body>
@@ -49,6 +49,9 @@
       <div class="cta">
         <p class="pitch">Turn your photo into a baby octopus.<br /><b>Free</b>, in seconds. Friends and pets too.</p>
         <a class="cta-main" href="https://generator.squeezeocto.com/" target="_blank" rel="noopener">🎨 Make my octopus</a>
+        <!-- 🥚 fase 2 (minten open, volgt de generator): tweede knop + Citizens over -->
+        <a id="cta-mint" class="cta-mint" href="https://generator.squeezeocto.com/" target="_blank" rel="noopener" hidden>🥚 Mint it as an NFT</a>
+        <a id="cta-mint-note" class="cta-note" href="nfts.html" hidden></a>
         <a class="cta-second" href="https://t.me/SqueezeOctoSquad" target="_blank" rel="noopener">Join the Squad on Telegram →</a>
       </div>
       <div class="hero">
@@ -159,14 +162,25 @@
   <script src="friends.js?v=20261011d"></script>
   <script src="lines.js?v=20261011d"></script>
   <script src="talk.js?v=20261011d"></script>
-  <script src="app.js?v=20261018a"></script>
+  <script src="app.js?v=20261022a"></script>
   <script>
     // NFT-link volgt de generator (2026-10-18): soon = "opens at launch", open = "mint now" met de prijs
+    // 🌐 site-fasen (2026-10-22): minten open = tweede knop 🥚 + Citizens over (fase 2); ?phase=mint om te bekijken
+    var forceMint = /[?&]phase=mint\b/.test(location.search);
     fetch("https://generator.squeezeocto.com/api/info").then(function (r) { return r.json(); }).then(function (d) {
-      var a = document.getElementById("nftlink");
-      if (!a || !d || d.mintSoon) return;
+      if (!d || (d.mintSoon && !forceMint)) return;
       var p = Number(d.price);
-      a.textContent = "Minting is open now" + (p > 0 ? ": " + p.toFixed(2) + " SOL" : "") + ". Mint your own octopus.";
+      var a = document.getElementById("nftlink");
+      if (a) a.textContent = "Minting is open now" + (p > 0 ? ": " + p.toFixed(2) + " SOL" : "") + ". Mint your own octopus.";
+      document.body.classList.add("phase-mint");
+      var b = document.getElementById("cta-mint");
+      if (b) { b.textContent = "🥚 Mint it as an NFT" + (p > 0 ? " · " + p.toFixed(2) + " SOL" : ""); b.hidden = false; }
+      var n = document.getElementById("cta-mint-note");
+      var c = d.citizens || {};
+      if (n) {
+        n.textContent = c.on && c.left > 0 ? "🏙 " + c.left + " of " + c.max + " Citizen spots left · how it works →" : "How minting works →";
+        n.hidden = false;
+      }
     }).catch(function () {});
   </script>
   <script src="ad.js?v=20261018c" defer></script>

@@ -554,3 +554,18 @@ a:focus-visible, button:focus-visible, input:focus-visible {
   .side .cta { order: -1; margin-bottom: 1.2rem; }
   .side .hero { order: 0; }
 }
+
+/* ===== 2026-10-22: site-fasen =====
+   fase 1 (nu): generator bovenaan · fase 2 (minten open, body.phase-mint): tweede knop 🥚 + Citizens over
+   fase 3 (token live, body.phase-live): CA/mcap/grafiek/Buy bovenaan, de generator-blok komt onder de Buy-knop */
+.cta-mint { display: inline-block; color: var(--white); font-weight: 800; font-size: 1.02rem; text-decoration: none; padding: .7rem 1.5rem; border-radius: 999px;
+  border: 2px solid #ffd24a; background: rgba(255,210,74,.12); box-shadow: 0 0 24px rgba(255,210,74,.25); transition: transform .15s ease, box-shadow .15s ease; }
+.cta-mint:hover { transform: translateY(-2px); box-shadow: 0 10px 30px -6px rgba(255,210,74,.5); }
+.cta-note { color: #ffd24a; font-size: .9rem; font-weight: 700; text-decoration: none; text-shadow: 0 2px 12px rgba(0,0,0,.85); }
+.cta-note:hover { text-decoration: underline; text-underline-offset: 4px; }
+body.phase-live .cta { order: 7; margin: 1.2rem 0 .6rem; }
+body.phase-live .pitch { font-size: clamp(1rem, 3vw, 1.15rem); }
+@media (min-width: 900px) and (orientation: landscape) {
+  body.phase-live .side .cta { order: 5; margin-top: 1.1rem; }
+}
+.cta-mint[hidden], .cta-note[hidden] { display: none; }
