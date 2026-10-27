@@ -6,15 +6,15 @@
   var API = (C.WORKER_URL || "https://squeeze-state.inferno2199.workers.dev").replace(/\/$/, "");
   fetch(API + "/settings", { cache: "no-store" }).then(function (r) { return r.json(); }).then(function (d) {
     if (!d || !d.prelaunch) return;
-    // 🎟 "30 days, 30 free mints": op Hold- en Says-dagen wint de beste speler een gratis NFT-mint
+    // 🎟 Free mint week (7 dagen, 3 per dag): elke dag wint de beste Hold- of Says-speler een gratis NFT-mint
     var pm = d.premint && d.premint.on && /^\d{4}-\d{2}-\d{2}$/.test(d.premint.start) ? d.premint : null;
     if (pm) {
       var start = new Date(pm.start + "T00:00:00");
       var days = Math.floor((Date.now() - start.getTime()) / 86400000);
-      var soon = days < 0, live = days >= 0 && days < 30;
+      var soon = days < 0, live = days >= 0 && days < 7;
       if (soon || live) {
-        var line = soon ? "🎟 30 days, 30 free mints starts " + start.toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "short" }) + "!" : "🎟 30 days, 30 free mints: on Hold and Says days, the best player wins a free Squeeze NFT mint (redeem when minting opens)!";
-        document.querySelectorAll(".win").forEach(function (el) { el.textContent = soon ? "Practice now · free mints from " + start.toLocaleDateString("en-GB", { day: "numeric", month: "short" }) + " 🎟" : "🎟 Win a free NFT mint on game days"; });
+        var line = soon ? "🎟 Free mint week starts " + start.toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "short" }) + "!" : "🎟 Free mint week: every day the best Hold or Says player wins a free Squeeze NFT mint (redeem when minting opens)!";
+        document.querySelectorAll(".win").forEach(function (el) { el.textContent = soon ? "Practice now · free mints from " + start.toLocaleDateString("en-GB", { day: "numeric", month: "short" }) + " 🎟" : "🎟 Win a free NFT mint this week"; });
         document.querySelectorAll(".card.prize").forEach(function (card) {
           var p = document.createElement("p");
           p.className = "prelaunch-note";
