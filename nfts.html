@@ -63,7 +63,7 @@
   </header>
 
   <main class="nft">
-    <p class="status" id="status">🥚 Minting opens soon · <b>0.30 SOL</b> per octopus</p>
+    <p class="status" id="status">🥚 Minting opens Wed 4 Nov · <b>0.30 SOL</b> per octopus</p>
 
     <p class="intro">
       Send a photo and our generator turns it into <span class="hl">your own baby octopus</span>: same outfit, same pose, same vibe.
@@ -165,7 +165,7 @@
         var c = d.citizens || {};
         var open = !d.mintSoon;
         var nx = d.priceNext;
-        document.getElementById("status").innerHTML = (open ? "🟢 Minting is open" : "🥚 Minting opens soon") + (price ? " · <b>" + price + "</b> per octopus" : "") +
+        document.getElementById("status").innerHTML = (open ? "🟢 Minting is open" : "🥚 Minting opens Wed 4 Nov") + (price ? " · <b>" + price + "</b> per octopus" : "") +
           (open && c.on && c.left > 0 ? " · <b>" + c.left + "</b> of " + c.max + " Citizen spots left" : "") +
           (open && nx && nx.inMints > 0 ? "<br><span style=\"font-weight:500\">📈 " + nx.inMints + " mint" + (nx.inMints === 1 ? "" : "s") + " left at this price, then " + Number(nx.price).toFixed(2) + " SOL</span>" : "");
         if (nx) document.getElementById("price-up").textContent = "The price goes up " + nx.step + " SOL every " + nx.every + " mints: early is cheapest.";
