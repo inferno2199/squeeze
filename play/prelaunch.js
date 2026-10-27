@@ -6,19 +6,19 @@
   var API = (C.WORKER_URL || "https://squeeze-state.inferno2199.workers.dev").replace(/\/$/, "");
   fetch(API + "/settings", { cache: "no-store" }).then(function (r) { return r.json(); }).then(function (d) {
     if (!d || !d.prelaunch) return;
-    // 🎟 Free mint week (7 dagen, 3 per dag): elke dag wint de beste Hold- of Says-speler een gratis NFT-mint
+    // 🎟 Squeeze Week (7 dagen): elke dag winnen de beste Hold- én de beste Says-speler elk een gratis NFT
     var pm = d.premint && d.premint.on && /^\d{4}-\d{2}-\d{2}$/.test(d.premint.start) ? d.premint : null;
     if (pm) {
       var start = new Date(pm.start + "T00:00:00");
       var days = Math.floor((Date.now() - start.getTime()) / 86400000);
       var soon = days < 0, live = days >= 0 && days < 7;
       if (soon || live) {
-        var line = soon ? "🎟 Free mint week starts " + start.toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "short" }) + "!" : "🎟 Free mint week: every day the best Hold or Says player wins a free Squeeze NFT mint (redeem when minting opens)!";
+        var line = soon ? "🎟 Squeeze Week starts " + start.toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "short" }) + "!" : "🎟 Squeeze Week: every day the best Hold player AND the best Says player each win a free Squeeze NFT (mint it from Wed 4 Nov)!";
         document.querySelectorAll(".win").forEach(function (el) { el.textContent = soon ? "Practice now · free mints from " + start.toLocaleDateString("en-GB", { day: "numeric", month: "short" }) + " 🎟" : "🎟 Win a free NFT mint this week"; });
         document.querySelectorAll(".card.prize").forEach(function (card) {
           var p = document.createElement("p");
           p.className = "prelaunch-note";
-          p.innerHTML = line + " <span style=\"font-weight:500\">To win: be in our Telegram group and link your wallet with /id. One win per person.</span>";
+          p.innerHTML = line + " <span style=\"font-weight:500\">To win: be in our Telegram group and link this same wallet once with /id. Each contest once per person.</span>";
           p.style.cssText = "margin:0 0 .6rem;font-weight:800;color:var(--green,#7cff6b)";
           var h = card.querySelector("h2");
           if (h && h.nextSibling) card.insertBefore(p, h.nextSibling); else card.prepend(p);
