@@ -43,6 +43,7 @@
   let pressure = 0;
   let sid = null;      // sessie van deze run (van de server)
   let sidPromise = null;
+  let sidAt = 0;
   let me = loadMe();
   let bestToday = 0;    // beste run vandaag (telt voor de prijs)
   let bestAll = 0;      // beste run ooit (op dit toestel)
@@ -88,6 +89,7 @@
         })
       );
     // mens-check mislukt (403)? één keer opnieuw proberen voor we de run laten vallen
+    sidAt = Date.now();
     sidPromise = begin()
       .then((r) => (r.status === 403 ? begin() : r))
       .then((r) => {
@@ -99,11 +101,16 @@
       .catch(() => (sid = null));
     return sidPromise;
   }
+  // 🧑 2026-10-28 (Eddy: Says telde wel, Hold niet, zelfde browser): Hold vroeg de mens-check pas aan als je de knop al vasthield,
+  // dus als Cloudflare een tik wilde, kon dat niet. Nu vooraf: bij het laden van de pagina en na elke run.
+  function prefetch() {
+    if (API && !sidPromise && rounds.length === 0) startSession();
+  }
 
   function press() {
     if (holding) return;
-    // eerste ronde van een nieuwe run: sessie ophalen
-    if (rounds.length === 0 && !sidPromise) startSession();
+    // eerste ronde van een nieuwe run: sessie ophalen (meestal al klaar via prefetch; ouder dan 20 min = nieuwe)
+    if (rounds.length === 0 && (!sidPromise || Date.now() - sidAt > 20 * 60000)) startSession();
     holding = true;
     holdStart = performance.now();
     el.hold.classList.add("down");
@@ -185,6 +192,7 @@
     sid = null;
     sidPromise = null;
     if (done.score > 0) submit(done, mySid, myPromise);
+    setTimeout(prefetch, 1500); // de mens-check voor de volgende run alvast doen
   }
 
   async function submit(done, mySid, myPromise) {
@@ -539,5 +547,6 @@
   paintStats();
   refresh();
   setInterval(refresh, 20000);
+  setTimeout(prefetch, 800); // mens-check alvast, vóór de eerste druk
   requestAnimationFrame(frame);
 })();
