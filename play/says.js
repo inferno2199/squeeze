@@ -128,7 +128,7 @@
         if (d.human === false) d = await go(); // mens-check mislukt: één keer opnieuw
         sid = d.sid;
         ranked = d.ranked;
-        if (d.human === false) showErr("Couldn't confirm you're human, so this is a practice run. Try again for the leaderboard. 🐙");
+        if (d.human === false) browserBlocked();
         else if (!ranked) showErr("Practice run. Save your X handle and wallet to enter the leaderboard.");
       } catch (e) {
         if (String(e && e.message).includes("paused")) {
@@ -349,6 +349,16 @@
   function showErr(text) {
     el.err.textContent = text;
     el.err.hidden = !text;
+  }
+  // 🌐 2026-10-28: de mens-check lukt soms niet in de ingebouwde browser van Telegram/X → zeg het duidelijk + knop om de link te kopiëren
+  function browserBlocked() {
+    showErr("⚠️ Your browser blocked the human check, so this run won't count. Open " + location.host + location.pathname + " in Chrome or Safari to get on the leaderboard.");
+    const b = document.createElement("button");
+    b.type = "button";
+    b.textContent = "📋 Copy link";
+    b.style.cssText = "margin-left:.5rem;padding:.15rem .6rem;border-radius:999px;border:1px solid currentColor;background:none;color:inherit;font:inherit;cursor:pointer";
+    b.onclick = () => { try { navigator.clipboard.writeText(location.origin + location.pathname); b.textContent = "✅ Copied"; } catch {} };
+    el.err.appendChild(b);
   }
   function autoSave() {
     if (me) return true;

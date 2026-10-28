@@ -92,7 +92,7 @@
       .then((r) => (r.status === 403 ? begin() : r))
       .then((r) => {
         if (r.status === 503) showErr("Squeeze Hold is paused for a moment. Runs won't count right now. 🐙");
-        if (r.status === 403) showErr("Couldn't confirm you're human, so this run won't count. Try again. 🐙");
+        if (r.status === 403) browserBlocked();
         return r.ok ? r.json() : null;
       })
       .then((d) => (sid = d && d.sid ? d.sid : null))
@@ -366,6 +366,16 @@
   function showErr(text) {
     el.err.textContent = text;
     el.err.hidden = !text;
+  }
+  // 🌐 2026-10-28: de mens-check lukt soms niet in de ingebouwde browser van Telegram/X → zeg het duidelijk + knop om de link te kopiëren
+  function browserBlocked() {
+    showErr("⚠️ Your browser blocked the human check, so this run won't count. Open " + location.host + location.pathname + " in Chrome or Safari to get on the leaderboard.");
+    const b = document.createElement("button");
+    b.type = "button";
+    b.textContent = "📋 Copy link";
+    b.style.cssText = "margin-left:.5rem;padding:.15rem .6rem;border-radius:999px;border:1px solid currentColor;background:none;color:inherit;font:inherit;cursor:pointer";
+    b.onclick = () => { try { navigator.clipboard.writeText(location.origin + location.pathname); b.textContent = "✅ Copied"; } catch {} };
+    el.err.appendChild(b);
   }
   // 2026-10-28: iemand vulde naam + wallet in maar tikte niet op Save → zijn topscore telde niet. Nu: geldig ingevuld = vanzelf opgeslagen.
   function autoSave() {
