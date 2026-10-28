@@ -44,6 +44,7 @@
   let sid = null;      // sessie van deze run (van de server)
   let sidPromise = null;
   let sidAt = 0;
+  let sidPending = false; // sessie (mens-check) nog onderweg
   let me = loadMe();
   let bestToday = 0;    // beste run vandaag (telt voor de prijs)
   let bestAll = 0;      // beste run ooit (op dit toestel)
@@ -90,6 +91,8 @@
       );
     // mens-check mislukt (403)? één keer opnieuw proberen voor we de run laten vallen
     sidAt = Date.now();
+    sidPending = true;
+    const ready = () => { sidPending = false; if (!holding) el.hold.textContent = "Hold"; };
     sidPromise = begin()
       .then((r) => (r.status === 403 ? begin() : r))
       .then((r) => {
@@ -97,8 +100,8 @@
         if (r.status === 403) browserBlocked();
         return r.ok ? r.json() : null;
       })
-      .then((d) => (sid = d && d.sid ? d.sid : null))
-      .catch(() => (sid = null));
+      .then((d) => { ready(); return (sid = d && d.sid ? d.sid : null); })
+      .catch(() => { ready(); return (sid = null); });
     return sidPromise;
   }
   // 🧑 2026-10-28 (Eddy: Says telde wel, Hold niet, zelfde browser): Hold vroeg de mens-check pas aan als je de knop al vasthield,
@@ -111,6 +114,12 @@
     if (holding) return;
     // eerste ronde van een nieuwe run: sessie ophalen (meestal al klaar via prefetch; ouder dan 20 min = nieuwe)
     if (rounds.length === 0 && (!sidPromise || Date.now() - sidAt > 20 * 60000)) startSession();
+    // 2026-10-28 ("Bad run."): de server meet vanaf het moment dat de sessie klaar is; begon de run eerder, dan leek hij "te lang".
+    // Dus een nieuwe run start pas als de mens-check/sessie klaar is (meestal al lang, dankzij prefetch).
+    if (API && rounds.length === 0 && sidPending) {
+      el.hold.textContent = "One sec…";
+      return;
+    }
     holding = true;
     holdStart = performance.now();
     el.hold.classList.add("down");
@@ -192,7 +201,7 @@
     sid = null;
     sidPromise = null;
     if (done.score > 0) submit(done, mySid, myPromise);
-    setTimeout(prefetch, 1500); // de mens-check voor de volgende run alvast doen
+    setTimeout(prefetch, 0); // de mens-check voor de volgende run meteen alvast doen
   }
 
   async function submit(done, mySid, myPromise) {
