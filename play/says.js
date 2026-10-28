@@ -244,8 +244,8 @@
       tiles[right[wrongAt]].classList.add("hint");
       setTimeout(() => tiles[right[wrongAt]].classList.remove("hint"), 1400);
     }
-    celebrate(score);
-    if (res.error) showErr(res.error.charAt(0).toUpperCase() + res.error.slice(1) + ".");
+    celebrate(score, !(ranked && res.error)); // niet bewaard op het bord = ook niet als 'Today'
+    if (res.error) showErr(`⚠️ Your run of ${score} wasn't saved: ` + res.error.charAt(0).toUpperCase() + res.error.slice(1) + ".");
     else if (ranked && res.rank && res.rank <= 5) setTimeout(() => toast(`You're #${res.rank} today!`, "good"), 1600);
     if (res.best != null) setBest(res.best);
     if (!localMode && ranked) refresh();
@@ -309,11 +309,11 @@
     { k: "shark", line: "Even I'm impressed." },
   ];
   let friendT = 0;
-  function celebrate(v) {
+  function celebrate(v, keep = true) {
     if (v <= 0) return;
     const wasToday = bestToday;
     const wasAll = bestAll;
-    setBest(v);
+    if (keep) setBest(v);
     if (v <= wasToday) return;
     const allTime = v > wasAll && wasAll > 0;
     const n = Number(localStorage.getItem("squeeze-says-friend") || 0);

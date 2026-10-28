@@ -190,7 +190,7 @@
 
   function endRun() {
     const done = { score: run, rounds: rounds.slice() };
-    celebrate(run);
+    celebrate(run, !API); // met leaderboard: 'Today' pas ophogen als de server de run echt bewaard heeft
     newBestShown = false;
     const mySid = sid;
     const myPromise = sidPromise;
@@ -223,7 +223,7 @@
       });
       const d = await r.json().catch(() => ({}));
       if (!r.ok) {
-        showErr(d.error ? cap(d.error) + "." : "Couldn't save this run.");
+        showErr(`⚠️ Your run of ${done.score} wasn't saved: ` + (d.error ? cap(d.error) + "." : "please try again."));
         return;
       }
       showErr("");
@@ -231,7 +231,7 @@
       if (d.rank && d.rank <= 5) toast(`You're #${d.rank} today!`, "good");
       refresh();
     } catch {
-      showErr("Couldn't reach the leaderboard.");
+      showErr(`⚠️ Your run of ${done.score} wasn't saved: couldn't reach the leaderboard.`);
     }
   }
 
@@ -268,11 +268,11 @@
     { k: "shark", line: "Even I'm impressed." },
   ];
   let friendT = 0;
-  function celebrate(score) {
+  function celebrate(score, keep = true) {
     if (score <= 0) return;
     const wasToday = bestToday;
     const wasAll = bestAll;
-    setBest(score);
+    if (keep) setBest(score);
     if (score <= wasToday) return;
     const allTime = score > wasAll && wasAll > 0;
     let n = Number(localStorage.getItem("squeeze-hold-friend") || 0);
