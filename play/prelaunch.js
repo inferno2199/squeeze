@@ -18,7 +18,8 @@
         document.querySelectorAll(".card.prize").forEach(function (card) {
           var p = document.createElement("p");
           p.className = "prelaunch-note";
-          p.innerHTML = line + " <span style=\"font-weight:500\">To win: be in our Telegram group and link this same wallet once with /id. Each contest once per person.</span>";
+          p.innerHTML = line + " <span style=\"font-weight:500\">To win: be in our Telegram group and link this same wallet once with /id. Each contest once per person.</span>" +
+            (soon ? "" : " <span style=\"display:block;margin-top:.35rem\">🎮 Bonus: playing with your X name = DOUBLE chance in our daily $50 SOL giveaway on X (@SqueezeOcto)!</span>"); // idee Zuko 2026-10-28
           p.style.cssText = "margin:0 0 .6rem;font-weight:800;color:var(--green,#7cff6b)";
           var h = card.querySelector("h2");
           if (h && h.nextSibling) card.insertBefore(p, h.nextSibling); else card.prepend(p);
