@@ -122,8 +122,10 @@
     localMode = !API;
     if (!localMode) {
       try {
-        const turnstile = me && window.SqzHuman ? await window.SqzHuman.token() : null;
-        const d = await post("/says/start", me ? { handle: me.handle, wallet: me.wallet, turnstile } : {});
+        autoSave(); // naam + wallet ingevuld maar Save vergeten? dan nu opslaan (2026-10-28)
+        const go = async () => post("/says/start", me ? { handle: me.handle, wallet: me.wallet, turnstile: me && window.SqzHuman ? await window.SqzHuman.token() : null } : {});
+        let d = await go();
+        if (d.human === false) d = await go(); // mens-check mislukt: één keer opnieuw
         sid = d.sid;
         ranked = d.ranked;
         if (d.human === false) showErr("Couldn't confirm you're human, so this is a practice run. Try again for the leaderboard. 🐙");
@@ -347,6 +349,17 @@
   function showErr(text) {
     el.err.textContent = text;
     el.err.hidden = !text;
+  }
+  function autoSave() {
+    if (me) return true;
+    const handle = el.handle.value.trim().replace(/^@/, "");
+    const wallet = el.wallet.value.trim();
+    if (!HANDLE_RE.test(handle) || !WALLET_RE.test(wallet)) return false;
+    me = { handle, wallet };
+    try { localStorage.setItem(ME_KEY, JSON.stringify(me)); } catch {}
+    paintMe();
+    paintList(el.board, lastRows, true);
+    return true;
   }
   el.form.addEventListener("submit", (e) => {
     e.preventDefault();

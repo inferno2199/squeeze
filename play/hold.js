@@ -79,14 +79,17 @@
   // ---------- vasthouden en loslaten ----------
   function startSession() {
     if (!API) return null;
-    sidPromise = (window.SqzHuman ? window.SqzHuman.token() : Promise.resolve(null))
+    const begin = () => (window.SqzHuman ? window.SqzHuman.token() : Promise.resolve(null))
       .then((turnstile) =>
         fetch(API + "/hold/start", {
           method: "POST",
           headers: { "content-type": "application/json" },
           body: JSON.stringify({ turnstile }),
         })
-      )
+      );
+    // mens-check mislukt (403)? één keer opnieuw proberen voor we de run laten vallen
+    sidPromise = begin()
+      .then((r) => (r.status === 403 ? begin() : r))
       .then((r) => {
         if (r.status === 503) showErr("Squeeze Hold is paused for a moment. Runs won't count right now. 🐙");
         if (r.status === 403) showErr("Couldn't confirm you're human, so this run won't count. Try again. 🐙");
@@ -186,7 +189,7 @@
 
   async function submit(done, mySid, myPromise) {
     if (!API) return;
-    if (!me) {
+    if (!me && !autoSave()) {
       showErr("Save your X handle and wallet to enter today's leaderboard.");
       return;
     }
@@ -363,6 +366,18 @@
   function showErr(text) {
     el.err.textContent = text;
     el.err.hidden = !text;
+  }
+  // 2026-10-28: iemand vulde naam + wallet in maar tikte niet op Save → zijn topscore telde niet. Nu: geldig ingevuld = vanzelf opgeslagen.
+  function autoSave() {
+    if (me) return true;
+    const handle = el.handle.value.trim().replace(/^@/, "");
+    const wallet = el.wallet.value.trim();
+    if (!HANDLE_RE.test(handle) || !WALLET_RE.test(wallet)) return false;
+    me = { handle, wallet };
+    try { localStorage.setItem(ME_KEY, JSON.stringify(me)); } catch {}
+    paintMe();
+    paintBoardMe();
+    return true;
   }
   el.form.addEventListener("submit", (e) => {
     e.preventDefault();
