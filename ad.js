@@ -1,4 +1,5 @@
-// ad.js — toont de betaalde advertentie van dat moment; geen betaalde advertentie = niets (wens gebruiker 2026-10-31: onze eigen links niet meer in dit blok).
+// ad.js — toont de betaalde advertentie van dat moment (📣 AD ·), anders een eigen link (🐙), in dezelfde grote stijl:
+// zo zien adverteerders waar hun advertentie komt (wens gebruiker 2026-10-31).
 // Staat er een <div data-ad-slot></div> op de pagina, dan komt hij daar; anders als klein balkje onderaan.
 (function () {
   var cfg = window.SQUEEZE_CONFIG || {};
@@ -6,7 +7,14 @@
   fetch(worker + "/tg/ad", { cache: "no-store" })
     .then(function (r) { return r.ok ? r.json() : null; })
     .then(function (a) {
-      if (!a || !a.url || !a.label || !a.sponsored) return;
+      if (!a || !a.url || !a.label) return;
+      // eigen link (geen betaalde advertentie) die al op de pagina staat? dan niet nog eens tonen (geen dubbele link)
+      var plain = function (t) { return String(t || "").toLowerCase().replace(/[^a-z0-9]+/g, " ").trim(); };
+      if (!a.sponsored) {
+        var mine = plain(a.label);
+        var dup = Array.prototype.some.call(document.querySelectorAll("a"), function (x) { return mine && plain(x.textContent).indexOf(mine) >= 0; });
+        if (dup) return;
+      }
       var css = document.createElement("style");
       css.textContent =
         // geen balk: los zwevende tekst in het midden
@@ -29,7 +37,7 @@
       link.rel = "noopener sponsored";
       link.textContent = a.label;
       var tag = document.createElement("small");
-      tag.textContent = "📣 AD ·";
+      tag.textContent = a.sponsored ? "📣 AD ·" : "🐙";
       box.appendChild(tag);
       box.appendChild(link);
       // geen kruisje: een (betaalde) advertentie kan niet weggeklikt worden
