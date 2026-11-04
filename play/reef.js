@@ -66,8 +66,8 @@
   var t0 = performance.now(), T = 0;
 
   // grootte per rang (0 = geen rang … 6 = Kraken, 7 = OctoChief)
-  var SIZE = [70, 76, 84, 94, 106, 120, 138, 156];
-  function depthOf(size) { return clamp(0.58 + size * 0.06, 0.58, 1); } // 1 = vooraan
+  var SIZE = [64, 67, 70, 74, 78, 83, 89, 90]; // 2026-11-04: gelijkmatige trap, alleen de OctoChief-NFT ±1,8x een nieuwe minter (was ±4x)
+  function depthOf(size) { return clamp(0.78 + size * 0.03, 0.78, 1); } // 1 = vooraan
 
   function makeFish(n, x, y) {
     var size = n.size || 0;
