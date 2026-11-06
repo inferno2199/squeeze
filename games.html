@@ -43,15 +43,46 @@
       <p class="win">Win $SQUEEZE daily</p>
       <span class="go">Play</span>
     </a>
+    <a class="game-card gw-new" href="stack.html" style="display:none">
+      <div class="art"><img src="assets/squeeze-face.png" alt="" /></div>
+      <h2>Squeeze Stack <small style="color:#052b07;background:#ffd24a;border-radius:6px;padding:1px 6px;font-size:.6em;vertical-align:middle">NEW</small></h2>
+      <p>Tap to drop the layer. Build the tower as high as you can. Land it perfectly for a combo.</p>
+      <p class="win">Daily board</p>
+      <span class="go">Play</span>
+    </a>
+    <a class="game-card gw-new" href="whichjar.html" style="display:none">
+      <div class="art">
+        <img class="mini" src="assets/squeeze-face.png" alt="" />
+        <img class="mini" src="assets/friends/crab.png" alt="" />
+      </div>
+      <h2>Which Jar? <small style="color:#052b07;background:#ffd24a;border-radius:6px;padding:1px 6px;font-size:.6em;vertical-align:middle">NEW</small></h2>
+      <p>Squeeze hides in a jar and Pinchy shuffles them. Follow him and tap the right jar.</p>
+      <p class="win">Daily board</p>
+      <span class="go">Play</span>
+    </a>
   </main>
-  <p class="hub-note">One entry (X handle + wallet) works for both games.</p>
+  <p class="hub-note">One entry (X handle + wallet) works for every game.</p>
+  <script>
+    // 🤫 de nieuwe spellen verschijnen pas als de Game Week start (vr 6 nov 2026 20:00 CET), vanzelf; testen met ?test=1
+    (function () {
+      var REVEAL = Date.UTC(2026, 10, 6, 19);
+      function show() {
+        if (!(/[?&]test=1\b/.test(location.search) || Date.now() >= REVEAL)) return false;
+        document.querySelectorAll(".gw-new").forEach(function (a) { a.style.display = ""; });
+        var s = document.querySelector(".top .sub");
+        if (s) s.innerHTML = 'Four free daily games. The board closes every day at <span class="tz">' + ((s.querySelector(".tz") || {}).textContent || "8:00 PM CET") + "</span>.";
+        return true;
+      }
+      if (!show()) { var t = setInterval(function () { if (show()) clearInterval(t); }, 15000); }
+    })();
+  </script>
   <p class="hub-note"><a href="reef.html" style="color:var(--green);font-weight:800;text-decoration:none">🐠 Visit the Reef: every Squeeze Squad octopus, swimming live →</a></p>
   <p class="hub-note"><a href="nfts.html" style="color:var(--green);font-weight:800;text-decoration:none">🥚 Squeeze Squad NFTs: how minting, Citizens and the Jar work →</a></p>
   <p class="hub-note"><a href="jar.html" style="color:var(--green);font-weight:800;text-decoration:none">🫙 Crack the Jar: weekly game for the Citizens of Octopolis →</a><br><span id="jar-pot" style="color:var(--green);font-weight:800" hidden></span></p>
   <div data-ad-slot></div>
   <script src="ad.js?v=20261031b" defer></script>
   <script src="config.js?v=20261011d"></script>
-  <script src="play/prelaunch.js?v=20261028a" defer></script>
+  <script src="play/prelaunch.js?v=20261105a" defer></script>
   <script>
     // CET in de winter, CEST in de zomer
     (function () {

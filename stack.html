@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>Squeeze Stack — daily game ($SQUEEZE)</title>
+  <meta name="description" content="Stack the layers as high as you can. Land it perfectly for a combo." />
+  <meta name="theme-color" content="#030604" />
+  <meta property="og:title" content="Squeeze Stack" />
+  <meta property="og:description" content="Stack the layers as high as you can. Land it perfectly for a combo." />
+  <meta property="og:image" content="https://squeezeocto.com/assets/og.png" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <link rel="canonical" href="https://squeezeocto.com/stack.html" />
+  <link rel="icon" href="assets/icon.png" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="play/play.css?v=20261011d" />
+  <style>
+    canvas.mg { display: block; width: 100%; max-width: 420px; margin: 0 auto; aspect-ratio: 2 / 3; touch-action: manipulation; cursor: pointer; }
+    .mg-hud { display: flex; justify-content: space-between; align-items: center; max-width: 420px; margin: 6px auto 0; color: var(--muted); font-weight: 700; }
+    .mg-hud b { color: var(--text); }
+    .mg-hud button { font: 700 15px var(--font); color: var(--text); background: none; border: 0; cursor: pointer; }
+    #tries-line { text-align: center; font-weight: 800; color: var(--green, #7cff6b); margin: .5rem 0 0; }
+  </style>
+</head>
+<body>
+  <div class="seabg" aria-hidden="true"></div>
+
+  <header class="top">
+    <a class="back" href="games.html">← All games</a>
+    <h1>Squeeze Stack</h1>
+    <p class="sub">Tap to drop the layer. Build the tower as high as you can.</p>
+  </header>
+
+  <main class="wrap">
+    <section class="game">
+      <canvas class="mg" id="c" width="480" height="720" aria-label="Squeeze Stack"></canvas>
+      <div class="mg-hud"><span>Score <b id="score">0</b></span><button id="mute" type="button" aria-label="Sound on or off">🔊</button><span>Best today <b id="best">0</b></span></div>
+      <button id="start" class="hold" type="button">Start</button>
+      <p id="tries-line" hidden></p>
+      <p class="hint">Only the part that lands on the tower stays. Land it perfectly to build a combo: 3 perfects in a row makes the layer grow back. Faster every layer. Tap the game, the button, or press space.</p>
+    </section>
+
+    <aside class="side">
+      <section class="card">
+        <h2>Today's round</h2>
+        <p class="clock"><span id="clock">–</span></p>
+        <p class="muted" id="close-local">Closes daily at <span class="tz">8:00 PM CET</span>.</p>
+        <ol class="board" id="board"><li class="empty">Loading…</li></ol>
+      </section>
+
+      <div data-ad-slot></div>
+
+      <section class="card" id="me-card">
+        <h2>Your entry</h2>
+        <form id="me-form" autocomplete="off">
+          <label>X handle<input id="me-handle" maxlength="16" placeholder="yourhandle" /></label>
+          <label>Solana wallet <small>(private, never shown)</small><input id="me-wallet" maxlength="44" placeholder="for the prize" /></label>
+          <button type="submit">Save</button>
+        </form>
+        <div id="me-saved" hidden>
+          <p><b id="me-name"></b> <button id="me-edit" class="link" type="button">change</button></p>
+          <p class="muted">Your wallet is linked to your X handle. Only the team can see it. Same entry for all Squeeze games.</p>
+        </div>
+        <p class="err" id="me-err" hidden></p>
+        <p class="muted" style="margin-top:.4rem">🕹 Tip: play in Chrome or Safari, not the X or Telegram browser, so your score always counts.</p>
+      </section>
+
+      <section class="card prize">
+        <h2>Prizes</h2>
+        <p class="muted">Prizes come with events like Game Week. Your best run of the day always counts on the daily board.</p>
+      </section>
+
+      <section class="card">
+        <h2>Yesterday's top 5</h2>
+        <ol class="board" id="last"><li class="empty">–</li></ol>
+      </section>
+
+      <section class="card rules">
+        <h2>Rules</h2>
+        <ul>
+          <li>Free to play. No purchase needed.</li>
+          <li>Your best run of the day counts. The board closes at <span class="tz">8:00 PM CET</span>.</li>
+          <li>Without a Squeeze Squad NFT you get a few tries per day that count. NFT holders play unlimited. Practice runs are always free.</li>
+          <li>One X account and one wallet per person. Your X handle is linked to one wallet for good.</li>
+          <li>To win a prize: hold a Squeeze Squad NFT, be in our Telegram group and link + verify that same wallet with /id.</li>
+          <li>Suspicious scores are checked and can be removed. The team decides in disputes.</li>
+        </ul>
+      </section>
+    </aside>
+  </main>
+
+  <script src="config.js?v=20261011d"></script>
+  <script src="play/human.js?v=20261011d"></script>
+  <script src="play/minigame.js?v=20261105a"></script>
+  <script src="play/stack.js?v=20261105a"></script>
+  <script src="play/prelaunch.js?v=20261105a" defer></script>
+  <script src="ink.js?v=20261011d" data-page="stack" defer></script>
+  <script src="life.js?v=20261014a" data-friends="few" defer></script>
+  <script src="ad.js?v=20261031b" defer></script>
+<!-- Cloudflare Web Analytics (bezoekers tellen, geen cookies) --><script type='module' src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "5b6397ad9cae4dcbad3dac16b14a5b70"}'></script><!-- End Cloudflare Web Analytics -->
+</body>
+</html>
