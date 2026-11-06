@@ -131,15 +131,29 @@
       paintTries(null);
     });
 
+    // 🧑 mens-check VOORAF (zoals Hold, 2026-11-06: Danie op Safari): bij het laden en na elke run alvast een token halen,
+    // zodat Cloudflare tijd heeft (en een eventueel vinkje kan tonen) vóór je op Start tikt. Een token is 5 min geldig en maar 1x bruikbaar.
+    let tsCache = null;
+    function prefetchHuman() {
+      if (!API || !window.SqzHuman || !window.SqzHuman.enabled || tsCache) return;
+      tsCache = { at: Date.now(), p: window.SqzHuman.token().catch(() => null) };
+    }
+    async function humanToken(fresh) {
+      if (!window.SqzHuman) return null;
+      const c = tsCache;
+      tsCache = null;
+      if (!fresh && c && Date.now() - c.at < 240000) { const t = await c.p; if (t) return t; }
+      return window.SqzHuman.token();
+    }
     // een run beginnen bij de server: { sid, ranked } · { local: true } (geen server = oefenen) · { paused: true }
     async function start() {
       showErr("");
       if (!API) return { local: true };
       autoSave();
       try {
-        const go = async () => post("/" + game + "/start", me ? { handle: me.handle, wallet: me.wallet, turnstile: window.SqzHuman ? await window.SqzHuman.token() : null } : {});
-        let d = await go();
-        if (d.human === false) d = await go(); // mens-check mislukt: één keer opnieuw
+        const go = async (fresh) => post("/" + game + "/start", me ? { handle: me.handle, wallet: me.wallet, turnstile: await humanToken(fresh) } : {});
+        let d = await go(false);
+        if (d.human === false) d = await go(true); // mens-check mislukt: één keer opnieuw, met een verse check
         if (d.tries) paintTries(d.tries);
         if (d.human === false) browserBlocked();
         else if (!d.ranked) showErr(me && d.tries && d.tries.limit && !d.tries.unlimited && d.tries.left <= 0
@@ -157,6 +171,7 @@
       if (res && res.error) showErr(`⚠️ Your run of ${score} wasn't saved: ` + cap(res.error) + ".");
       if (res && res.tries) paintTries(res.tries);
       if (ranked) refresh();
+      setTimeout(prefetchHuman, 0); // mens-check voor de volgende run alvast
     }
 
     function paintList(ol, rows, mark) {
@@ -220,6 +235,7 @@
     paintMe();
     refresh();
     loadTries(game);
+    setTimeout(prefetchHuman, 800); // mens-check alvast, vóór de eerste Start
     setInterval(refresh, 20000);
     requestAnimationFrame(tickClock);
     return { API, post, start, after, refresh, showErr, get me() { return me; } };
