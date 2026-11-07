@@ -152,6 +152,10 @@ body {
 .board li.top5 b { color: var(--green); }
 .board li.me { background: rgba(124, 255, 107, 0.08); border-radius: 8px; }
 .board .score { font-weight: 800; }
+/* 🚫 Game Week: verdachte score telt niet mee voor de prijs (grijs + doorgestreept) */
+.board li.nc b, .board li.nc.top5 b { color: var(--muted); }
+.board li.nc .score { color: var(--muted); text-decoration: line-through; opacity: 0.7; }
+.board .nc-tag { color: #ffb84d; font-weight: 700; font-size: 0.8em; white-space: nowrap; }
 
 label { display: block; color: var(--muted); font-size: 0.85rem; margin-bottom: 0.6rem; }
 label small { color: var(--muted); opacity: 0.8; }

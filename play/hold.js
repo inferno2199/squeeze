@@ -446,6 +446,7 @@
       const s = document.createElement("span");
       s.className = "score";
       s.textContent = r.score;
+      if (r.nc) { li.classList.add("nc"); const w = document.createElement("small"); w.className = "nc-tag"; w.textContent = " ⚠️ not counted"; n.appendChild(w); } // 🚫 verdacht: geen prijs
       li.append(n, s);
       ol.appendChild(li);
     });
