@@ -143,6 +143,21 @@
     nextRound();
   }
 
+  // ⏱ 2026-11-07: tijdslimiet om te antwoorden (1,5 s per vriendje + 3 s, de server bepaalt), met aftelling in de statusregel
+  let limit = 0, deadline = 0, timer = null, tooSlow = false;
+  const turnText = () => `Your turn · ${taps.length} / ${seq.length} · ⏱ ${Math.max(0, Math.ceil((deadline - performance.now()) / 1000))}s`;
+  function stopTimer() { if (timer) clearInterval(timer); timer = null; }
+  function startTimer() {
+    stopTimer();
+    tooSlow = false;
+    deadline = performance.now() + limit;
+    timer = setInterval(() => {
+      if (phase !== "input") return stopTimer();
+      if (performance.now() >= deadline) { stopTimer(); tooSlow = true; return finishRound(false); }
+      status(turnText());
+    }, 200);
+  }
+
   async function nextRound() {
     phase = "wait";
     setTilesEnabled(false);
@@ -152,12 +167,14 @@
       const len = START_LEN + round - 1;
       seq = Array.from({ length: len }, () => (Math.random() * FRIENDS.length) | 0);
       step = Math.max(320, 760 - (round - 1) * 45);
+      limit = len * 1500 + 3000;
     } else {
       try {
         const d = await post("/says/round", { sid });
         round = d.round;
         seq = d.seq;
         step = d.step;
+        limit = d.limit || seq.length * 1500 + 3000;
       } catch (e) {
         status("Connection lost. Press start to play again.");
         return endUi();
@@ -176,7 +193,8 @@
     taps = [];
     phase = "input";
     setTilesEnabled(true);
-    status(`Your turn · 0 / ${seq.length}`);
+    startTimer();
+    status(turnText());
   }
 
   function tap(i) {
@@ -185,12 +203,13 @@
     taps.push(i);
     const pos = taps.length - 1;
     if (taps[pos] !== seq[pos]) return finishRound(false);
-    status(`Your turn · ${taps.length} / ${seq.length}`);
+    status(turnText());
     if (taps.length === seq.length) finishRound(true);
   }
 
   async function finishRound(okLocal) {
     phase = "wait";
+    stopTimer();
     setTilesEnabled(false);
     let res;
     if (localMode) {
@@ -234,7 +253,8 @@
     }
     // fout: laat de juiste volgorde zien
     const record = score > 0 && score > bestToday;
-    status(record ? `New high score: ${score}!` : `Wrong friend. Run over · ${score}`);
+    const slow = tooSlow || res.slow;
+    status(record ? `New high score: ${score}!` : slow ? `⏱ Too slow. Run over · ${score}` : `Wrong friend. Run over · ${score}`);
     toast(record ? `New high score: ${score}` : `Run over · ${score}`, record ? "good" : "bad");
     sq.flinch = 1;
     sq.setPrice(record ? 0.7 : -0.6);
