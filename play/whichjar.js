@@ -63,10 +63,16 @@
     phase = "show"; t0 = performance.now();
   }
 
+  const PICK_MS = 10000; // ⏱ max 10 s om te kiezen (zelfde als de server, 2026-11-08)
+  let slow = false;
   async function pick(x) {
     let s = 0, d = 1e9;
     for (let i = 0; i < n; i++) { const dd = Math.abs(x - slotX(i, n)); if (dd < d) { d = dd; s = i; } }
-    picked = jarAtSlot(s);
+    return pickSlot(s);
+  }
+  async function pickSlot(s) {
+    slow = s < 0;
+    picked = s < 0 ? -1 : jarAtSlot(s);
     phase = "check";
     if (local) {
       correct = s === finalOf(hidden, swaps);
@@ -78,7 +84,8 @@
     if (correct) { score = res.score; $score.textContent = score; beep(660, 140, "triangle", 0.13); say("squeeze", pickOne(S_FOUND), slotX(s, n), 330, 1200); }
     else {
       beep(180, 380, "sawtooth", 0.1, -120);
-      const tx = slotX(s, n) + (slotX(s, n) > W / 2 ? -80 : 80);
+      const cs = s < 0 ? finalOf(hidden, swaps) : s;
+      const tx = slotX(cs, n) + (slotX(cs, n) > W / 2 ? -80 : 80);
       crab = { x0: W - 70, y0: 640, x1: tx, y1: 585, t0: performance.now(), said: false };
     }
     finished = !!res.finished;
@@ -107,10 +114,11 @@
 
   function step(now) {
     const t = now - t0;
+    if (phase === "pick" && t > PICK_MS) { pickSlot(-1); return; } // te laat = ronde verloren
     if (phase === "show" && t > show) { phase = "swap"; t0 = now; anim = null; }
     if (phase === "swap") {
       if (!anim) {
-        if (!queue.length) { phase = "pick"; return; }
+        if (!queue.length) { phase = "pick"; t0 = now; return; }
         const [a, b] = queue.shift();
         anim = { a: jarAtSlot(a), b: jarAtSlot(b), sa: a, sb: b, t0: now };
         beep(300 + Math.random() * 120, 40, "sine", 0.04);
@@ -149,13 +157,17 @@
       if (p >= 1 && !crab.said) { crab.said = true; say("pinchy", pickOne(P_WRONG), cx, cy - 75, 4000); beep(520, 70, "square", 0.05); setTimeout(() => beep(620, 70, "square", 0.05), 110); setTimeout(() => beep(720, 90, "square", 0.05), 220); }
     } else G.drawImg(G.CRAB, W - 70, 640 + Math.sin(now / 300) * 2, 90, true);
     ctx.save(); ctx.shadowColor = "rgba(0,0,0,.85)"; ctx.shadowBlur = 14;
-    if (phase === "pick") text("Where is Squeeze?", W / 2, 230, 32, GREEN);
+    if (phase === "pick") {
+      const left = Math.max(0, Math.ceil((PICK_MS - (now - t0)) / 1000));
+      text("Where is Squeeze?", W / 2, 230, 32, GREEN);
+      text(left + "s", W / 2, 270, 24, left <= 3 ? "#ffb4b4" : "#fff");
+    }
     if (phase === "show") text("Watch closely…", W / 2, 230, 30);
     if (phase === "check") text("…", W / 2, 230, 34);
     if (phase === "reveal" && correct) text("Found him! 🎉", W / 2, 230, 34, GREEN);
-    if (phase === "ready" || phase === "wait") { text("Which Jar?", W / 2, 230, 46, GREEN); text(phase === "wait" ? "Getting ready…" : "Tap to start", W / 2, 274, 24, "#fff"); text("Follow the jar with Squeeze in it", W / 2, 310, 19, "#cfe"); }
+    if (phase === "ready" || phase === "wait") { text("Which Jar?", W / 2, 230, 46, GREEN); text(phase === "wait" ? "Getting ready…" : "Tap to start", W / 2, 274, 24, "#fff"); text("Follow the jar with Squeeze in it", W / 2, 310, 19, "#cfe"); text("You have 10 seconds to pick", W / 2, 336, 17, "#cfe"); }
     if (phase === "over") {
-      text(finished && correct ? "🏆 Max level!" : "Wrong jar!", W / 2, 150, 32, finished && correct ? GREEN : "#ffb4b4");
+      text(finished && correct ? "🏆 Max level!" : slow ? "Too slow! ⏱" : "Wrong jar!", W / 2, 150, 32, finished && correct ? GREEN : "#ffb4b4");
       text(`${score}`, W / 2, 222, 72, GREEN);
       text(`Best today ${best}`, W / 2, 262, 20, "#fff");
       if (now - t0 > 600) text("Tap to play again", W / 2, 302, 22, "#fff");
