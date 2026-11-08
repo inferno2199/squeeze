@@ -23,14 +23,16 @@
   }
 
   let hintEl = null;
-  function showHint(on) {
+  const HINT1 = "Checking you're human… tick the box if it shows up 🐙";
+  const HINT2 = "Taking long? Open this page in Chrome or Safari (not inside Telegram or X) 🐙";
+  function showHint(on, txt) {
     if (!on) { if (hintEl) hintEl.style.display = "none"; return; }
     if (!hintEl) {
       hintEl = document.createElement("div");
-      hintEl.textContent = "Checking you're human… tick the box if it shows up 🐙";
       hintEl.style.cssText = "position:fixed;left:50%;bottom:92px;transform:translateX(-50%);z-index:61;background:rgba(7,20,11,.92);color:#7cff6b;font:700 14px/1.3 system-ui,sans-serif;padding:8px 14px;border-radius:12px;text-align:center;max-width:90vw";
       document.body.appendChild(hintEl);
     }
+    hintEl.textContent = txt || HINT1;
     hintEl.style.display = "block";
   }
 
@@ -43,12 +45,15 @@
       let settled = false;
       // ⏳ 2026-11-08 (Noel: "it takes a long while for the Cloudflare check to come"): duurt de check langer dan 3 s,
       // dan een regeltje boven het vakje, zodat je weet dat je moet wachten (of het vakje aanvinken).
-      const hint = setTimeout(() => showHint(true), 3000);
+      const hint = setTimeout(() => showHint(true, HINT1), 3000);
+      // 💡 2026-11-08: na 10 s de tip voor in-app browsers (Telegram/X), waar het vakje vaak nooit komt
+      const hint2 = setTimeout(() => showHint(true, HINT2), 10000);
       const done = (t) => {
         if (settled) return;
         settled = true;
         pending = null;
         clearTimeout(hint);
+        clearTimeout(hint2);
         showHint(false);
         resolve(t || null);
       };
