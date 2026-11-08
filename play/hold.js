@@ -45,6 +45,8 @@
   let sidPromise = null;
   let sidAt = 0;
   let sidPending = false; // sessie (mens-check) nog onderweg
+  let sidFail = false;    // laatste sessie-aanvraag faalde door de verbinding (niet mens-check/pauze)
+  const NO_LINK = "Can't reach the leaderboard right now. Check your connection and tap Hold again. 🐙";
   let me = loadMe();
   let bestToday = 0;    // beste run vandaag (telt voor de prijs)
   let bestAll = 0;      // beste run ooit (op dit toestel)
@@ -96,12 +98,20 @@
     sidPromise = begin()
       .then((r) => (r.status === 403 ? begin() : r))
       .then((r) => {
+        if (r.status === 503 || r.status === 403) sidFail = false;
         if (r.status === 503) showErr("Squeeze Hold is paused for a moment. Runs won't count right now. 🐙");
-        if (r.status === 403) browserBlocked();
+        else if (r.status === 403) browserBlocked();
+        else if (!r.ok) { sidFail = true; showErr(NO_LINK); }
         return r.ok ? r.json() : null;
       })
-      .then((d) => { ready(); return (sid = d && d.sid ? d.sid : null); })
-      .catch(() => { ready(); return (sid = null); });
+      .then((d) => {
+        ready();
+        sid = d && d.sid ? d.sid : null;
+        if (sid) sidFail = false;
+        if (sid && el.err.textContent === NO_LINK) showErr("");
+        return sid;
+      })
+      .catch(() => { ready(); sidFail = true; showErr(NO_LINK); return (sid = null); });
     return sidPromise;
   }
   // 🧑 2026-10-28 (Eddy: Says telde wel, Hold niet, zelfde browser): Hold vroeg de mens-check pas aan als je de knop al vasthield,
@@ -117,6 +127,13 @@
     // 2026-10-28 ("Bad run."): de server meet vanaf het moment dat de sessie klaar is; begon de run eerder, dan leek hij "te lang".
     // Dus een nieuwe run start pas als de mens-check/sessie klaar is (meestal al lang, dankzij prefetch).
     if (API && rounds.length === 0 && sidPending) {
+      el.hold.textContent = "One sec…";
+      return;
+    }
+    // 2026-11-08 (Johnny: 500 punten, "Couldn't reach the leaderboard"): de sessie was nooit aangekomen en de run mocht toch.
+    // Nu: sessie mislukt door de verbinding = geen run (mens-check geblokkeerd of pauze: spelen mag, dat zegt de melding al); meteen opnieuw proberen, de speler tikt nog eens zodra hij er is.
+    if (API && rounds.length === 0 && !sid && sidFail) {
+      startSession();
       el.hold.textContent = "One sec…";
       return;
     }
