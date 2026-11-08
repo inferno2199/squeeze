@@ -22,6 +22,18 @@
     return ready;
   }
 
+  let hintEl = null;
+  function showHint(on) {
+    if (!on) { if (hintEl) hintEl.style.display = "none"; return; }
+    if (!hintEl) {
+      hintEl = document.createElement("div");
+      hintEl.textContent = "Checking you're human… tick the box if it shows up 🐙";
+      hintEl.style.cssText = "position:fixed;left:50%;bottom:92px;transform:translateX(-50%);z-index:61;background:rgba(7,20,11,.92);color:#7cff6b;font:700 14px/1.3 system-ui,sans-serif;padding:8px 14px;border-radius:12px;text-align:center;max-width:90vw";
+      document.body.appendChild(hintEl);
+    }
+    hintEl.style.display = "block";
+  }
+
   // geeft een eenmalige token terug (of null)
   async function token() {
     if (!KEY) return null;
@@ -29,10 +41,15 @@
     if (!ok || !window.turnstile) return null;
     return new Promise((resolve) => {
       let settled = false;
+      // ⏳ 2026-11-08 (Noel: "it takes a long while for the Cloudflare check to come"): duurt de check langer dan 3 s,
+      // dan een regeltje boven het vakje, zodat je weet dat je moet wachten (of het vakje aanvinken).
+      const hint = setTimeout(() => showHint(true), 3000);
       const done = (t) => {
         if (settled) return;
         settled = true;
         pending = null;
+        clearTimeout(hint);
+        showHint(false);
         resolve(t || null);
       };
       pending = done;
@@ -56,7 +73,7 @@
       } catch (e) {
         done(null);
       }
-      setTimeout(() => done(null), 20000);
+      setTimeout(() => done(null), 60000); // was 20 s: te kort voor trage verbindingen (2026-11-08)
     });
   }
 
