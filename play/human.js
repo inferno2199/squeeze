@@ -36,6 +36,14 @@
     hintEl.style.display = "block";
   }
 
+  function showErr(code) {
+    try { console.warn("turnstile error", code); } catch (e) {}
+    setTimeout(() => {
+      showHint(true, "Cloudflare check failed (error " + String(code || "?").slice(0, 12) + "). Try mobile data or another browser, and tell us the code 🐙");
+      setTimeout(() => showHint(false), 9000);
+    }, 0);
+  }
+
   // geeft een eenmalige token terug (of null)
   async function token() {
     if (!KEY) return null;
@@ -60,15 +68,20 @@
       pending = done;
       try {
         if (wid === null) {
+          // 👀 2026-11-08 (Noel, SPOOKY: "no box comes up", 70% van de checks nooit af): het vakje staat nu ALTIJD zichtbaar
+          // onder de knop van het spel (na #tries-line), zodat niets het kan verbergen; geen plek = vast onderaan zoals eerst.
           const box = document.createElement("div");
-          box.style.cssText = "position:fixed;left:50%;bottom:14px;transform:translateX(-50%);z-index:60";
-          document.body.appendChild(box);
+          box.className = "sqz-human";
+          const anchor = document.getElementById("tries-line");
+          if (anchor && anchor.parentNode) { box.style.cssText = "display:flex;justify-content:center;margin:10px auto 4px;min-height:70px"; anchor.parentNode.insertBefore(box, anchor.nextSibling); }
+          else { box.style.cssText = "position:fixed;left:50%;bottom:14px;transform:translateX(-50%);z-index:60"; document.body.appendChild(box); }
           wid = window.turnstile.render(box, {
             sitekey: KEY,
             execution: "execute",
-            appearance: "interaction-only", // alleen zichtbaar als Cloudflare twijfelt
+            appearance: "always",
             callback: (t) => pending && pending(t),
-            "error-callback": () => pending && pending(null),
+            // foutcode van Cloudflare tonen (bv. 300030), zodat we weten waar het aan ligt
+            "error-callback": (code) => { showErr(code); if (pending) pending(null); return true; },
             "timeout-callback": () => pending && pending(null),
           });
         } else {
