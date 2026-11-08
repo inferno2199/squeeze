@@ -4,7 +4,12 @@
 (function () {
   "use strict";
   const SHOW = 1300;
-  const wjLevel = (score) => ({ n: score >= 7 ? 5 : score >= 3 ? 4 : 3, swaps: 4 + Math.min(10, score), dur: Math.max(200, 520 - 30 * score) });
+  // gelijk aan wjLevel in squeeze-worker/bot/minigames.js (2026-11-08: na ronde 11 moeilijker, vanaf 25 zes potten)
+  const wjLevel = (score) => {
+    const extra = score > 11 ? Math.min(8, Math.floor((score - 11) / 4)) : 0;
+    const dur = score <= 11 ? Math.max(200, 520 - 30 * score) : Math.max(140, 200 - 3 * (score - 11));
+    return { n: score >= 25 ? 6 : score >= 7 ? 5 : score >= 3 ? 4 : 3, swaps: 4 + Math.min(10, score) + extra, dur };
+  };
   function localRound(score) {
     const L = wjLevel(score);
     const r = (n) => (Math.random() * n) | 0;
