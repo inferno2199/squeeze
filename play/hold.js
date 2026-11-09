@@ -12,6 +12,8 @@
   const RATE_UP = 1.4;
   const EASE = 1.6; // de balk versnelt binnen een ronde
   const RATE_MAX = 3.3;
+  const RATE_MAX2 = 5.0, HARD_FROM = 15; // 🆙 2026-11-09: zelfde als holdNextRate in de worker
+  const nextRate = (r, k) => { r = Math.min(RATE_MAX, r * RATE_UP); if (k >= HARD_FROM) r = Math.min(RATE_MAX2, RATE_MAX + 0.04 * (k - HARD_FROM + 1)); return r; };
   const MAX_COMBO = 9;
   const MIN_HOLD = 80;
 
@@ -157,7 +159,7 @@
     finishRound(h, false);
   }
 
-  const MAX_ROUNDS_RUN = 40;
+  const MAX_ROUNDS_RUN = 100; // was 40 (2026-11-09)
   function finishRound(h, popped) {
     rounds.push(Math.round(h));
     const p = pressureAt(h);
@@ -166,7 +168,7 @@
       const gain = pts * combo;
       run += gain;
       combo = Math.min(MAX_COMBO, combo + 1);
-      rate = Math.min(RATE_MAX, rate * RATE_UP);
+      rate = nextRate(rate, rounds.length);
       if (!newBestShown && bestToday > 0 && run > bestToday) {
         newBestShown = true;
         toast(`New best! ${run}  ·  +${gain}`, "good");
@@ -177,7 +179,7 @@
       sq.buyPulse(1);
       if (pts === 3) sq.euphoria(1.2);
       sq.setPrice(moodFor());
-      // plafond: na 40 rondes is de run klaar
+      // plafond: na 100 rondes is de run klaar
       if (rounds.length >= MAX_ROUNDS_RUN) {
         toast(`🏆 Max level! Final score ${run}`, "good");
         endRun();
