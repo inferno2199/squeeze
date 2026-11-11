@@ -12,6 +12,8 @@
   }
   if (!demo) fetch(API + "/settings", { cache: "no-store" }).then(function (r) { return r.json(); }).then(function (d) {
     if (d && !d.prelaunch && d.prizes && d.prizes.active) return dailyPrizes(d.prizes);
+    // 🚀 launchdag (2026-11-11): token live, maar de eerste prijsronde begint pas om 20:00 CET
+    if (d && !d.prelaunch && d.prizes && !d.prizes.active && d.prizes.start) return launchDay();
     if (!d || !d.prelaunch) return;
     // 🎮 Game Week (2026-11-05): 4 spellen, elke dag per spel 🥇 $25 · 🥈 $10 in SOL · 🥉 gratis NFT. Start 20:00 de avond vóór de eerste dag.
     var gw = d.gameweek && d.gameweek.on && /^\d{4}-\d{2}-\d{2}$/.test(d.gameweek.first) ? d.gameweek : null;
@@ -75,6 +77,18 @@
       if (h && h.nextSibling) card.insertBefore(p, h.nextSibling); else card.prepend(p);
     });
   }).catch(function () {});
+
+  function launchDay() {
+    document.querySelectorAll(".win").forEach(function (el) { el.textContent = "Just for fun until 8 PM CET · first prize round starts tonight 🚀"; });
+    document.querySelectorAll(".card.prize").forEach(function (card) {
+      var p = document.createElement("p");
+      p.className = "prelaunch-note";
+      p.textContent = "🚀 Launch day: until 8 PM CET this round is just for fun, no prizes. The first prize round (Squeeze Hold + Squeeze Says) starts tonight at 8 PM CET, winners tomorrow at 8 PM CET.";
+      p.style.cssText = "margin:0 0 .6rem;font-weight:800;color:var(--green,#7cff6b)";
+      var h = card.querySelector("h2");
+      if (h && h.nextSibling) card.insertBefore(p, h.nextSibling); else card.prepend(p);
+    });
+  }
 
   // 🏆 dagprijzen na de launch (2026-11-10): elke dag hebben 2 van de 4 spellen prijzen, de dag erna de andere 2.
   // Spellen-overzicht: per kaart "Prizes TODAY" of "Just for fun today". Spelpagina: een duidelijke regel bovenaan het prijzen-blok.
