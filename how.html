@@ -30,7 +30,7 @@
     .card a { color: var(--green); }
     .grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 0.7rem; }
     .grid .card { margin: 0; }
-    .split { display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.45rem; margin: 0.5rem 0 0.2rem; }
+    .split { display: grid; grid-template-columns: repeat(5, 1fr); gap: 0.45rem; margin: 0.5rem 0 0.2rem; }
     .split div { text-align: center; padding: 0.6rem 0.3rem; border-radius: 12px; background: rgba(124, 255, 107, 0.07); border: 1px solid var(--line); font-size: 0.9rem; line-height: 1.35; }
     .split b { display: block; font-size: 1.2rem; color: var(--green); }
     .ranks { display: flex; flex-wrap: wrap; gap: 0.35rem; margin: 0.4rem 0 0; }
@@ -83,7 +83,8 @@
         <div><b>5%</b>🫧 Hold game prizes</div>
         <div><b>5%</b>🧠 Says game prizes</div>
         <div><b>5%</b>🔥 Burn wallet</div>
-        <div><b>5%</b>👤 Dev</div>
+        <div><b>2.5%</b>👤 Dev wallet</div>
+        <div><b>2.5%</b>🔒 Team wallet<br><small>locked, unlocks monthly</small></div>
       </div>
       <p class="note">Every wallet is public: type <b>/wallets</b> in the Telegram group, or check them yourself on Solscan.</p>
     </div>
@@ -108,12 +109,24 @@
 
     <h2 class="h2" id="games">🎮 Daily games</h2>
     <div class="grid">
-      <div class="card"><h3>🫧 Squeeze Hold</h3><p>Hold to squeeze, let go right before he pops. Every round gets faster.</p><p class="note">Top 5 win $PUMP every day (40/25/15/10/10% of the pool).</p></div>
-      <div class="card"><h3>🧠 Squeeze Says</h3><p>Watch the friends light up and tap them back in order. One more every round.</p><p class="note">Top 5 win $SQUEEZE every day.</p></div>
-      <div class="card"><h3>🧱 Squeeze Stack</h3><p>Tap to drop the layer and build the tower as high as you can. Land it perfectly for a combo.</p><p class="note">Daily board · prizes during events like Game Week.</p></div>
-      <div class="card"><h3>🫙 Which Jar?</h3><p>Squeeze hides in a jar and Pinchy shuffles them. Follow him and tap the right jar.</p><p class="note">Daily board · prizes during events like Game Week.</p></div>
+      <div class="card"><h3>🫧 Squeeze Hold</h3><p>Hold to squeeze, let go right before he pops. Every round gets faster.</p><p class="note">$PUMP prizes every other day (40/25/15/10/10% of the pool). Switches with Stack.</p></div>
+      <div class="card"><h3>🧠 Squeeze Says</h3><p>Watch the friends light up and tap them back in order. One more every round.</p><p class="note">$SQUEEZE prizes every other day. Switches with Which Jar?.</p></div>
+      <div class="card"><h3>🧱 Squeeze Stack</h3><p>Tap to drop the layer and build the tower as high as you can. Land it perfectly for a combo.</p><p class="note">$PUMP prizes every other day (same pool as Hold). Switches with Hold.</p></div>
+      <div class="card"><h3>🫙 Which Jar?</h3><p>Squeeze hides in a jar and Pinchy shuffles them. Follow him and tap the right jar.</p><p class="note">$SQUEEZE prizes every other day (same prizes as Says). Switches with Says.</p></div>
     </div>
     <p class="hub-note" style="margin-top:0.8rem">Free to play · 5 free plays a day per game, Squeeze NFT holders play unlimited · winners at <span class="tz">8:00 PM CET</span> · one entry (X handle + wallet) for all 4 games · <a href="games.html" style="color:var(--green);font-weight:800;text-decoration:none">Play →</a></p>
+
+    <h3 class="h2" id="prizes" style="font-size:1.15rem;margin-top:1.4rem">🏆 How the daily prizes work</h3>
+    <div class="card">
+      <ul>
+        <li><b>🔄 Two prize games a day.</b> One day Squeeze Hold + Squeeze Says have prizes, the next day Squeeze Stack + Which Jar?. The other two are just for fun that day. <b>/games</b> in the group shows today's prize games.</li>
+        <li><b>💰 What you win.</b> Hold and Stack: $PUMP from the prize pool (40/25/15/10/10%). Says and Which Jar?: $SQUEEZE.</li>
+        <li><b>🥇🥈🥉 + 🎲🎲 Who wins.</b> The top 3 of the board at <span class="tz">8:00 PM CET</span>, plus 2 lucky players drawn at random from everyone who played that game 5+ times that day. So you can win without the highest score. The draw uses a Solana block hash from after 8 PM, so nobody can know it in advance.</li>
+        <li><b>✅ To win.</b> Be in our Telegram group and link + verify your wallet with <b>/id</b> in the bot (the same wallet you play with). No NFT needed to win. Everyone gets 5 free plays per game per day; Squeeze NFT holders play unlimited.</li>
+        <li><b>🤝 Fair for everyone.</b> One prize per person per day, then a 3-day break before you can win again. Playing with more accounts is not allowed: the bot checks the winners' wallets, and accounts that belong together get no prize.</li>
+        <li><b>🐦 Claim it.</b> Winners get a DM from @SqueezeOctoBot with a short text and a code. Post it on X from the X name you played with (account 30+ days old, 10+ followers) and send the link to the bot before 12:00 noon CET the next day. The bot checks it and sends the prize to your wallet, and the Squad raids your post. Not claimed in time = the prize goes back into the pot for the next winners.</li>
+      </ul>
+    </div>
 
     <h2 class="h2" id="octo">🎨 Your own octopus</h2>
     <div class="card">
@@ -173,6 +186,7 @@
       <details><summary>When does $SQUEEZE launch?</summary><p>Soon. The contract address (CA) will only be posted by the official bot in the group and here on the site. Join the group so you don't miss it.</p></details>
       <details><summary>How do the $PUMP rewards work?</summary><p>$SQUEEZE is paired with $PUMP and has a 3% creator fee for holders. Pump.fun sends holders their share of $PUMP automatically. You don't have to claim anything.</p></details>
       <details><summary>Is it safe?</summary><p>All wallets are public and every burn and prize payout is on the blockchain. Admins will never DM you first and never ask for your seed phrase. Only trust the CA from <b>/ca</b>.</p></details>
+      <details><summary>Why didn't I win with a top score?</summary><p>Check the 4 things: is today a prize day for that game (they switch every day), are you in the Telegram group, is your wallet verified with /id, and did you win in the last 3 days? If one is missing, the prize goes to the next player. Winners also need to claim with a post on X before 12:00 noon CET.</p></details>
       <details><summary>Do I need to hold $SQUEEZE to play?</summary><p>No. The daily games and the generator are free for everyone, and anyone can watch the Reef. Holders get extras, like more octopuses per day in the generator and a higher rank on their Squeeze ID.</p></details>
       <details><summary>Where can I ask something?</summary><p>In the Telegram group: tag TentaDev with your question. He knows how everything works.</p></details>
     </div>
