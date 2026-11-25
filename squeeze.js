@@ -1476,7 +1476,7 @@
         // kerstmuts als 3D-plaatje (2026-11-25), zelfde aanpak als de heksenhoed: de witte rand is de onderste
         // ~37% van het plaatje en moet net boven zijn wenkbrauwen uitkomen.
         const im = hatImage("christmas");
-        ctx.translate(0, TOP + 100);
+        ctx.translate(0, TOP + 84); // 2026-11-25: iets hoger op zijn kop (wens gebruiker)
         ctx.rotate(Math.sin(t * 1.2) * 0.025);
         const W = 575, H = W * im.naturalHeight / im.naturalWidth;
         // 🎯 De pompon hangt rechts uit het plaatje, dus het midden van het PLAATJE is niet het midden van
