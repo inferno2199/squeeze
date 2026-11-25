@@ -11,6 +11,20 @@
   var BASE = new URL("assets/friends/", (me && me.src) || location.href).href;
   var reduced = window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches;
 
+  // 🎄 kerstsfeer (2026-11-25): vlokjes, lichtjes en mutsjes op de vriendjes. Hij luistert naar hetzelfde
+  // seizoen als Squeeze zelf (squeeze.js roept "sqz-season" om); staat die niet op de pagina, dan vraagt hij het
+  // zelf op. Testen kan altijd met ?season=christmas. Op 1 december gaat dit vanzelf aan en op 28 december uit.
+  var XMAS = false;
+  try { XMAS = new URLSearchParams(location.search).get("season") === "christmas"; } catch (e) {}
+  window.addEventListener("sqz-season", function (e) { XMAS = e && e.detail === "christmas"; });
+  if (!/[?&]season=/.test(location.search)) {
+    setTimeout(function () {
+      if (window.sqzSeason) return; // squeeze.js vraagt het al en zegt het via het bericht hierboven
+      fetch("https://generator.squeezeocto.com/api/info").then(function (r) { return r.json(); })
+        .then(function (j) { XMAS = !!j && j.season === "christmas"; }).catch(function () {});
+    }, 1200);
+  }
+
   var cv = document.createElement("canvas");
   cv.setAttribute("aria-hidden", "true");
   var bg = document.querySelector(".seabg, .bg, #seabg");
@@ -74,7 +88,7 @@
   var TRIO = [["follow me!", "ok!", "are we there yet?"], ["to the Reef!", "to the Reef!", "wait for me!"], ["left!", "no, right!", "I'm lost 🫠"]];
 
   // ---------- toestand ----------
-  var bubbles = [], swimmers = [], stars = [], notes = [];
+  var bubbles = [], swimmers = [], stars = [], notes = [], flakes = [];
   var mouse = { x: 0, y: 0, at: -1e9 };
   window.addEventListener("pointermove", function (e) { if (e.pointerType === "mouse") { mouse.x = e.clientX; mouse.y = e.clientY; mouse.at = performance.now(); } }, { passive: true });
   var nextScene = rnd(6, 12);
@@ -604,6 +618,19 @@
       b.x += Math.sin(T * 1.6 + b.ph) * 10 * U * dt;
     }
     bubbles = bubbles.filter(function (b) { return b.y > -10; });
+    // ❄️ onderwatersneeuw: zachte vlokjes die langzaam naar beneden dwarrelen (dit bestaat echt in zee,
+    // "marine snow", dus het past hier beter dan sneeuw die zomaar door het water valt)
+    if (XMAS && !reduced) {
+      var wantF = Math.round(W / 26);
+      if (flakes.length < wantF && Math.random() < dt * 30) flakes.push({ x: rnd(0, W), y: -10, r: rnd(1.2, 3.8) * U, vy: rnd(9, 26) * U, ph: rnd(0, 6), sw: rnd(6, 20) * U });
+      for (var fi = 0; fi < flakes.length; fi++) {
+        var f = flakes[fi];
+        f.y += f.vy * dt;
+        f.ph += dt;
+        f.x += Math.sin(f.ph * 0.8) * f.sw * dt;
+      }
+      flakes = flakes.filter(function (f) { return f.y < H + 12; });
+    } else if (flakes.length) flakes = [];
     // vriendjes
     if (!reduced) {
       nextScene -= dt;
@@ -668,6 +695,94 @@
     ctx.fillText(text, bx + 10, by + h / 2 + 1);
   }
 
+  // ❄️ vlokjes: wit met een zachte gloed, nooit fel (het moet rustig blijven onder water)
+  function drawFlakes() {
+    ctx.save();
+    ctx.fillStyle = "#ffffff";
+    for (var i = 0; i < flakes.length; i++) {
+      var f = flakes[i];
+      ctx.globalAlpha = 0.30 + Math.abs(Math.sin(f.ph * 0.6)) * 0.38; // net zichtbaar, nooit fel
+      ctx.beginPath();
+      ctx.arc(f.x, f.y, f.r, 0, 6.28);
+      ctx.fill();
+    }
+    ctx.restore();
+  }
+
+  // 💡 lichtslinger langs de bovenrand: een doorhangend draadje met lampjes die om beurten oplichten
+  var BULB = ["#ff4d4d", "#ffd84d", "#7cff6b", "#5bc8ff", "#ff8ad4"];
+  function drawLights() {
+    // 📱 op een smal scherm mag hij niet zo diep doorhangen: daar zakte de slinger dwars door het logo
+    var sag = Math.min(70, H * 0.09, W * 0.11), y0 = 2, n = Math.max(6, Math.round(W / 115));
+    var at = function (i) {
+      var u = i / n;
+      return { x: u * W, y: y0 + Math.sin(u * Math.PI) * sag };
+    };
+    ctx.save();
+    ctx.strokeStyle = "rgba(10,40,34,.75)";
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(0, y0);
+    for (var k = 0; k <= n; k++) { var q = at(k); ctx.lineTo(q.x, q.y); }
+    ctx.stroke();
+    for (var i = 1; i < n; i++) {
+      var pz = at(i), c = BULB[i % BULB.length];
+      var tw = 0.55 + 0.45 * Math.sin(T * 2.2 + i * 1.1); // om beurten aan en uit (T = de klok van deze pagina)
+      var r = 5 * U;
+      ctx.globalAlpha = 0.30 * tw;                      // gloed
+      ctx.fillStyle = c;
+      ctx.beginPath(); ctx.arc(pz.x, pz.y + r * 1.7, r * 3.4, 0, 6.28); ctx.fill();
+      ctx.globalAlpha = 1;
+      ctx.strokeStyle = "rgba(10,40,34,.75)";           // kabeltje naar het lampje
+      ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.moveTo(pz.x, pz.y); ctx.lineTo(pz.x, pz.y + r * 0.9); ctx.stroke();
+      ctx.globalAlpha = 0.45 + 0.55 * tw;               // het lampje zelf
+      ctx.fillStyle = c;
+      ctx.beginPath(); ctx.arc(pz.x, pz.y + r * 1.7, r, 0, 6.28); ctx.fill();
+    }
+    ctx.restore();
+  }
+
+  // 🎅 een piepklein kerstmutsje op een vriendje. Wordt getekend IN zijn eigen draaiing mee, dus hij
+  // kantelt netjes met het beestje mee. De walvis krijgt er geen: die zwemt ver weg en klein in beeld.
+  var HATSPOT = {
+    crab: [0, 0.04],      // oogjes bovenop, mutsje er precies tussen
+    lobster: [0, 0.30],   // voelsprieten erboven
+    shrimp: [0.12, 0.32], // kop rechts, lijf laag in het plaatje
+    jelly: [0, 0.08],
+    fish: [0.16, 0.10],
+    dolphin: [0.18, 0.12],
+    shark: [0.16, 0.12],
+    seal: [0.14, 0.08],
+  };
+  function drawHat(o, h) {
+    if (o.kind === "whale") return;
+    var w = Math.max(9, o.s * 0.26), hh = w * 1.15;
+    // Waar zit zijn kop? Niet bovenaan het plaatje: de kreeft en de garnaal hebben voelsprieten die uitsteken,
+    // dus daar zweefde het mutsje in het niets (gezien bij de eerste test). Per diertje de plek van zijn kop,
+    // als deel van zijn breedte en hoogte. Onbekend diertje = een veilige stand net onder de bovenrand.
+    var sp = HATSPOT[o.kind] || [0.14, 0.10];
+    var x = sp[0] * o.s, y = -h / 2 + sp[1] * h;
+    ctx.save();
+    ctx.translate(x, y);
+    ctx.rotate(-0.18);
+    ctx.fillStyle = "#e03131";                                   // de punt
+    ctx.beginPath();
+    ctx.moveTo(-w / 2, 0);
+    ctx.quadraticCurveTo(-w * 0.1, -hh, w * 0.42, -hh * 0.72);
+    ctx.quadraticCurveTo(w * 0.2, -hh * 0.3, w / 2, 0);
+    ctx.closePath();
+    ctx.fill();
+    ctx.fillStyle = "#fff";                                      // de witte rand
+    ctx.beginPath();
+    ctx.ellipse(0, 0, w * 0.56, Math.max(2, w * 0.17), 0, 0, 6.28);
+    ctx.fill();
+    ctx.beginPath();                                             // de pompon
+    ctx.arc(w * 0.46, -hh * 0.72, Math.max(2, w * 0.16), 0, 6.28);
+    ctx.fill();
+    ctx.restore();
+  }
+
   function draw() {
     ctx.clearRect(0, 0, W, H);
     tctx.clearRect(0, 0, W, H);
@@ -678,6 +793,7 @@
       ctx.arc(b.x, b.y, b.r, 0, 6.28);
       ctx.stroke();
     });
+    if (XMAS) { drawFlakes(); drawLights(); }
     // ver weg eerst (walvis), dan de rest
     swimmers.slice().sort(function (a, b) { return (a.kind === "whale" ? 0 : 1) - (b.kind === "whale" ? 0 : 1); }).forEach(function (o) {
       var im = IMG[o.kind];
@@ -707,6 +823,7 @@
       if (o.squat) ctx.scale(1, 1 - Math.abs(Math.sin(o.t * 3)) * 0.18); // door de knieën
       if (o.flipY) ctx.scale(1, -1); // op zijn rug
       ctx.drawImage(im, -o.s / 2, -h / 2, o.s, h);
+      if (XMAS && !o.flipY) drawHat(o, h); // op zijn rug = het mutsje zou los zweven
       ctx.restore();
       if (o.carry) { // iets in de bek (de $PUMP-buidel)
         ctx.font = Math.round(26 * U + 4) + "px system-ui, sans-serif";

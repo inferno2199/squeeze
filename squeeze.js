@@ -30,7 +30,7 @@
   const SEASON_KEYS = ["halloween", "christmas", "newyear", "valentine", "easter", "stpatrick", "summer"];
   // 🎩 seizoenshoeden als echt 3D-plaatje (2026-10-21, wens gebruiker: de getekende hoed zag eruit als een sticker).
   // Nog geen plaatje voor een seizoen = de oude getekende versie. Nieuwe hoed: assets/hats/<seizoen>.webp + hier erbij.
-  const HATS = { halloween: "assets/hats/halloween.webp?v=2" };
+  const HATS = { halloween: "assets/hats/halloween.webp?v=2", christmas: "assets/hats/christmas.webp?v=1" };
   const HAT_IMG = {};
   function hatImage(key) {
     if (!HATS[key]) return null;
@@ -1472,6 +1472,17 @@
         ctx.beginPath(); ctx.moveTo(-100, -12); ctx.quadraticCurveTo(0, -40, 100, -12); ctx.lineTo(96, -44); ctx.quadraticCurveTo(0, -72, -96, -44); ctx.closePath(); ctx.fill(); // band
         ctx.fillStyle = "#7cff6b";
         ctx.fillRect(-14, -52, 28, 30); ctx.fillStyle = "#2a1640"; ctx.fillRect(-7, -45, 14, 16); // gesp
+      } else if (SEASON === "christmas" && hatImage("christmas")) {
+        // kerstmuts als 3D-plaatje (2026-11-25), zelfde aanpak als de heksenhoed: de witte rand is de onderste
+        // ~37% van het plaatje en moet net boven zijn wenkbrauwen uitkomen.
+        const im = hatImage("christmas");
+        ctx.translate(0, TOP + 100);
+        ctx.rotate(Math.sin(t * 1.2) * 0.025);
+        const W = 575, H = W * im.naturalHeight / im.naturalWidth;
+        // 🎯 De pompon hangt rechts uit het plaatje, dus het midden van het PLAATJE is niet het midden van
+        // de muts. Gemeten: de witte rand loopt van 0,01 tot 0,80 van de breedte, met zijn midden op 0,403.
+        // Daarop centreren, anders staat de muts scheef naar links en steekt zijn hoofd er rechts naast uit.
+        ctx.drawImage(im, -W * 0.403, -H * 0.72, W, H);
       } else if (SEASON === "christmas") {
         ctx.translate(0, TOP + 62);
         ctx.rotate(Math.sin(t * 1.2) * 0.03);
