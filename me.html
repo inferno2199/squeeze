@@ -73,7 +73,11 @@
       <div class="kaart">
         <p class="kop">🔗 LINK YOUR WALLET</p>
         <p class="vtxt">Your wallet app can't reach into this app, so you sign in over there. Tap your wallet below, sign in, then <b>come back here</b> — this page notices by itself, you don't have to type anything.</p>
-        <a class="go small-go" id="w-phantom" href="#" target="_blank" rel="noopener">Open Phantom</a>
+        <!-- 🚫 geen target="_blank": in een app op het beginscherm opent dat een browser-venstertje BOVENOP
+             de app. Phantom opent dan wel, maar bij terugkomst kijk je tegen dat lege venstertje aan — dat
+             was het witte scherm in de opname. Gewoon in dit venster navigeren geeft de overdracht aan de
+             wallet-app, en de app zelf blijft eronder staan wachten. -->
+        <a class="go small-go" id="w-phantom" href="#">Open Phantom</a>
         <p class="uitlog"><a href="#" id="w-solflare">Solflare</a> &nbsp;·&nbsp; <a href="#" id="w-backpack">Backpack</a></p>
         <p class="sub" id="wachttxt">Waiting for your wallet…</p>
       </div>
@@ -130,8 +134,17 @@
       var C = window.SQUEEZE_CONFIG || {};
       var API = (C.WORKER_URL || "").replace(/\/$/, "");
       var $ = function (id) { return document.getElementById(id); };
-      var token = null;
-      try { token = sessionStorage.getItem("sqz-jar-t"); } catch (e) {}
+      // 🔑 Het slot. Stond in sessionStorage, en dat gooit iOS weg zodra je de app sluit: dan moest je elke
+      // keer opnieuw je wallet koppelen. Nu in localStorage (dat blijft staan) en de bot schuift het slot
+      // mee zolang je de app gebruikt. Allebei schrijven, want Crack the Jar leest nog uit sessionStorage.
+      var SLOT = "sqz-jar-t";
+      function leesSlot() {
+        try { return localStorage.getItem(SLOT) || sessionStorage.getItem(SLOT); } catch (e) { return null; }
+      }
+      function zetSlot(t) {
+        try { if (t) { localStorage.setItem(SLOT, t); sessionStorage.setItem(SLOT, t); } else { localStorage.removeItem(SLOT); sessionStorage.removeItem(SLOT); } } catch (e) {}
+      }
+      var token = leesSlot();
 
       // 🔗 Koppelen (2026-11-27). In de app op je beginscherm zit geen wallet: Phantom kan daar niets
       // injecteren. Dus log je in in de wallet-browser, en geeft die pagina het slot door aan een code waar
@@ -255,7 +268,7 @@
           await fetch(API + "/tg/me", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ t: token, action: "logout" }) }).catch(function () {});
         } catch (e) { /* weggaan mag nooit stuklopen */ }
         token = null;
-        try { sessionStorage.removeItem("sqz-jar-t"); } catch (e) {}
+        zetSlot(null);
         $("aan").classList.add("hidden");
         $("uit").classList.remove("hidden");
         $("login").disabled = false;
@@ -266,7 +279,7 @@
         say(""); $("verify").disabled = true;
         try {
           var r = await (await fetch(API + "/tg/me", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ t: token, action: "verify" }) })).json();
-          if (r.login) { token = null; try { sessionStorage.removeItem("sqz-jar-t"); } catch (e) {} location.reload(); return; }
+          if (r.login) { token = null; zetSlot(null); location.reload(); return; }
           if (r.error) throw new Error(r.error);
           toon(r);
           if (r.verified) say("Verified 🐙 You can win now.", "ok");
@@ -279,7 +292,7 @@
         try {
           var r = await fetch(API + "/tg/me?t=" + encodeURIComponent(token), { cache: "no-store" });
           var d = await r.json();
-          if (d.login) { token = null; try { sessionStorage.removeItem("sqz-jar-t"); } catch (e) {} return; }
+          if (d.login) { token = null; zetSlot(null); return; }
           if (d.error) return say(d.error, "err");
           toon(d);
         } catch (e) { say("Can't reach the bot right now. Try again in a minute.", "err"); }
@@ -313,7 +326,7 @@
             vergeet();
             stopWachten();
             token = r.token;
-            try { sessionStorage.setItem("sqz-jar-t", token); } catch (e) {}
+            zetSlot(token);
             say("Linked 🐙", "ok");
             laden();
           } catch (e) { /* even geen net: gewoon doorgaan met proberen */ }
@@ -396,7 +409,7 @@
           var r = await (await fetch(API + "/tg/jar/login", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ wallet: w.address, nonce: n.nonce, signature: sig }) })).json();
           if (!r.token) throw new Error(r.error || "Sign-in didn't work.");
           token = r.token;
-          try { sessionStorage.setItem("sqz-jar-t", token); } catch (e) {}
+          zetSlot(token);
           // 🔗 geopend vanuit de app? Dan is dit de wallet-browser: geef het slot door aan de wachtende app.
           if (pairCode) return await doorgeven();
           await laden();
