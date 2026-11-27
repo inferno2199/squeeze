@@ -67,6 +67,22 @@
       <button class="go" id="login">Sign in with your wallet</button>
     </div>
 
+    <div id="wacht" class="hidden">
+      <div class="kaart">
+        <p class="kop">🔗 LINK YOUR WALLET</p>
+        <p class="vtxt">Your wallet app can't reach into this app, so you sign in over there. Tap your wallet below, sign in, then <b>come back here</b> — this page notices by itself, you don't have to type anything.</p>
+        <a class="go small-go" id="w-phantom" href="#" target="_blank" rel="noopener">Open Phantom</a>
+        <p class="uitlog"><a href="#" id="w-solflare">Solflare</a> &nbsp;·&nbsp; <a href="#" id="w-backpack">Backpack</a></p>
+        <p class="sub" id="wachttxt">Waiting for your wallet…</p>
+      </div>
+      <p class="uitlog"><a href="#" id="w-stop">Cancel</a></p>
+    </div>
+
+    <div id="klaar" class="kaart hidden">
+      <p class="naam">✅ Linked</p>
+      <p class="vtxt" id="klaartxt">You're signed in. Go back to the <b>Squeeze</b> app on your Home Screen — it's already waiting for you.</p>
+    </div>
+
     <div id="aan" class="hidden">
       <div class="kaart">
         <p class="naam">@<span id="handle">—</span><span class="vink" id="vink"></span></p>
@@ -115,6 +131,14 @@
       var token = null;
       try { token = sessionStorage.getItem("sqz-jar-t"); } catch (e) {}
 
+      // 🔗 Koppelen (2026-11-27). In de app op je beginscherm zit geen wallet: Phantom kan daar niets
+      // injecteren. Dus log je in in de wallet-browser, en geeft die pagina het slot door aan een code waar
+      // de app op staat te wachten. Een terugkeer-link werkt niet: die belandt op de iPhone altijd in Safari.
+      var isApp = (window.matchMedia && matchMedia("(display-mode: standalone)").matches) || navigator.standalone === true;
+      var isPhone = /iphone|ipad|ipod|android/i.test(navigator.userAgent);
+      var pairCode = (new URLSearchParams(location.search).get("pair") || "").toUpperCase();
+      var pollTimer = null;
+
       function say(t, k) { $("msg").textContent = t || ""; $("msg").className = "msg" + (k ? " " + k : ""); }
       function kort(w) { return w ? w.slice(0, 4) + "…" + w.slice(-4) : "—"; }
 
@@ -151,7 +175,6 @@
       // 🔔 Meldingen (2026-11-27). Zonder Telegram hoorde een winnaar nergens dát hij gewonnen had.
       // Op de iPhone werkt dit alleen als de site op het beginscherm staat — daar zeggen we het dan ook.
       var kanBel = "serviceWorker" in navigator && "PushManager" in window && "Notification" in window;
-      var isApp = (window.matchMedia && matchMedia("(display-mode: standalone)").matches) || navigator.standalone === true;
       var mijnSub = null;
 
       function belStand(aan, uitleg) {
@@ -256,7 +279,70 @@
         } catch (e) { say("Can't reach the bot right now. Try again in a minute.", "err"); }
       }
 
+      // ⏳ de app wacht: elke 2 seconden kijken of er in de wallet-browser is ingelogd, maximaal 5 minuten
+      function wachtOpWallet(code, secret) {
+        var tot = Date.now() + 5 * 60000;
+        clearInterval(pollTimer);
+        pollTimer = setInterval(async function () {
+          if (Date.now() > tot) { stopWachten(); return say("That took too long. Tap sign in again.", "err"); }
+          try {
+            var r = await (await fetch(API + "/tg/pair/poll?code=" + code + "&s=" + secret, { cache: "no-store" })).json();
+            if (r.expired) { stopWachten(); return say("That link expired. Tap sign in again.", "err"); }
+            if (!r.token) return;
+            stopWachten();
+            token = r.token;
+            try { sessionStorage.setItem("sqz-jar-t", token); } catch (e) {}
+            say("Linked 🐙", "ok");
+            laden();
+          } catch (e) { /* even geen net: gewoon doorgaan met proberen */ }
+        }, 2000);
+      }
+      function stopWachten() {
+        clearInterval(pollTimer);
+        pollTimer = null;
+        $("wacht").classList.add("hidden");
+        $("uit").classList.remove("hidden");
+        $("login").disabled = false;
+      }
+      $("w-stop").onclick = function (ev) { ev.preventDefault(); stopWachten(); say(""); };
+
+      // 🤝 de wallet-browser geeft het slot door aan de app die staat te wachten
+      async function doorgeven() {
+        try {
+          var r = await (await fetch(API + "/tg/pair/claim", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ code: pairCode, t: token }) })).json();
+          if (!r.ok) throw new Error(r.error || "That link didn't work. Start again in the app.");
+          $("uit").classList.add("hidden");
+          $("klaar").classList.remove("hidden");
+          say("");
+        } catch (e) {
+          // 🧯 doorgeven mislukt? Dan ben je hier gewoon ingelogd, dus laat zien wat je hebt.
+          say(e.message || "Couldn't link the app, but you're signed in here.", "err");
+          await laden();
+        }
+      }
+
+      async function koppelViaWallet() {
+        say(""); $("login").disabled = true;
+        try {
+          var p = await (await fetch(API + "/tg/pair/new", { cache: "no-store" })).json();
+          if (!p.code) throw new Error("Couldn't start. Try again in a minute.");
+          var doel = encodeURIComponent(location.origin + "/me.html?pair=" + p.code);
+          var ref = encodeURIComponent(location.origin);
+          $("w-phantom").href = "https://phantom.app/ul/browse/" + doel + "?ref=" + ref;
+          $("w-solflare").href = "https://solflare.com/ul/v1/browse/" + doel + "?ref=" + ref;
+          $("w-backpack").href = "https://backpack.app/ul/v1/browse/" + doel + "?ref=" + ref;
+          $("uit").classList.add("hidden");
+          $("wacht").classList.remove("hidden");
+          wachtOpWallet(p.code, p.secret);
+        } catch (e) {
+          $("login").disabled = false;
+          say(e.message || "Couldn't start. Try again in a minute.", "err");
+        }
+      }
+
       $("login").onclick = async function () {
+        // 📱 in de app (en op een telefoon zonder wallet in de browser) kan het alleen via de wallet-app
+        if (!pairCode && isApp && isPhone) return koppelViaWallet();
         say(""); $("login").disabled = true;
         try {
           if (!window.SqzWallet) throw new Error("Wallet tools didn't load. Refresh the page.");
@@ -268,6 +354,8 @@
           if (!r.token) throw new Error(r.error || "Sign-in didn't work.");
           token = r.token;
           try { sessionStorage.setItem("sqz-jar-t", token); } catch (e) {}
+          // 🔗 geopend vanuit de app? Dan is dit de wallet-browser: geef het slot door aan de wachtende app.
+          if (pairCode) return await doorgeven();
           await laden();
         } catch (e) {
           say(/cancel|reject|denied|declined/i.test(e.message || "") ? "Cancelled." : (e.message || "Sign-in didn't work."), "err");
@@ -275,7 +363,12 @@
         $("login").disabled = false;
       };
 
-      laden();
+      // 🔗 geopend vanuit de app: zeg meteen waar dit over gaat, en als je hier al ingelogd bent is het
+      // alleen nog doorgeven — dan hoef je niet nog een keer te ondertekenen.
+      if (pairCode) {
+        document.querySelector(".lead").innerHTML = "Sign in here to link the <b>Squeeze</b> app on your Home Screen. One signature — nothing is sent and nothing can be moved.";
+        if (token) doorgeven(); else laden();
+      } else laden();
     })();
   </script>
 </body>
