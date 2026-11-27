@@ -52,6 +52,8 @@
     .hidden { display: none !important; }
     .vtxt { color: #dfeee2; font-size: .92rem; line-height: 1.5; margin: .7rem 0 .6rem; }
     .small-go { font-size: .95rem; padding: .7rem 1.3rem; }
+    .uitlog { text-align: center; margin: .2rem 0 0; }
+    .uitlog a { color: var(--muted); font-weight: 700; font-size: .9rem; text-decoration: none; border-bottom: 1px solid rgba(255,255,255,.18); }
   </style>
 </head>
 <body>
@@ -93,6 +95,7 @@
         <p class="vtxt" id="beltxt">Get a notification the moment you win, so you never miss the 12:00 deadline. Nothing else — no ads, no daily pings.</p>
         <button class="go small-go" id="bel">Turn on notifications</button>
       </div>
+      <p class="uitlog"><a href="#" id="uitlog">Sign out</a></p>
     </div>
 
     <p class="msg" id="msg"></p>
@@ -207,6 +210,27 @@
           belStand(!!mijnSub);
           say(e.message || "That didn't work. Try again in a minute.", "err");
         }
+      };
+
+      // 🚪 Uitloggen (2026-11-27). Ook de meldingen van dit toestel eraf: anders blijft een telefoon die je
+      // doorgeeft of uitleent berichten krijgen over de prijzen van de vorige wallet.
+      $("uitlog").onclick = async function (ev) {
+        ev.preventDefault();
+        say("");
+        try {
+          if (mijnSub) {
+            await mijnSub.unsubscribe().catch(function () {});
+            await fetch(API + "/tg/push/off", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ t: token, endpoint: mijnSub.endpoint }) }).catch(function () {});
+            mijnSub = null;
+          }
+          await fetch(API + "/tg/me", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ t: token, action: "logout" }) }).catch(function () {});
+        } catch (e) { /* weggaan mag nooit stuklopen */ }
+        token = null;
+        try { sessionStorage.removeItem("sqz-jar-t"); } catch (e) {}
+        $("aan").classList.add("hidden");
+        $("uit").classList.remove("hidden");
+        $("login").disabled = false;
+        say("Signed out. Notifications on this device are off too.", "ok");
       };
 
       $("verify").onclick = async function () {
