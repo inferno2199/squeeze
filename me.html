@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>You · Squeeze</title>
+  <meta name="description" content="Your Squeeze ID, your best scores and your prizes — all in one place." />
+  <meta name="theme-color" content="#030604" />
+  <link rel="manifest" href="/manifest.json" />
+  <link rel="apple-touch-icon" href="/assets/pwa/icon-192.png" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="Squeeze" />
+  <script>if ("serviceWorker" in navigator) addEventListener("load", function () { navigator.serviceWorker.register("/sw.js").catch(function () {}); });</script>
+  <script src="/tabs.js?v=20261127b" defer></script>
+  <script src="/install.js?v=20261127a" defer></script>
+  <link rel="icon" href="assets/icon.png" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="play/play.css?v=20261127a" />
+  <style>
+    .mwrap { position: relative; z-index: 1; min-height: 100vh; padding: 18px 16px 56px; display: grid; justify-items: center; align-items: start; }
+    .min { width: min(560px, 100%); text-align: center; }
+    .back { color: var(--muted); text-decoration: none; font-weight: 700; display: inline-block; margin: 0 0 .6rem; }
+    h1 { margin: .2rem 0 .3rem; font-size: clamp(1.9rem, 7vw, 2.6rem); font-weight: 800; letter-spacing: -.02em; text-shadow: 0 2px 24px rgba(0,0,0,.6); }
+    .lead { color: #dfeee2; line-height: 1.5; margin: 0 auto 1.2rem; max-width: 30em; text-shadow: 0 1px 12px rgba(0,0,0,.8); }
+    .go { font: 800 1.05rem var(--font); border: 0; border-radius: 999px; padding: .9rem 1.9rem; cursor: pointer; background: var(--green); color: #031006; box-shadow: 0 0 30px rgba(124,255,107,.4); }
+    .go:disabled { opacity: .45; cursor: default; box-shadow: none; }
+    .msg { margin: 1rem auto 0; max-width: 30em; font-weight: 700; min-height: 1.4em; text-shadow: 0 1px 12px rgba(0,0,0,.8); }
+    .msg.err { color: #ff9a8a; } .msg.ok { color: var(--green); }
+    .kaart { background: rgba(4,16,10,.62); border: 1px solid var(--line); border-radius: 18px; padding: 1rem 1.1rem; margin: 0 0 .9rem; text-align: left; }
+    .naam { font-size: 1.35rem; font-weight: 800; margin: 0; }
+    .naam span { color: var(--green); }
+    .sub { color: var(--muted); font-size: .9rem; margin: .25rem 0 0; word-break: break-all; }
+    .vink { display: inline-block; font-size: .78rem; font-weight: 800; border-radius: 999px; padding: .15rem .6rem; margin-left: .4rem; vertical-align: middle; }
+    .vink.ja { background: rgba(124,255,107,.16); color: var(--green); }
+    .vink.nee { background: rgba(255,154,138,.14); color: #ff9a8a; }
+    .kop { font-size: .78rem; letter-spacing: .14em; font-weight: 800; color: var(--muted); margin: 0 0 .6rem; }
+    .scores { display: grid; grid-template-columns: 1fr 1fr; gap: .5rem; }
+    .score { background: rgba(3,12,8,.5); border-radius: 12px; padding: .6rem .7rem; }
+    .score b { display: block; font-size: 1.3rem; color: var(--green); }
+    .score span { color: var(--muted); font-size: .82rem; }
+    .cijfers { display: grid; grid-template-columns: repeat(3, 1fr); gap: .5rem; text-align: center; }
+    .cijfers div b { display: block; font-size: 1.5rem; }
+    .cijfers div span { color: var(--muted); font-size: .8rem; }
+    .claim { background: rgba(124,255,107,.08); border: 1px solid rgba(124,255,107,.3); border-radius: 14px; padding: .8rem .9rem; margin: .6rem 0 0; }
+    .claim p { margin: 0 0 .5rem; font-weight: 700; }
+    .claim code { display: block; background: rgba(3,12,8,.6); border-radius: 10px; padding: .6rem; font-size: .82rem; white-space: pre-wrap; color: #cfe8d6; }
+    .small { color: var(--muted); font-size: .9rem; line-height: 1.5; margin: 1.2rem auto 0; max-width: 32em; }
+    .small a { color: var(--green); }
+    .hidden { display: none !important; }
+  </style>
+</head>
+<body>
+  <canvas class="seabg" id="sea"></canvas>
+  <div class="mwrap"><div class="min">
+    <a class="back" href="games.html">← Squeeze</a>
+    <h1>You</h1>
+
+    <div id="uit">
+      <p class="lead">Your Squeeze ID, your best scores and your prizes in one place. Sign in with the wallet you play with — one signature, nothing is sent and nothing can be moved.</p>
+      <button class="go" id="login">Sign in with your wallet</button>
+    </div>
+
+    <div id="aan" class="hidden">
+      <div class="kaart">
+        <p class="naam">@<span id="handle">—</span><span class="vink" id="vink"></span></p>
+        <p class="sub" id="wallet">—</p>
+      </div>
+      <div class="kaart">
+        <p class="kop">YOUR BEST SCORE EVER</p>
+        <div class="scores" id="scores"></div>
+      </div>
+      <div class="kaart">
+        <p class="kop">PRIZES (LAST 7 DAYS)</p>
+        <div class="cijfers">
+          <div><b id="p-won">0</b><span>won</span></div>
+          <div><b id="p-paid" style="color:var(--green)">0</b><span>paid</span></div>
+          <div><b id="p-missed" style="color:#ff9a8a">0</b><span>missed</span></div>
+        </div>
+        <div id="open"></div>
+      </div>
+    </div>
+
+    <p class="msg" id="msg"></p>
+    <p class="small">Not showing what you expect? Your wallet has to be verified in Telegram with <b>/id</b>, using the same wallet you play with. <a href="games.html">Back to the games →</a></p>
+  </div></div>
+
+  <script src="config.js?v=20261011d"></script>
+  <script src="https://generator.squeezeocto.com/wallet.js?v=20261013a"></script>
+  <script src="sea.js?v=20261011d"></script>
+  <script src="life.js?v=20261125a" data-friends="few" data-bubbles="off"></script>
+  <script>
+    (function () {
+      "use strict";
+      var C = window.SQUEEZE_CONFIG || {};
+      var API = (C.WORKER_URL || "").replace(/\/$/, "");
+      var $ = function (id) { return document.getElementById(id); };
+      var token = null;
+      try { token = sessionStorage.getItem("sqz-jar-t"); } catch (e) {}
+
+      function say(t, k) { $("msg").textContent = t || ""; $("msg").className = "msg" + (k ? " " + k : ""); }
+      function kort(w) { return w ? w.slice(0, 4) + "…" + w.slice(-4) : "—"; }
+
+      function toon(d) {
+        $("uit").classList.add("hidden");
+        $("aan").classList.remove("hidden");
+        $("handle").textContent = d.handle || "not linked yet";
+        $("vink").textContent = d.verified ? "verified" : "not verified";
+        $("vink").className = "vink " + (d.verified ? "ja" : "nee");
+        $("wallet").textContent = d.wallet;
+        $("scores").innerHTML = (d.games || []).map(function (g) {
+          return '<div class="score"><b>' + (g.best || 0) + "</b><span>" + g.icoon + " " + g.naam + "</span></div>";
+        }).join("");
+        var p = d.prizes || {};
+        $("p-won").textContent = p.won || 0;
+        $("p-paid").textContent = p.paid || 0;
+        $("p-missed").textContent = p.missed || 0;
+        $("open").innerHTML = (p.open || []).map(function (o) {
+          return '<div class="claim"><p>⏳ Still to claim: ' + (o.amount || 0).toLocaleString("en-US") + " " + (o.symbol || "") +
+            "</p><code>Post on X with " + o.code + ", then paste the link to @SqueezeOctoBot</code></div>";
+        }).join("");
+        if (!d.verified) say("Your wallet isn't verified yet, so you can't win. Send /id " + kort(d.wallet) + " to the bot in Telegram.", "err");
+        else say("");
+      }
+
+      async function laden() {
+        if (!token) return;
+        try {
+          var r = await fetch(API + "/tg/me?t=" + encodeURIComponent(token), { cache: "no-store" });
+          var d = await r.json();
+          if (d.login) { token = null; try { sessionStorage.removeItem("sqz-jar-t"); } catch (e) {} return; }
+          if (d.error) return say(d.error, "err");
+          toon(d);
+        } catch (e) { say("Can't reach the bot right now. Try again in a minute.", "err"); }
+      }
+
+      $("login").onclick = async function () {
+        say(""); $("login").disabled = true;
+        try {
+          if (!window.SqzWallet) throw new Error("Wallet tools didn't load. Refresh the page.");
+          var w = await window.SqzWallet.pick();
+          var n = await (await fetch(API + "/tg/jar/nonce?wallet=" + encodeURIComponent(w.address))).json();
+          if (n.error) throw new Error(n.error);
+          var sig = await w.signMessage(n.message);
+          var r = await (await fetch(API + "/tg/jar/login", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ wallet: w.address, nonce: n.nonce, signature: sig }) })).json();
+          if (!r.token) throw new Error(r.error || "Sign-in didn't work.");
+          token = r.token;
+          try { sessionStorage.setItem("sqz-jar-t", token); } catch (e) {}
+          await laden();
+        } catch (e) {
+          say(/cancel|reject|denied|declined/i.test(e.message || "") ? "Cancelled." : (e.message || "Sign-in didn't work."), "err");
+        }
+        $("login").disabled = false;
+      };
+
+      laden();
+    })();
+  </script>
+</body>
+</html>

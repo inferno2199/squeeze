@@ -15,8 +15,8 @@
   var TABS = [
     { id: "play", naam: "Play", url: "games.html", bij: ["games", "hold", "says", "stack", "whichjar"], teken: "M4 3l10 7-10 7z" },
     { id: "make", naam: "Make", url: "https://generator.squeezeocto.com", uit: true, teken: "M10 2a8 8 0 100 16 8 8 0 000-16zm0 3v10M5 10h10" },
-    { id: "reef", naam: "Reef", url: "reef.html", bij: ["reef"], teken: "M3 15c3-2 3-6 7-6s4 4 7 6" },
-    { id: "nfts", naam: "NFTs", url: "nfts.html", bij: ["nfts", "jar"], teken: "M10 3l6 3.5v7L10 17l-6-3.5v-7z" },
+    { id: "me", naam: "Me", url: "me.html", bij: ["me", "id", "verify"], teken: "M3 17a7 7 0 0114 0M10 9a3.5 3.5 0 100-7 3.5 3.5 0 000 7" },
+    { id: "reef", naam: "Reef", url: "reef.html", bij: ["reef", "nfts", "jar"], teken: "M3 15c3-2 3-6 7-6s4 4 7 6" },
     { id: "squad", naam: "Squad", url: TG, uit: true, teken: "M3 14a4 4 0 014-4h6a4 4 0 014 4M10 8a3 3 0 100-6 3 3 0 000 6" },
   ];
 
