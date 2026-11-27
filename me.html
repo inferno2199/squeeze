@@ -93,6 +93,10 @@
       <div class="kaart">
         <p class="naam"><span id="handle">—</span><span class="vink" id="vink"></span></p>
         <p class="sub" id="wallet">—</p>
+        <div id="xbox" class="hidden">
+          <p class="vtxt">Your X name comes from the games: the first time you play with this wallet and fill in your X name, the two are linked for good. Without it you're on no board, so you can't win.</p>
+          <a class="go small-go" href="games.html">Play a game →</a>
+        </div>
         <div id="vbox" class="hidden">
           <p class="vtxt">Verified means we know this wallet is yours, so we can pay you when you win. One tap — you already signed in with it.</p>
           <button class="go small-go" id="verify">✅ This is my Squeeze ID</button>
@@ -185,9 +189,9 @@
           : "Verified in Telegram ✓";
         if (!d.verified) say("Not verified yet, so a prize would go to the next player. One tap above fixes it.", "err");
         // 🎮 wel verified, maar deze wallet speelde nog nooit: dan staat hij nergens op een bord en kan hij
-        // ook niets winnen. Dat is geen fout, maar je moet het wel weten.
-        else if (!d.handle) say("This wallet hasn't played yet. Play a game once and fill in your X name — that links the two, and then you can win.", "err");
+        // ook niets winnen. Dat is geen fout, maar je moet weten wat eraan ontbreekt én waar je heen moet.
         else say("");
+        $("xbox").classList.toggle("hidden", !!d.handle);
         belKlaar();
       }
 
