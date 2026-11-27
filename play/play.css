@@ -14,6 +14,9 @@ body {
   color: var(--text);
   background: var(--deep);
   min-height: 100vh;
+  /* 📱 2026-11-27 (als app op het beginscherm): zonder de bovenmarge begint de pagina ONDER de klok en de
+     batterij van de iPhone, en viel "← Squeeze" in de statusbalk. Op een gewone browser is de inset 0. */
+  padding-top: env(safe-area-inset-top, 0px);
   padding-bottom: env(safe-area-inset-bottom, 0px);
 }
 .seabg {
@@ -30,7 +33,7 @@ body {
 }
 .top, .wrap { position: relative; z-index: 1; }
 
-.top { text-align: center; padding: 1rem 1rem 0.2rem; }
+.top { text-align: center; padding: 1rem 1rem 0.2rem; position: relative; } /* 📱 zodat .back binnen de kop valt en mee opschuift */
 .top h1 { margin: 0.2rem 0 0; font-size: clamp(1.8rem, 6vw, 2.6rem); font-weight: 800; letter-spacing: -0.02em; }
 .sub { margin: 0.2rem 0 0; color: var(--muted); }
 .back { position: absolute; left: 1rem; top: 1rem; color: var(--muted); text-decoration: none; font-weight: 700; }
