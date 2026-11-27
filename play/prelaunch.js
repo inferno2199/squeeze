@@ -138,7 +138,10 @@
         ? "🏆 This game has prizes TODAY! The board closes at 8 PM CET." +
           "<span style=\"display:block;margin-top:.35rem;font-weight:500\">" + (me === POT
             ? "It has the $PUMP pot today: 🥇🥈🥉 the top 3 win, plus 🎲 2 lucky players drawn from everyone who played 5+ times today."
-            : "🥇 the winner wins $SQUEEZE, plus 🎲 1 lucky player drawn from everyone who played 5+ times today." + (POT ? " The $PUMP pot is at " + NAME[POT] + " today." : "")) + "</span>"
+            : "🥇 the winner wins $SQUEEZE, plus 🎲 1 lucky player drawn from everyone who played 5+ times today." + (POT ? " The $PUMP pot is at " + NAME[POT] + " today." : "")) +
+          // 🪪 2026-11-27: de grootste reden dat prijzen misgaan is een niet-verified wallet. Nu is dat één tik
+          // op dezelfde site, dus zeg het waar iemand speelt in plaats van alleen in Telegram.
+          "<br><a href=\"me.html\" style=\"" + green + ";font-weight:800\">🪪 Verify your wallet first, or you can't win →</a></span>"
         : "🎮 Just for fun today: this game has prizes again tomorrow." +
           "<span style=\"display:block;margin-top:.35rem;font-weight:500\">The prizes switch every day. Today's prize games: " + names(today) + ". Your score still counts on today's board.</span>";
       p.style.cssText = "margin:0 0 .6rem;font-weight:800;" + (on ? green : "color:#ffd24a");
