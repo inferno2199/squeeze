@@ -24,10 +24,12 @@
 
   var css = document.createElement("style");
   css.textContent =
-    "body{padding-bottom:calc(68px + env(safe-area-inset-bottom,0px)) !important}" +
+    // 🤖 Android geeft geen safe-area-inset (die is daar 0), dus zonder ondergrens plakken de knopjes tegen
+    // de onderrand en vallen ze half onder de gebaren-balk. Op de iPhone duwt de insets ze vanzelf omhoog.
+    "body{padding-bottom:calc(68px + max(env(safe-area-inset-bottom,0px),10px)) !important}" +
     ".sqz-tabs{position:fixed;left:0;right:0;bottom:0;z-index:60;display:flex;" +
     "background:rgba(5,18,12,.94);backdrop-filter:blur(14px);border-top:1px solid rgba(124,255,107,.18);" +
-    "padding-bottom:env(safe-area-inset-bottom,0px)}" +
+    "padding-bottom:max(env(safe-area-inset-bottom,0px),10px)}" +
     ".sqz-tabs a{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;padding:9px 2px 7px;" +
     "color:#8aa396;text-decoration:none;font:600 11px/1 system-ui,sans-serif;-webkit-tap-highlight-color:transparent}" +
     ".sqz-tabs a.aan{color:#7cff6b}" +
