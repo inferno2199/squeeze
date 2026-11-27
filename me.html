@@ -85,7 +85,7 @@
 
     <div id="aan" class="hidden">
       <div class="kaart">
-        <p class="naam">@<span id="handle">—</span><span class="vink" id="vink"></span></p>
+        <p class="naam"><span id="handle">—</span><span class="vink" id="vink"></span></p>
         <p class="sub" id="wallet">—</p>
         <div id="vbox" class="hidden">
           <p class="vtxt">Verified means we know this wallet is yours, so we can pay you when you win. One tap — you already signed in with it.</p>
@@ -145,7 +145,8 @@
       function toon(d) {
         $("uit").classList.add("hidden");
         $("aan").classList.remove("hidden");
-        $("handle").textContent = d.handle || "not linked yet";
+        // 🏷 zonder X-naam geen "@not linked yet": dan zeggen we gewoon wat eraan ontbreekt, en hoe je het oplost
+        $("handle").textContent = d.handle ? "@" + d.handle : "No X name yet";
         $("vink").textContent = d.verified ? "verified" : "not verified";
         $("vink").className = "vink " + (d.verified ? "ja" : "nee");
         $("wallet").textContent = d.wallet;
@@ -168,6 +169,9 @@
           : d.how === "app" ? "Verified in this app ✓ — to win, your X account needs " + (n.days || 30) + "+ days" + (n.folls > 0 ? " and " + n.folls + "+ followers" : "") + "."
           : "Verified in Telegram ✓";
         if (!d.verified) say("Not verified yet, so a prize would go to the next player. One tap above fixes it.", "err");
+        // 🎮 wel verified, maar deze wallet speelde nog nooit: dan staat hij nergens op een bord en kan hij
+        // ook niets winnen. Dat is geen fout, maar je moet het wel weten.
+        else if (!d.handle) say("This wallet hasn't played yet. Play a game once and fill in your X name — that links the two, and then you can win.", "err");
         else say("");
         belKlaar();
       }
@@ -340,9 +344,16 @@
         }
       }
 
+      // 🔍 zit er een wallet IN deze browser? In de app op je beginscherm en in Safari niet; in de browser
+      // van Phantom/Solflare/Backpack wel. Dit is betrouwbaarder dan vragen of we "als app" draaien: die
+      // vraag gaf op de iPhone het oude keuzevenster van wallet.js, en dat opent de pagina zonder koppelcode.
+      function heeftWallet() {
+        try { return !!(window.phantom && window.phantom.solana) || !!window.solflare || !!window.backpack || !!window.solana; } catch (e) { return false; }
+      }
+
       $("login").onclick = async function () {
-        // 📱 in de app (en op een telefoon zonder wallet in de browser) kan het alleen via de wallet-app
-        if (!pairCode && isApp && isPhone) return koppelViaWallet();
+        // 📱 telefoon zonder wallet in deze browser → inloggen gebeurt in de wallet-app, wij wachten hier
+        if (!pairCode && isPhone && !heeftWallet()) return koppelViaWallet();
         say(""); $("login").disabled = true;
         try {
           if (!window.SqzWallet) throw new Error("Wallet tools didn't load. Refresh the page.");
