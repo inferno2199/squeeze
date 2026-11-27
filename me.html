@@ -26,6 +26,8 @@
     h1 { margin: .2rem 0 .3rem; font-size: clamp(1.9rem, 7vw, 2.6rem); font-weight: 800; letter-spacing: -.02em; text-shadow: 0 2px 24px rgba(0,0,0,.6); }
     .lead { color: #dfeee2; line-height: 1.5; margin: 0 auto 1.2rem; max-width: 30em; text-shadow: 0 1px 12px rgba(0,0,0,.8); }
     .go { font: 800 1.05rem var(--font); border: 0; border-radius: 999px; padding: .9rem 1.9rem; cursor: pointer; background: var(--green); color: #031006; box-shadow: 0 0 30px rgba(124,255,107,.4); }
+    /* een <a> is van zichzelf inline: zonder dit valt de knop over de regel eronder (gezien op de iPhone) */
+    a.go { display: inline-block; text-decoration: none; text-align: center; }
     .go:disabled { opacity: .45; cursor: default; box-shadow: none; }
     .msg { margin: 1rem auto 0; max-width: 30em; font-weight: 700; min-height: 1.4em; text-shadow: 0 1px 12px rgba(0,0,0,.8); }
     .msg.err { color: #ff9a8a; } .msg.ok { color: var(--green); }
@@ -52,7 +54,7 @@
     .hidden { display: none !important; }
     .vtxt { color: #dfeee2; font-size: .92rem; line-height: 1.5; margin: .7rem 0 .6rem; }
     .small-go { font-size: .95rem; padding: .7rem 1.3rem; }
-    .uitlog { text-align: center; margin: .2rem 0 0; }
+    .uitlog { text-align: center; margin: .7rem 0 0; }
     .uitlog a { color: var(--muted); font-weight: 700; font-size: .9rem; text-decoration: none; border-bottom: 1px solid rgba(255,255,255,.18); }
   </style>
 </head>
@@ -283,16 +285,32 @@
         } catch (e) { say("Can't reach the bot right now. Try again in a minute.", "err"); }
       }
 
+      // 💾 De koppeling moet overleven dat de app wordt weggegooid. Op de iPhone gebeurt dat zodra je naar
+      // Phantom overschakelt: kom je terug, dan laadt deze pagina opnieuw en is alles uit het geheugen weg.
+      // Stond de code alleen daar, dan staat er niemand meer te kijken en merk je nooit dat het gelukt is.
+      // Dus in localStorage (dat overleeft een herstart) en bij het laden meteen weer verder kijken.
+      var BEZIG = "sqz-pair";
+      function onthoud(p) { try { localStorage.setItem(BEZIG, JSON.stringify(p)); } catch (e) {} }
+      function vergeet() { try { localStorage.removeItem(BEZIG); } catch (e) {} }
+      function opgeslagen() {
+        try {
+          var p = JSON.parse(localStorage.getItem(BEZIG) || "null");
+          return p && p.code && p.secret && p.tot > Date.now() ? p : null;
+        } catch (e) { return null; }
+      }
+
       // ⏳ de app wacht: elke 2 seconden kijken of er in de wallet-browser is ingelogd, maximaal 5 minuten
-      function wachtOpWallet(code, secret) {
-        var tot = Date.now() + 5 * 60000;
+      function wachtOpWallet(code, secret, tot) {
+        tot = tot || Date.now() + 5 * 60000;
+        onthoud({ code: code, secret: secret, tot: tot });
         clearInterval(pollTimer);
         pollTimer = setInterval(async function () {
-          if (Date.now() > tot) { stopWachten(); return say("That took too long. Tap sign in again.", "err"); }
+          if (Date.now() > tot) { vergeet(); stopWachten(); return say("That took too long. Tap sign in again.", "err"); }
           try {
             var r = await (await fetch(API + "/tg/pair/poll?code=" + code + "&s=" + secret, { cache: "no-store" })).json();
-            if (r.expired) { stopWachten(); return say("That link expired. Tap sign in again.", "err"); }
+            if (r.expired) { vergeet(); stopWachten(); return say("That link expired. Tap sign in again.", "err"); }
             if (!r.token) return;
+            vergeet();
             stopWachten();
             token = r.token;
             try { sessionStorage.setItem("sqz-jar-t", token); } catch (e) {}
@@ -308,7 +326,21 @@
         $("uit").classList.remove("hidden");
         $("login").disabled = false;
       }
-      $("w-stop").onclick = function (ev) { ev.preventDefault(); stopWachten(); say(""); };
+      $("w-stop").onclick = function (ev) { ev.preventDefault(); vergeet(); stopWachten(); say(""); };
+
+      // 🔄 teruggekomen uit je wallet-app en de pagina is opnieuw geladen? Dan gewoon weer verder kijken.
+      // Ook als je het scherm even weglegt: iOS zet de klok van een verborgen pagina stil.
+      function hervat() {
+        if (token || pairCode || pollTimer) return false;
+        var p = opgeslagen();
+        if (!p) return false;
+        $("uit").classList.add("hidden");
+        $("wacht").classList.remove("hidden");
+        $("login").disabled = true;
+        wachtOpWallet(p.code, p.secret, p.tot);
+        return true;
+      }
+      document.addEventListener("visibilitychange", function () { if (!document.hidden) hervat(); });
 
       // 🤝 de wallet-browser geeft het slot door aan de app die staat te wachten
       async function doorgeven() {
@@ -379,7 +411,7 @@
       if (pairCode) {
         document.querySelector(".lead").innerHTML = "Sign in here to link the <b>Squeeze</b> app on your Home Screen. One signature — nothing is sent and nothing can be moved.";
         if (token) doorgeven(); else laden();
-      } else laden();
+      } else if (!hervat()) laden();
     })();
   </script>
 </body>
