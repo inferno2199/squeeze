@@ -6,6 +6,14 @@
   <title>Squeeze Squad NFTs — how it works</title>
   <meta name="description" content="Your photo becomes your own octopus NFT. What you get: a spot in the Reef, Citizens of Octopolis, Crack the Jar, stickers, seasonal versions and more." />
   <meta name="theme-color" content="#030604" />
+  <!-- 📱 PWA (2026-11-27): op je beginscherm zetten en fullscreen spelen. De service worker haalt ALTIJD
+       eerst van het net, dus niemand ziet ooit een oude versie; de cache is alleen een vangnet zonder verbinding. -->
+  <link rel="manifest" href="/manifest.json" />
+  <link rel="apple-touch-icon" href="/assets/pwa/icon-192.png" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="Squeeze" />
+  <script>if ("serviceWorker" in navigator) addEventListener("load", function () { navigator.serviceWorker.register("/sw.js").catch(function () {}); });</script>
   <meta property="og:title" content="Squeeze Squad NFTs — how it works" />
   <meta property="og:description" content="Your photo becomes your own octopus. The first 500 become Citizens of Octopolis and play for the Jar every week." />
   <meta property="og:image" content="https://squeezeocto.com/assets/og.png" />

@@ -7,6 +7,14 @@
   <meta name="description" content="Squeeze is an octopus who lives on the $SQUEEZE chart. Buys feed him, records give him rings. Turn yourself into an octopus for free and play daily games for prizes." />
   <link rel="canonical" href="https://squeezeocto.com/" />
   <meta name="theme-color" content="#030604" />
+  <!-- 📱 PWA (2026-11-27): op je beginscherm zetten en fullscreen spelen. De service worker haalt ALTIJD
+       eerst van het net, dus niemand ziet ooit een oude versie; de cache is alleen een vangnet zonder verbinding. -->
+  <link rel="manifest" href="/manifest.json" />
+  <link rel="apple-touch-icon" href="/assets/pwa/icon-192.png" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="Squeeze" />
+  <script>if ("serviceWorker" in navigator) addEventListener("load", function () { navigator.serviceWorker.register("/sw.js").catch(function () {}); });</script>
 
   <!-- Social preview (volledige URL nodig) -->
   <meta property="og:title" content="Squeeze ($SQUEEZE)" />

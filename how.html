@@ -6,6 +6,14 @@
   <title>How Squeeze works ($SQUEEZE)</title>
   <meta name="description" content="Everything about Squeeze in one place: the token, holder rewards, burns, daily games, the generator, NFTs, Squeeze ID, Ink Hunt and the Reef." />
   <meta name="theme-color" content="#030604" />
+  <!-- 📱 PWA (2026-11-27): op je beginscherm zetten en fullscreen spelen. De service worker haalt ALTIJD
+       eerst van het net, dus niemand ziet ooit een oude versie; de cache is alleen een vangnet zonder verbinding. -->
+  <link rel="manifest" href="/manifest.json" />
+  <link rel="apple-touch-icon" href="/assets/pwa/icon-192.png" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="Squeeze" />
+  <script>if ("serviceWorker" in navigator) addEventListener("load", function () { navigator.serviceWorker.register("/sw.js").catch(function () {}); });</script>
   <meta property="og:title" content="How Squeeze works" />
   <meta property="og:description" content="The octopus who lives on the chart. Holder rewards, burns, daily games, your own octopus NFT and more." />
   <meta property="og:image" content="https://squeezeocto.com/assets/og.png" />
