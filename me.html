@@ -50,6 +50,8 @@
     .small { color: var(--muted); font-size: .9rem; line-height: 1.5; margin: 1.2rem auto 0; max-width: 32em; }
     .small a { color: var(--green); }
     .hidden { display: none !important; }
+    .vtxt { color: #dfeee2; font-size: .92rem; line-height: 1.5; margin: .7rem 0 .6rem; }
+    .small-go { font-size: .95rem; padding: .7rem 1.3rem; }
   </style>
 </head>
 <body>
@@ -67,6 +69,11 @@
       <div class="kaart">
         <p class="naam">@<span id="handle">—</span><span class="vink" id="vink"></span></p>
         <p class="sub" id="wallet">—</p>
+        <div id="vbox" class="hidden">
+          <p class="vtxt">Verified means we know this wallet is yours, so we can pay you when you win. One tap — you already signed in with it.</p>
+          <button class="go small-go" id="verify">✅ This is my Squeeze ID</button>
+        </div>
+        <p class="sub" id="vhow"></p>
       </div>
       <div class="kaart">
         <p class="kop">YOUR BEST SCORE EVER</p>
@@ -84,7 +91,7 @@
     </div>
 
     <p class="msg" id="msg"></p>
-    <p class="small">Not showing what you expect? Your wallet has to be verified in Telegram with <b>/id</b>, using the same wallet you play with. <a href="games.html">Back to the games →</a></p>
+    <p class="small">Your name here is the X name you play the games with — one X name stays linked to one wallet. You win with the wallet you played with, and you claim by posting your code on X. Prefer Telegram? <b>/id</b> there works just the same. <a href="games.html">Back to the games →</a></p>
   </div></div>
 
   <script src="config.js?v=20261011d"></script>
@@ -119,11 +126,30 @@
         $("p-missed").textContent = p.missed || 0;
         $("open").innerHTML = (p.open || []).map(function (o) {
           return '<div class="claim"><p>⏳ Still to claim: ' + (o.amount || 0).toLocaleString("en-US") + " " + (o.symbol || "") +
-            "</p><code>Post on X with " + o.code + ", then paste the link to @SqueezeOctoBot</code></div>";
+            "</p><code>Post it on X from @" + (d.handle || "your name") + " with your code " + o.code +
+            ". I look for it on X myself before the deadline — on Telegram you can paste the link to @SqueezeOctoBot to get paid sooner.</code></div>";
         }).join("");
-        if (!d.verified) say("Your wallet isn't verified yet, so you can't win. Send /id " + kort(d.wallet) + " to the bot in Telegram.", "err");
+        // ✅ verifiëren kan nu in de app zelf (2026-11-27). Telegram is niet meer nodig om te kunnen winnen.
+        $("vbox").classList.toggle("hidden", !!d.verified);
+        var n = d.xNeed || {};
+        $("vhow").textContent = !d.verified ? ""
+          : d.how === "app" ? "Verified in this app ✓ — to win, your X account needs " + (n.days || 30) + "+ days" + (n.folls > 0 ? " and " + n.folls + "+ followers" : "") + "."
+          : "Verified in Telegram ✓";
+        if (!d.verified) say("Not verified yet, so a prize would go to the next player. One tap above fixes it.", "err");
         else say("");
       }
+
+      $("verify").onclick = async function () {
+        say(""); $("verify").disabled = true;
+        try {
+          var r = await (await fetch(API + "/tg/me", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ t: token, action: "verify" }) })).json();
+          if (r.login) { token = null; try { sessionStorage.removeItem("sqz-jar-t"); } catch (e) {} location.reload(); return; }
+          if (r.error) throw new Error(r.error);
+          toon(r);
+          if (r.verified) say("Verified 🐙 You can win now.", "ok");
+        } catch (e) { say(e.message || "That didn't work. Try again in a minute.", "err"); }
+        $("verify").disabled = false;
+      };
 
       async function laden() {
         if (!token) return;
