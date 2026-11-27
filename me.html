@@ -88,6 +88,11 @@
         </div>
         <div id="open"></div>
       </div>
+      <div class="kaart hidden" id="belbox">
+        <p class="kop">🔔 NOTIFICATIONS</p>
+        <p class="vtxt" id="beltxt">Get a notification the moment you win, so you never miss the 12:00 deadline. Nothing else — no ads, no daily pings.</p>
+        <button class="go small-go" id="bel">Turn on notifications</button>
+      </div>
     </div>
 
     <p class="msg" id="msg"></p>
@@ -137,7 +142,72 @@
           : "Verified in Telegram ✓";
         if (!d.verified) say("Not verified yet, so a prize would go to the next player. One tap above fixes it.", "err");
         else say("");
+        belKlaar();
       }
+
+      // 🔔 Meldingen (2026-11-27). Zonder Telegram hoorde een winnaar nergens dát hij gewonnen had.
+      // Op de iPhone werkt dit alleen als de site op het beginscherm staat — daar zeggen we het dan ook.
+      var kanBel = "serviceWorker" in navigator && "PushManager" in window && "Notification" in window;
+      var isApp = (window.matchMedia && matchMedia("(display-mode: standalone)").matches) || navigator.standalone === true;
+      var mijnSub = null;
+
+      function belStand(aan, uitleg) {
+        $("belbox").classList.remove("hidden");
+        $("bel").textContent = aan ? "Turn notifications off" : "Turn on notifications";
+        $("bel").disabled = false;
+        if (uitleg) $("beltxt").textContent = uitleg;
+      }
+
+      async function belKlaar() {
+        if (!kanBel) return; // oude browser: de kaart blijft gewoon weg
+        if (!isApp && /iphone|ipad|ipod/i.test(navigator.userAgent)) {
+          $("belbox").classList.remove("hidden");
+          $("beltxt").textContent = "To get a notification when you win, add Squeeze to your Home Screen first (tap the share button, then “Add to Home Screen”) and open it from there.";
+          $("bel").style.display = "none";
+          return;
+        }
+        try {
+          var reg = await navigator.serviceWorker.ready;
+          mijnSub = await reg.pushManager.getSubscription();
+          belStand(!!mijnSub, Notification.permission === "denied"
+            ? "Notifications are blocked for this site in your browser settings. Turn them back on there and come back."
+            : null);
+          if (Notification.permission === "denied") $("bel").disabled = true;
+        } catch (e) { /* geen service worker = geen kaart */ }
+      }
+
+      function sleutelNaarBytes(s) {
+        var t = (s + "=".repeat((4 - (s.length % 4)) % 4)).replace(/-/g, "+").replace(/_/g, "/");
+        var bin = atob(t), out = new Uint8Array(bin.length);
+        for (var i = 0; i < bin.length; i++) out[i] = bin.charCodeAt(i);
+        return out;
+      }
+
+      $("bel").onclick = async function () {
+        say(""); $("bel").disabled = true;
+        try {
+          var reg = await navigator.serviceWorker.ready;
+          if (mijnSub) {
+            await mijnSub.unsubscribe().catch(function () {});
+            await fetch(API + "/tg/push/off", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ t: token, endpoint: mijnSub.endpoint }) });
+            mijnSub = null;
+            belStand(false);
+            return say("Notifications are off.", "ok");
+          }
+          var perm = await Notification.requestPermission();
+          if (perm !== "granted") { belStand(false); return say(perm === "denied" ? "You said no to notifications. You can turn them back on in your browser settings." : "Cancelled.", "err"); }
+          var k = await (await fetch(API + "/tg/push/key")).json();
+          if (!k.key) throw new Error("Notifications aren't switched on yet on our side. Try again later.");
+          mijnSub = await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: sleutelNaarBytes(k.key) });
+          var r = await (await fetch(API + "/tg/push/sub", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ t: token, sub: mijnSub.toJSON() }) })).json();
+          if (!r.ok) throw new Error(r.error || "That didn't work.");
+          belStand(true);
+          say("Done 🔔 I'll tell you the moment you win.", "ok");
+        } catch (e) {
+          belStand(!!mijnSub);
+          say(e.message || "That didn't work. Try again in a minute.", "err");
+        }
+      };
 
       $("verify").onclick = async function () {
         say(""); $("verify").disabled = true;

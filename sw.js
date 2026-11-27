@@ -7,7 +7,7 @@
 // Daarom: ALTIJD EERST HET NET, de cache is alleen een vangnet als je offline bent. Hij maakt de site dus
 // niet sneller, hij maakt hem installeerbaar en hij laat iets zien in plaats van een foutpagina als de
 // verbinding wegvalt. Sneller maken kan later, als dit een tijdje goed draait.
-const CACHE = "sqz-v2";                       // bij elke verandering hieronder: nummer ophogen
+const CACHE = "sqz-v3";                       // bij elke verandering hieronder: nummer ophogen
 const OFFLINE = "/games.html";                 // wat we tonen als er niets is
 
 self.addEventListener("install", (e) => {
@@ -20,6 +20,35 @@ self.addEventListener("activate", (e) => {
   e.waitUntil((async () => {
     for (const k of await caches.keys()) if (k !== CACHE) await caches.delete(k);
     await self.clients.claim();                // meteen de baas, ook over open tabbladen
+  })());
+});
+
+// 🔔 Meldingen (2026-11-27). Een winnaar zonder Telegram hoorde nergens dát hij gewonnen had en had tot
+// 12:00 de volgende ochtend. De bot stuurt het bericht versleuteld (alleen deze telefoon kan het lezen);
+// hier maken we het open en tonen het. Komt er onverhoopt niets leesbaars mee, dan tonen we toch iets:
+// de browser eist dat er bij elke push een melding verschijnt, anders trekt hij de toestemming in.
+self.addEventListener("push", (e) => {
+  let d = {};
+  try { d = e.data ? e.data.json() : {}; } catch (err) { d = {}; }
+  const titel = d.title || "🐙 Squeeze";
+  e.waitUntil(self.registration.showNotification(titel, {
+    body: d.body || "Open the app to see what's new.",
+    icon: "/assets/pwa/icon-192.png",
+    badge: "/assets/pwa/icon-192.png",
+    tag: d.tag || "squeeze",       // zelfde tag = vervangt de vorige, dus nooit een stapel van hetzelfde
+    renotify: true,
+    data: { url: d.url || "/me.html" },
+  }));
+});
+
+// tikken op de melding: een tabblad dat al open staat hergebruiken, anders een nieuw openen
+self.addEventListener("notificationclick", (e) => {
+  e.notification.close();
+  const doel = new URL((e.notification.data && e.notification.data.url) || "/me.html", self.location.origin).href;
+  e.waitUntil((async () => {
+    const open = await self.clients.matchAll({ type: "window", includeUncontrolled: true });
+    for (const c of open) if (c.url.startsWith(self.location.origin) && "focus" in c) { await c.navigate(doel).catch(() => null); return c.focus(); }
+    return self.clients.openWindow(doel);
   })());
 });
 
