@@ -10,11 +10,12 @@
 
   var C = window.SQUEEZE_CONFIG || {};
   var TG = C.TELEGRAM_URL || "https://t.me/SqueezeOctoSquad";
-  // 🐙 Make staat op een ander adres (de generator), dus die opent buiten de app-schil. Dat is onvermijdelijk
-  // tot de generator hier zelf draait; de andere vier blijven binnen.
+  // 🐙 2026-11-28: Make blijft nu BINNEN de app (make.html praat zelf met de generator-server). Daarvoor
+  // sprong je de app uit, want de generator staat op een ander adres en een telefoon houdt een app binnen
+  // zijn eigen adres. Alleen Squad (Telegram) opent nog buiten.
   var TABS = [
     { id: "play", naam: "Play", url: "games.html", bij: ["games", "hold", "says", "stack", "whichjar"], teken: "M4 3l10 7-10 7z" },
-    { id: "make", naam: "Make", url: "https://generator.squeezeocto.com", uit: true, teken: "M10 2a8 8 0 100 16 8 8 0 000-16zm0 3v10M5 10h10" },
+    { id: "make", naam: "Make", url: "make.html", bij: ["make"], teken: "M10 2a8 8 0 100 16 8 8 0 000-16zm0 3v10M5 10h10" },
     { id: "me", naam: "Me", url: "me.html", bij: ["me", "id", "verify"], teken: "M3 17a7 7 0 0114 0M10 9a3.5 3.5 0 100-7 3.5 3.5 0 000 7" },
     { id: "reef", naam: "Reef", url: "reef.html", bij: ["reef", "nfts", "jar"], teken: "M3 15c3-2 3-6 7-6s4 4 7 6" },
     { id: "squad", naam: "Squad", url: TG, uit: true, teken: "M3 14a4 4 0 014-4h6a4 4 0 014 4M10 8a3 3 0 100-6 3 3 0 000 6" },

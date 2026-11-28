@@ -11,6 +11,9 @@ window.SQUEEZE_CONFIG = {
   // Cloudflare Worker: dezelfde ringen/combo bij iedereen.
   WORKER_URL: "https://squeeze-state.inferno2199.workers.dev",
 
+  // Generator (het "Make"-scherm in de app praat hier rechtstreeks mee)
+  GENERATOR_URL: "https://generator.squeezeocto.com",
+
   // Socials (leeg = niet tonen)
   X_URL: "https://x.com/SqueezeOcto",
   TELEGRAM_URL: "",   // leeg = de link uit de bot (/menu → Token & wallets → Set Telegram link)

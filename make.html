@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>Make your octopus · Squeeze</title>
+  <meta name="description" content="Turn your photo into a Squeeze octopus, right here in the app." />
+  <meta name="theme-color" content="#143a37" />
+  <link rel="manifest" href="/manifest.json" />
+  <link rel="apple-touch-icon" href="/assets/pwa/icon-192.png" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="Squeeze" />
+  <script>if ("serviceWorker" in navigator) addEventListener("load", function () { navigator.serviceWorker.register("/sw.js").catch(function () {}); });</script>
+  <script src="/tabs.js?v=20261128b" defer></script>
+  <script src="/install.js?v=20261127a" defer></script>
+  <link rel="icon" href="assets/icon.png" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link rel="preconnect" href="https://generator.squeezeocto.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="play/play.css?v=20261127a" />
+  <style>
+    .mwrap { position: relative; z-index: 1; min-height: 100vh; padding: 18px 16px 56px; display: grid; justify-items: center; align-items: start; }
+    .min { width: min(560px, 100%); text-align: center; }
+    .back { color: var(--muted); text-decoration: none; font-weight: 700; display: inline-block; margin: 0 0 .6rem; }
+    h1 { margin: .2rem 0 .3rem; font-size: clamp(1.9rem, 7vw, 2.6rem); font-weight: 800; letter-spacing: -.02em; text-shadow: 0 2px 24px rgba(0,0,0,.6); }
+    .lead { color: #dfeee2; line-height: 1.5; margin: 0 auto 1.2rem; max-width: 30em; text-shadow: 0 1px 12px rgba(0,0,0,.8); }
+    .go { font: 800 1.05rem var(--font); border: 0; border-radius: 999px; padding: .9rem 1.9rem; cursor: pointer; background: var(--green); color: #031006; box-shadow: 0 0 30px rgba(124,255,107,.4); }
+    a.go { display: inline-block; text-decoration: none; text-align: center; }
+    .go:disabled { opacity: .45; cursor: default; box-shadow: none; }
+    .small-go { font-size: .95rem; padding: .7rem 1.3rem; }
+    .msg { margin: 1rem auto 0; max-width: 30em; font-weight: 700; min-height: 1.4em; text-shadow: 0 1px 12px rgba(0,0,0,.8); }
+    .msg.err { color: #ff9a8a; } .msg.ok { color: var(--green); }
+    .kaart { background: rgba(4,16,10,.62); border: 1px solid var(--line); border-radius: 18px; padding: 1rem 1.1rem; margin: 0 0 .9rem; }
+    .uit { width: 100%; border-radius: 14px; display: block; }
+    .knoppen { display: flex; flex-wrap: wrap; gap: .5rem; justify-content: center; margin: .9rem 0 0; }
+    .knoppen button, .knoppen a { font: 800 .92rem var(--font); border-radius: 999px; padding: .6rem 1rem; cursor: pointer; border: 1px solid var(--line); background: rgba(3,12,8,.5); color: #e8f5ea; text-decoration: none; }
+    .knoppen button:disabled { opacity: .45; cursor: default; }
+    .balk { height: 10px; border-radius: 999px; background: rgba(3,12,8,.6); overflow: hidden; margin: .7rem 0 .5rem; }
+    .balk i { display: block; height: 100%; width: 0; background: var(--green); transition: width .4s linear; }
+    .stap { color: #dfeee2; font-weight: 700; }
+    .sub { color: var(--muted); font-size: .9rem; margin: .5rem 0 0; }
+    .wens { width: 100%; box-sizing: border-box; border-radius: 12px; border: 1px solid var(--line); background: rgba(3,12,8,.6); color: #e8f5ea; font: 600 1rem var(--font); padding: .7rem .8rem; margin: .2rem 0 .6rem; }
+    .small { color: var(--muted); font-size: .9rem; line-height: 1.5; margin: 1.2rem auto 0; max-width: 32em; }
+    .small a { color: var(--green); }
+    .hidden { display: none !important; }
+  </style>
+</head>
+<body>
+  <canvas class="seabg" id="sea"></canvas>
+  <div class="mwrap"><div class="min">
+    <a class="back" href="games.html">← Squeeze</a>
+    <h1>Make your octopus</h1>
+
+    <div id="start">
+      <p class="lead">Send a photo and Squeeze turns whoever is in it into an octopus. Your photo is never published — it's only used to draw.</p>
+      <button class="go" id="kies">📸 Choose a photo</button>
+      <input type="file" id="bestand" accept="image/*" class="hidden" />
+    </div>
+
+    <div id="bezig" class="kaart hidden">
+      <p class="stap" id="stap">🔍 Looking at your photo…</p>
+      <div class="balk"><i id="vul"></i></div>
+      <p class="sub">This takes about a minute. Keep this screen open.</p>
+    </div>
+
+    <div id="klaar" class="hidden">
+      <div class="kaart">
+        <img class="uit" id="uit" alt="Your Squeeze octopus" />
+        <div class="knoppen">
+          <button id="opnieuw">🔁 Again</button>
+          <button id="wijzig">✏️ Change something</button>
+          <button id="fix">✨ Fix it</button>
+          <button id="deel">📤 Share</button>
+        </div>
+        <p class="sub" id="over"></p>
+      </div>
+      <div class="kaart hidden" id="wensbox">
+        <input class="wens" id="wens" maxlength="120" placeholder="e.g. give him a santa hat" />
+        <button class="go small-go" id="wensok">Change it</button>
+      </div>
+    </div>
+
+    <p class="msg" id="msg"></p>
+    <p class="small">Minting, stickers and seasons live in the full generator for now: <a href="https://generator.squeezeocto.com" id="vol">open it →</a></p>
+  </div></div>
+
+  <script src="config.js?v=20261128a"></script>
+  <script src="sea.js?v=20261011d"></script>
+  <script src="life.js?v=20261125a" data-friends="few" data-bubbles="off"></script>
+  <script>
+    (function () {
+      "use strict";
+      // 🐙 Het generator-scherm IN de app (2026-11-28). Wens gebruiker: "één app waar je alles van Squeeze
+      // in kan doen". De generator draait op een ander adres, en een telefoon houdt een app binnen zijn
+      // eigen adres — dus sprong je er altijd uit. Nu staat het scherm hier en praat het rechtstreeks met
+      // de generator-server. Al het zware werk (tekenen, lijfcontrole, logo-check) blijft daar.
+      var C = window.SQUEEZE_CONFIG || {};
+      var GEN = (C.GENERATOR_URL || "https://generator.squeezeocto.com").replace(/\/$/, "");
+      var $ = function (id) { return document.getElementById(id); };
+      var plaatje = null;   // het resultaat (data-URL)
+      var attrs = [];       // eigenschappen van de NFT; die moeten bij elke bewerking mee
+      var foto = null;      // de ingestuurde foto, voor 🔁 Again
+      var timer = null;
+
+      function say(t, k) { $("msg").textContent = t || ""; $("msg").className = "msg" + (k ? " " + k : ""); }
+      function toon(el, aan) { el.classList.toggle("hidden", !aan); }
+      function knoppenUit(aan) {
+        ["opnieuw", "wijzig", "fix", "deel", "wensok"].forEach(function (id) { $(id).disabled = aan; });
+        $("kies").disabled = aan;
+      }
+
+      // ⏳ De server stuurt het plaatje in één keer terug, dus we kunnen geen echte voortgang tonen. De balk
+      // loopt mee met hoe lang het gemiddeld duurt en wacht vlak voor het einde tot het er echt is.
+      var MAAK = [[0, "🔍 Looking at your photo…"], [4, "🎨 Drawing your octopus…"], [17, "🔎 Checking the details…"], [24, "🧽 Polishing a few details…"], [34, "👥 Lots of people? Drawing each one…"], [65, "🧩 Putting your squad together…"]];
+      var WIJZIG = [[0, "✏️ Making the change…"], [3, "🎨 Redrawing…"], [14, "🔎 Checking the details…"], [20, "🧽 Polishing a few details…"]];
+      function startBalk(stappen) {
+        stopBalk();
+        toon($("bezig"), true);
+        $("vul").style.transition = "none"; $("vul").style.width = "0%";
+        void $("vul").offsetWidth; $("vul").style.transition = "";
+        var t0 = Date.now(), totaal = stappen[stappen.length - 1][0] + 8;
+        timer = setInterval(function () {
+          var sec = (Date.now() - t0) / 1000, label = stappen[0][1];
+          for (var i = 0; i < stappen.length; i++) if (sec >= stappen[i][0]) label = stappen[i][1];
+          $("stap").textContent = label;
+          $("vul").style.width = Math.min(95, (sec / totaal) * 95) + "%";
+        }, 300);
+      }
+      function stopBalk() { if (timer) clearInterval(timer); timer = null; toon($("bezig"), false); }
+
+      // 📸 de foto kleiner maken, anders is hij te groot om te versturen
+      function naarJpeg(file) {
+        return new Promise(function (resolve, reject) {
+          if (!file || !/^image\//.test(file.type)) return reject(new Error("Choose a photo."));
+          var img = new Image();
+          img.onload = function () {
+            var max = 1024, k = Math.min(1, max / Math.max(img.width, img.height));
+            var c = document.createElement("canvas");
+            c.width = Math.round(img.width * k); c.height = Math.round(img.height * k);
+            c.getContext("2d").drawImage(img, 0, 0, c.width, c.height);
+            resolve(c.toDataURL("image/jpeg", 0.88));
+          };
+          img.onerror = function () { reject(new Error("I couldn't read that photo. Try another one.")); };
+          img.src = URL.createObjectURL(file);
+        });
+      }
+
+      async function vraag(pad, body) {
+        var r = await fetch(GEN + pad, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body) });
+        var d = await r.json().catch(function () { return {}; });
+        if (!r.ok) throw new Error(d.error || "Something went wrong. Try again in a minute.");
+        return d;
+      }
+
+      function toonUitslag(d) {
+        plaatje = d.image;
+        if (Array.isArray(d.attributes)) attrs = d.attributes;
+        $("uit").src = plaatje;
+        toon($("start"), false);
+        toon($("klaar"), true);
+        toon($("wensbox"), false);
+        $("over").textContent = d.left === "unlimited" ? "🎉 Unlimited today!" : (d.left != null ? d.left + " left today" + (d.holder ? " (holder 💎)" : "") : "");
+      }
+
+      async function maak() {
+        if (!foto) return;
+        say(""); knoppenUit(true); startBalk(MAAK);
+        try {
+          var d = await vraag("/api/squeezify", { image: foto });
+          toonUitslag(d);
+          // 👥 staan er meerdere mensen op, dan komt de groepsfoto terug. Die kun je hier gewoon bewaren;
+          // de losse octopussen eruit halen kan voorlopig alleen in de volledige generator, en dat zeggen
+          // we er eerlijk bij in plaats van de knop stil niets te laten doen.
+          if (d.group) say("👥 A group photo! Want each one on their own? That's in the full generator for now.", "ok");
+        } catch (e) { say(e.message, "err"); }
+        stopBalk(); knoppenUit(false);
+      }
+
+      async function bewerk(extra, label) {
+        if (!plaatje) return;
+        say(""); knoppenUit(true); startBalk(WIJZIG);
+        try {
+          var d = await vraag("/api/edit", Object.assign({ image: plaatje, attributes: attrs }, extra));
+          if (d.none) say("✨ Looks good already! Nothing to fix. 🐙", "ok");
+          else { toonUitslag(d); say(label, "ok"); }
+        } catch (e) { say(e.message, "err"); }
+        stopBalk(); knoppenUit(false);
+      }
+
+      $("kies").onclick = function () { $("bestand").click(); };
+      $("bestand").onchange = async function () {
+        var f = this.files && this.files[0];
+        this.value = "";
+        if (!f) return;
+        say("");
+        try { foto = await naarJpeg(f); } catch (e) { return say(e.message, "err"); }
+        maak();
+      };
+      $("opnieuw").onclick = function () { maak(); };
+      $("fix").onclick = function () { bewerk({ fix: "auto" }, "✨ Checked hands, ears, legs and hair."); };
+      $("wijzig").onclick = function () {
+        toon($("wensbox"), $("wensbox").classList.contains("hidden"));
+        if (!$("wensbox").classList.contains("hidden")) $("wens").focus();
+      };
+      $("wensok").onclick = function () {
+        var w = $("wens").value.trim();
+        if (!w) return say("Type what you'd like changed.", "err");
+        $("wens").value = "";
+        bewerk({ wish: w }, "✏️ Done!");
+      };
+      $("wens").onkeydown = function (e) { if (e.key === "Enter") $("wensok").click(); };
+
+      // 📤 op een telefoon het echte deelmenu (dan kun je hem meteen posten of bewaren), anders downloaden
+      $("deel").onclick = async function () {
+        if (!plaatje) return;
+        try {
+          var blob = await (await fetch(plaatje)).blob();
+          var file = new File([blob], "my-squeeze.jpg", { type: "image/jpeg" });
+          if (navigator.canShare && navigator.canShare({ files: [file] })) {
+            await navigator.share({ files: [file], text: "I turned myself into a Squeeze octopus 🐙 squeezeocto.com" });
+            return;
+          }
+          var a = document.createElement("a");
+          a.href = plaatje; a.download = "my-squeeze.jpg";
+          document.body.appendChild(a); a.click(); a.remove();
+          say("Saved 🐙", "ok");
+        } catch (e) {
+          if (!/abort|cancel/i.test(e.message || "")) say("Couldn't share that. Press and hold the picture to save it.", "err");
+        }
+      };
+    })();
+  </script>
+</body>
+</html>
