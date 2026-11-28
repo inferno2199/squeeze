@@ -49,10 +49,16 @@
     #mintrij { margin: 0 0 .9rem; }
     #seizoenuit { box-shadow: 0 0 0 3px rgba(255,146,43,.7), 0 0 40px rgba(255,146,43,.3); }
     .rij { display: grid; grid-template-columns: repeat(3, 1fr); gap: .5rem; }
-    .rij figure { margin: 0; cursor: pointer; }
+    .rij figure { margin: 0; cursor: pointer; position: relative; }
+    .rij .weg { position: absolute; top: 4px; right: 4px; width: 24px; height: 24px; border-radius: 50%; border: 0; cursor: pointer;
+      background: rgba(3,12,8,.8); color: #cfe8d6; font: 700 13px/1 var(--font); display: flex; align-items: center; justify-content: center; }
     .rij img { width: 100%; aspect-ratio: 1; object-fit: cover; border-radius: 12px; display: block; border: 1px solid var(--line); }
     .rij figcaption { font-size: .72rem; color: var(--muted); font-weight: 700; margin: .25rem 0 0; text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     .rij .nft img { border-color: rgba(124,255,107,.55); box-shadow: 0 0 14px rgba(124,255,107,.25); }
+    .rij .bewaard img { border-color: rgba(124,255,107,.35); }
+    .opsl { display: flex; gap: .5rem; margin: .9rem 0 0; }
+    .opsl .wens { margin: 0; flex: 1; }
+    .opsl .go { white-space: nowrap; }
   </style>
 </head>
 <body>
@@ -84,6 +90,12 @@
           <button id="deel">📤 Share</button>
         </div>
         <div class="knoppen" id="seizoenen"></div>
+        <!-- 💾 2026-11-28: een naam geven en bewaren, zoals My Squeezes in Telegram. Zonder naam blijft hij
+             ook staan (de laatste 6), maar mét naam raak je hem niet kwijt als je er nog een paar maakt. -->
+        <div class="opsl">
+          <input class="wens" id="naam" maxlength="32" placeholder="Name it, so you keep it" />
+          <button class="go small-go" id="opslaan">💾 Save</button>
+        </div>
         <p class="sub" id="over"></p>
       </div>
 
@@ -157,7 +169,8 @@
       // op onze server: dan heb je twee plekken die hetzelfde proberen te onthouden, met eigen regels over
       // wat wanneer weggaat. Dit is alleen van jou en kost ons niets.
       var BAK = "sqz-mijn";
-      var BEWAAR = 6; // meer past niet: een telefoon geeft een site ongeveer 5 MB, en elk plaatje is ±120 KB
+      var BEWAAR = 6;   // zonder naam: de laatste zoveel blijven staan
+      var MAX = 12;     // met naam erbij: zoveel in totaal (telefoon geeft ±5 MB, elk plaatje ±120 KB)
       function mijne() {
         try { var l = JSON.parse(localStorage.getItem(BAK) || "[]"); return Array.isArray(l) ? l : []; } catch (e) { return []; }
       }
@@ -176,17 +189,39 @@
           img.src = dataUrl;
         });
       }
-      async function bewaar(dataUrl) {
-        if (!dataUrl || !/^data:image\//.test(dataUrl)) return; // een gemintte NFT staat al op de blockchain
+      // 🧹 wat mag blijven staan: alles met een naam (daar koos je voor), plus de laatste BEWAAR zonder naam.
+      // Zo raak je een octopus met een naam nooit kwijt doordat je er nog een paar maakt.
+      function opruimen(l) {
+        var zonder = 0;
+        return l.filter(function (x) {
+          if (x.naam) return true;
+          zonder++;
+          return zonder <= BEWAAR;
+        }).slice(0, MAX);
+      }
+      // de laatst gemaakte onthouden we apart, zodat 💾 Save weet welke hij een naam moet geven
+      var laatstKlein = null;
+      async function bewaar(dataUrl, naam) {
+        if (!dataUrl || !/^data:image\//.test(dataUrl)) return null; // een gemintte NFT staat al op de blockchain
         var klein = await kleiner(dataUrl);
-        if (!klein) return;
-        var l = mijne().filter(function (x) { return x.img !== klein; });
-        l.unshift({ img: klein, at: Date.now() });
-        // 🧯 ruimte op? dan de oudste laten vallen tot het past, in plaats van stilletjes niets bewaren
-        while (l.length) {
-          try { localStorage.setItem(BAK, JSON.stringify(l.slice(0, BEWAAR))); return; }
-          catch (e) { l.pop(); }
+        if (!klein) return null;
+        var l = mijne();
+        var bestaat = l.find(function (x) { return x.img === klein; });
+        if (bestaat) {
+          if (naam != null) bestaat.naam = naam || "";
+        } else {
+          l.unshift({ img: klein, at: Date.now(), naam: naam || "" });
         }
+        l = opruimen(l);
+        // 🧯 ruimte op? dan de oudste zónder naam laten vallen tot het past, in plaats van stil niets bewaren
+        while (l.length) {
+          try { localStorage.setItem(BAK, JSON.stringify(l)); return klein; }
+          catch (e) {
+            var i = l.map(function (x) { return !x.naam; }).lastIndexOf(true);
+            l.splice(i >= 0 ? i : l.length - 1, 1);
+          }
+        }
+        return null;
       }
       function toon(el, aan) { el.classList.toggle("hidden", !aan); }
       function knoppenUit(aan) {
@@ -251,7 +286,8 @@
         toon($("mintrij"), true);
         seizoenPlaatje = null;
         nagekeken = null;
-        bewaar(plaatje).then(galerij); // 💾 zodat hij er morgen nog is, ook als je de app sluit
+        // 💾 meteen bewaren (zonder naam), zodat hij er morgen nog is ook als je de app sluit
+        bewaar(plaatje).then(function (k) { laatstKlein = k; galerij(); });
         $("over").textContent = d.left === "unlimited" ? "🎉 Unlimited today!" : (d.left != null ? d.left + " left today" + (d.holder ? " (holder 💎)" : "") : "");
       }
 
@@ -353,21 +389,55 @@
           }, true));
         });
         eigen.forEach(function (x, i) {
-          rij.appendChild(tegel(x.img, i === 0 ? "newest" : "", function () {
-            plaatje = x.img; attrs = [];
+          var f = tegel(x.img, x.naam || (i === 0 && !x.naam ? "newest" : ""), function () {
+            plaatje = x.img; attrs = []; laatstKlein = x.img;
             $("uit").src = x.img;
+            $("naam").value = x.naam || "";
             toon($("start"), false); toon($("klaar"), true);
             toon($("mintrij"), true); toon($("mintbox"), false); toon($("seizoenbox"), false);
             nagekeken = null; seizoenPlaatje = null;
-            say("Back to this one 🐙", "ok");
+            say(x.naam ? "“" + x.naam + "” 🐙" : "Back to this one 🐙", "ok");
             window.scrollTo({ top: 0, behavior: "smooth" });
-          }, false));
+          }, false);
+          if (x.naam) f.classList.add("bewaard");
+          // 🗑 weggooien: vraagt eerst, want weg is hier echt weg (hij staat alleen op deze telefoon)
+          var weg = document.createElement("button");
+          weg.className = "weg";
+          weg.textContent = "✕";
+          weg.title = "Remove";
+          weg.onclick = async function (ev) {
+            ev.stopPropagation();
+            if (!confirm(x.naam ? "Remove “" + x.naam + "”? It's only on this phone, so it's gone for good." : "Remove this one? It's only on this phone.")) return;
+            try { localStorage.setItem(BAK, JSON.stringify(mijne().filter(function (y) { return y.img !== x.img; }))); } catch (e) {}
+            await galerij();
+          };
+          f.appendChild(weg);
+          rij.appendChild(f);
         });
         toon($("mijnbox"), rij.children.length > 0 || !token);
         $("mijnuitleg").textContent = !token
           ? "Sign in on the Me tab and your minted NFTs show up here too."
-          : (eigen.length ? "The last " + BEWAAR + " you make are kept on this phone. NFTs are yours forever." : "NFTs are yours forever. What you make is kept on this phone.");
+          : (eigen.length
+            ? "Give one a name and it stays; without a name only the last " + BEWAAR + " are kept. All of this lives on this phone only — NFTs are yours forever, wherever you open them."
+            : "NFTs are yours forever. What you make is kept on this phone; give it a name and it stays.");
       }
+
+      // 💾 een naam geven. Hij staat er al in (zonder naam); dit zet de naam erbij en beschermt hem tegen
+      // het opruimen. Wens gebruiker: "ik kan hem niet saven en een naam kiezen zoals in Telegram".
+      $("opslaan").onclick = async function () {
+        if (!plaatje) return;
+        var n = $("naam").value.trim().slice(0, 32);
+        if (!n) return say("Type a name first, then tap Save.", "err");
+        $("opslaan").disabled = true;
+        var k = await bewaar(plaatje, n);
+        $("opslaan").disabled = false;
+        if (!k) return say("Couldn't save that one — your phone is out of room. Delete a few older ones first.", "err");
+        laatstKlein = k;
+        $("naam").value = "";
+        await galerij();
+        say("Saved as “" + n + "” 🐙 It stays in 🖼 Your octopuses.", "ok");
+      };
+      $("naam").onkeydown = function (e) { if (e.key === "Enter") $("opslaan").click(); };
 
       $("kies").onclick = function () { $("bestand").click(); };
       $("bestand").onchange = async function () {
