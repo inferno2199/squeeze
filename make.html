@@ -45,6 +45,9 @@
     .small { color: var(--muted); font-size: .9rem; line-height: 1.5; margin: 1.2rem auto 0; max-width: 32em; }
     .small a { color: var(--green); }
     .hidden { display: none !important; }
+    .kop { font-size: .78rem; letter-spacing: .14em; font-weight: 800; color: var(--muted); margin: 0 0 .6rem; text-align: left; }
+    #mintrij { margin: 0 0 .9rem; }
+    #seizoenuit { box-shadow: 0 0 0 3px rgba(255,146,43,.7), 0 0 40px rgba(255,146,43,.3); }
   </style>
 </head>
 <body>
@@ -72,14 +75,40 @@
           <button id="opnieuw">🔁 Again</button>
           <button id="wijzig">✏️ Change something</button>
           <button id="fix">✨ Fix it</button>
+          <button id="pak">👕 Match outfit</button>
           <button id="deel">📤 Share</button>
         </div>
+        <div class="knoppen" id="seizoenen"></div>
         <p class="sub" id="over"></p>
       </div>
+
       <div class="kaart hidden" id="wensbox">
         <input class="wens" id="wens" maxlength="120" placeholder="e.g. give him a santa hat" />
         <button class="go small-go" id="wensok">Change it</button>
       </div>
+
+      <!-- 🎃 de seizoensversie is een APART plaatje om te bewaren; je octopus en je NFT blijven zoals ze zijn -->
+      <div class="kaart hidden" id="seizoenbox">
+        <img class="uit" id="seizoenuit" alt="Season version of your octopus" />
+        <div class="knoppen"><button id="seizoendeel">📤 Share this one</button></div>
+      </div>
+
+      <!-- 🥚 minten -->
+      <div class="kaart hidden" id="mintbox">
+        <p class="kop">🥚 MINT IT AS AN NFT</p>
+        <input class="wens" id="mnaam" maxlength="32" placeholder="Name your octopus (max 32)" />
+        <input class="wens" id="mtekst" maxlength="100" placeholder="One line about it (optional)" />
+        <button class="go small-go" id="mcheck">Review</button>
+        <div id="mbekijk" class="hidden">
+          <p class="sub"><b id="rvnaam"></b><br><span id="rvtekst"></span></p>
+          <div class="knoppen">
+            <button id="mbetaal">💳 Pay <span id="mprijs"></span> &amp; mint</button>
+            <button id="mterug">✏️ Edit</button>
+          </div>
+          <p class="sub">You sign one transaction in your wallet. Minting takes up to a minute after that — keep this screen open.</p>
+        </div>
+      </div>
+      <div class="knoppen" id="mintrij"><button id="mintknop">🥚 Mint it as an NFT</button></div>
     </div>
 
     <p class="msg" id="msg"></p>
@@ -87,6 +116,8 @@
   </div></div>
 
   <script src="config.js?v=20261128a"></script>
+  <!-- de wallet-code staat bij de generator; sinds 2026-11-28 kan een pagina zeggen waar de server staat -->
+  <script src="https://generator.squeezeocto.com/wallet.js?v=20261128a"></script>
   <script src="sea.js?v=20261011d"></script>
   <script src="life.js?v=20261125a" data-friends="few" data-bubbles="off"></script>
   <script>
@@ -101,14 +132,17 @@
       var $ = function (id) { return document.getElementById(id); };
       var plaatje = null;   // het resultaat (data-URL)
       var attrs = [];       // eigenschappen van de NFT; die moeten bij elke bewerking mee
-      var foto = null;      // de ingestuurde foto, voor 🔁 Again
+      var foto = null;      // de ingestuurde foto, voor 🔁 Again en 👕 Match outfit
       var timer = null;
+      var info = null;             // prijs, betaal-wallet en seizoensknoppen van de generator
+      var seizoenPlaatje = null;   // 🎃 de seizoensversie is een apart plaatje, niet je octopus zelf
+      var nagekeken = null;        // 🥚 naam en tekst die de server goedkeurde, vlak voor het betalen
 
       function say(t, k) { $("msg").textContent = t || ""; $("msg").className = "msg" + (k ? " " + k : ""); }
       function toon(el, aan) { el.classList.toggle("hidden", !aan); }
       function knoppenUit(aan) {
-        ["opnieuw", "wijzig", "fix", "deel", "wensok"].forEach(function (id) { $(id).disabled = aan; });
-        $("kies").disabled = aan;
+        ["opnieuw", "wijzig", "fix", "pak", "deel", "wensok", "kies", "mintknop", "mcheck", "mbetaal", "seizoendeel"].forEach(function (id) { $(id).disabled = aan; });
+        $("seizoenen").querySelectorAll("button").forEach(function (b) { b.disabled = aan; });
       }
 
       // ⏳ De server stuurt het plaatje in één keer terug, dus we kunnen geen echte voortgang tonen. De balk
@@ -161,6 +195,13 @@
         toon($("start"), false);
         toon($("klaar"), true);
         toon($("wensbox"), false);
+        // een nieuw plaatje = de seizoensversie en de mint-gegevens horen bij de vorige, dus weg ermee
+        toon($("seizoenbox"), false);
+        toon($("mintbox"), false);
+        toon($("mbekijk"), false);
+        toon($("mintrij"), true);
+        seizoenPlaatje = null;
+        nagekeken = null;
         $("over").textContent = d.left === "unlimited" ? "🎉 Unlimited today!" : (d.left != null ? d.left + " left today" + (d.holder ? " (holder 💎)" : "") : "");
       }
 
@@ -189,6 +230,39 @@
         stopBalk(); knoppenUit(false);
       }
 
+      // ℹ️ prijs, betaal-wallet en de seizoensknoppen komen van de generator
+      if (window.SqzWallet) window.SqzWallet.api = GEN; // anders zoekt hij /api/blockhash op ONZE site
+      fetch(GEN + "/api/info").then(function (r) { return r.json(); }).then(function (d) {
+        info = d;
+        $("mprijs").textContent = d.price ? d.price + " SOL" : "";
+        (d.seasonButtons || []).forEach(function (b) {
+          var el = document.createElement("button");
+          el.textContent = b.label;
+          el.onclick = function () { seizoen(b.v, b.label); };
+          $("seizoenen").appendChild(el);
+        });
+      }).catch(function () {});
+
+      // 🎃 seizoensversie: apart plaatje, je octopus zelf blijft hetzelfde
+      async function seizoen(v, label) {
+        if (!plaatje) return;
+        say(""); knoppenUit(true); startBalk(WIJZIG);
+        try {
+          var d = await vraag("/api/edit", { image: plaatje, season: v });
+          seizoenPlaatje = d.image;
+          $("seizoenuit").src = d.image;
+          toon($("seizoenbox"), true);
+          say(label.split(" ")[0] + " Ready! Your octopus itself stays the same.", "ok");
+        } catch (e) { say(e.message, "err"); }
+        stopBalk(); knoppenUit(false);
+      }
+
+      // 👕 de kleren van je eigen foto overnemen
+      $("pak").onclick = function () {
+        if (!foto) return say("Make an octopus from a photo first.", "err");
+        bewerk({ outfit: foto }, "👕 Outfit matched!");
+      };
+
       $("kies").onclick = function () { $("bestand").click(); };
       $("bestand").onchange = async function () {
         var f = this.files && this.files[0];
@@ -212,24 +286,106 @@
       };
       $("wens").onkeydown = function (e) { if (e.key === "Enter") $("wensok").click(); };
 
-      // 📤 op een telefoon het echte deelmenu (dan kun je hem meteen posten of bewaren), anders downloaden
-      $("deel").onclick = async function () {
+      // 🥚 MINTEN. Dit is het enige stuk waar echt geld overheen gaat, dus precies dezelfde volgorde als in
+      // de volledige generator: eerst de logo-controle (een echt merklogo mag geen NFT worden), dan je naam
+      // en tekst door de server laten nakijken, dan pas betalen. Betalen en minten zitten in één tik, zodat
+      // er nooit een betaling kan zijn zonder mintpoging.
+      $("mintknop").onclick = async function () {
         if (!plaatje) return;
+        say("");
+        if (info && info.mintSoon) return say("🪙 Minting opens at launch. Soon! 🚀 Save your octopus for now.", "ok");
+        knoppenUit(true); startBalk([[0, "🔎 Quick check before minting…"]]);
         try {
-          var blob = await (await fetch(plaatje)).blob();
+          var d = await vraag("/api/edit", { image: plaatje, op: "logocheck" });
+          if (d.logo) {
+            stopBalk(); knoppenUit(false);
+            say("🧽 This one shows a real logo" + (d.what ? " (" + d.what + ")" : "") + ". Real logos can't be minted, but Squeeze can turn it into an ink emblem — tap ✏️ Change something and ask for that, or Fix it.", "err");
+            return;
+          }
+        } catch (e) { /* controle niet bereikbaar: gewoon doorgaan, de server kijkt bij het minten nog eens */ }
+        stopBalk(); knoppenUit(false);
+        toon($("mintbox"), true);
+        toon($("mbekijk"), false);
+        nagekeken = null;
+        $("mnaam").focus();
+      };
+      ["mnaam", "mtekst"].forEach(function (id) { $(id).oninput = function () { nagekeken = null; toon($("mbekijk"), false); }; });
+      $("mterug").onclick = function () { nagekeken = null; toon($("mbekijk"), false); $("mnaam").focus(); };
+
+      $("mcheck").onclick = async function () {
+        say("");
+        var naam = $("mnaam").value.trim().slice(0, 32);
+        if (!naam) return say("Give your octopus a name first.", "err");
+        $("mcheck").disabled = true;
+        try {
+          var r = await fetch(GEN + "/api/mint", {
+            method: "POST", headers: { "content-type": "application/json" },
+            body: JSON.stringify({ previewOnly: true, name: naam, description: $("mtekst").value.trim(), attributes: attrs }),
+          });
+          var d = await r.json();
+          if (!r.ok) throw new Error(d.error || "That name didn't pass the check.");
+          nagekeken = d;
+          $("rvnaam").textContent = d.name;
+          $("rvtekst").textContent = d.description || "";
+          toon($("mbekijk"), true);
+        } catch (e) { nagekeken = null; say(e.message, "err"); }
+        $("mcheck").disabled = false;
+      };
+
+      $("mbetaal").onclick = async function () {
+        if (!nagekeken) return say("Tap Review first.", "err");
+        say(""); $("mbetaal").disabled = true;
+        try {
+          if (!window.SqzWallet) throw new Error("Wallet tools didn't load. Refresh the page.");
+          if (!info || !info.payWallet) throw new Error("Can't reach the generator right now. Try again in a minute.");
+          var w = await window.SqzWallet.pick();
+          var sig = await window.SqzWallet.payMint(w, info);
+          say("Payment sent. Minting… (up to a minute)", "ok");
+          var r = await fetch(GEN + "/api/mint", {
+            method: "POST", headers: { "content-type": "application/json" },
+            body: JSON.stringify({ txId: sig, imageUrl: plaatje, recipientWallet: w.address, name: nagekeken.name, description: nagekeken.description, attributes: attrs.concat([{ trait_type: "Made with", value: "Squeeze Generator" }]) }),
+          });
+          var d = await r.json();
+          // 💸 betaald maar niet gemint: zeg het eerlijk én zeg erbij dat het geld niet weg is
+          if (!r.ok || !d.success) throw new Error((d.error || "Minting failed.") + " Your payment is safe — send us this transaction: " + sig);
+          if (/^https:\/\//.test(d.imageUrl || "")) { plaatje = d.imageUrl; $("uit").src = d.imageUrl; }
+          toon($("mintbox"), false);
+          toon($("mintrij"), false);
+          say("🎉 Minted! " + (d.citizen ? "🏙 Welcome to Octopolis, Citizen #" + d.citizen + "! " : "") + (d.rareText ? String(d.rareText).replace("\n", " ") : ""), "ok");
+          if (d.mintAddress) {
+            var a = document.createElement("a");
+            a.href = "https://solscan.io/token/" + d.mintAddress;
+            a.target = "_blank"; a.rel = "noopener";
+            a.textContent = " View on Solscan";
+            a.style.color = "var(--green)";
+            $("msg").appendChild(a);
+          }
+        } catch (e) {
+          say(/cancel|reject|denied|declined/i.test(e.message || "") ? "Cancelled — nothing was paid." : (e.message || "Minting failed."), "err");
+        }
+        $("mbetaal").disabled = false;
+      };
+
+      // 📤 op een telefoon het echte deelmenu (dan kun je hem meteen posten of bewaren), anders downloaden
+      async function deelPlaatje(bron) {
+        if (!bron) return;
+        try {
+          var blob = await (await fetch(bron)).blob();
           var file = new File([blob], "my-squeeze.jpg", { type: "image/jpeg" });
           if (navigator.canShare && navigator.canShare({ files: [file] })) {
             await navigator.share({ files: [file], text: "I turned myself into a Squeeze octopus 🐙 squeezeocto.com" });
             return;
           }
           var a = document.createElement("a");
-          a.href = plaatje; a.download = "my-squeeze.jpg";
+          a.href = bron; a.download = "my-squeeze.jpg";
           document.body.appendChild(a); a.click(); a.remove();
           say("Saved 🐙", "ok");
         } catch (e) {
           if (!/abort|cancel/i.test(e.message || "")) say("Couldn't share that. Press and hold the picture to save it.", "err");
         }
-      };
+      }
+      $("deel").onclick = function () { deelPlaatje(plaatje); };
+      $("seizoendeel").onclick = function () { deelPlaatje(seizoenPlaatje); };
     })();
   </script>
 </body>
