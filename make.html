@@ -88,6 +88,7 @@
           <button id="fix">✨ Fix it</button>
           <button id="pak">👕 Match outfit</button>
           <button id="deel">📤 Share</button>
+          <button id="naartg">📩 Save to my Telegram</button>
         </div>
         <div class="knoppen" id="seizoenen"></div>
         <!-- 💾 2026-11-28: een naam geven en bewaren, zoals My Squeezes in Telegram. Zonder naam blijft hij
@@ -225,7 +226,7 @@
       }
       function toon(el, aan) { el.classList.toggle("hidden", !aan); }
       function knoppenUit(aan) {
-        ["opnieuw", "wijzig", "fix", "pak", "deel", "wensok", "kies", "mintknop", "mcheck", "mbetaal", "seizoendeel"].forEach(function (id) { $(id).disabled = aan; });
+        ["opnieuw", "wijzig", "fix", "pak", "deel", "naartg", "opslaan", "wensok", "kies", "mintknop", "mcheck", "mbetaal", "seizoendeel"].forEach(function (id) { $(id).disabled = aan; });
         $("seizoenen").querySelectorAll("button").forEach(function (b) { b.disabled = aan; });
       }
 
@@ -560,6 +561,25 @@
           if (!/abort|cancel/i.test(e.message || "")) say("Couldn't share that. Press and hold the picture to save it.", "err");
         }
       }
+      // 📩 In je Telegram-galerij zetten. My Squeezes bewaart geen plaatje maar een Telegram-bestandsnummer,
+      // dus hij moet eerst echt door Telegram heen. Daarom: hier klaarzetten, dan de bot openen met dat
+      // nummer in de link. Wie die link opent is de eigenaar — zo komt hij nooit in andermans galerij.
+      $("naartg").onclick = async function () {
+        if (!plaatje) return;
+        if (!/^data:image\//.test(plaatje)) return say("This one is already an NFT — it's in your Telegram gallery for good.", "ok");
+        say(""); $("naartg").disabled = true;
+        try {
+          var r = await (await fetch(GEN + "/api/ops?fn=appsave", {
+            method: "POST", headers: { "content-type": "application/json" },
+            body: JSON.stringify({ image: plaatje, name: $("naam").value.trim().slice(0, 32) }),
+          })).json();
+          if (!r.id) throw new Error(r.error || "That didn't work. Try again in a minute.");
+          say("Opening Telegram… tap Start there and he's in My Squeezes 🐙", "ok");
+          location.href = "https://t.me/SqueezeOctoGeneratorBot?start=app_" + r.id;
+        } catch (e) { say(e.message || "That didn't work.", "err"); }
+        $("naartg").disabled = false;
+      };
+
       $("deel").onclick = function () { deelPlaatje(plaatje); };
       $("seizoendeel").onclick = function () { deelPlaatje(seizoenPlaatje); };
 
