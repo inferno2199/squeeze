@@ -94,7 +94,7 @@
         <!-- 💾 2026-11-28: een naam geven en bewaren, zoals My Squeezes in Telegram. Zonder naam blijft hij
              ook staan (de laatste 6), maar mét naam raak je hem niet kwijt als je er nog een paar maakt. -->
         <div class="opsl">
-          <input class="wens" id="naam" maxlength="32" placeholder="Name it, so you keep it" />
+          <input class="wens" id="naam" maxlength="32" placeholder="Name it" />
           <button class="go small-go" id="opslaan">💾 Save</button>
         </div>
         <p class="sub" id="over"></p>
@@ -290,6 +290,9 @@
         // 💾 meteen bewaren (zonder naam), zodat hij er morgen nog is ook als je de app sluit
         bewaar(plaatje).then(function (k) { laatstKlein = k; galerij(); });
         $("over").textContent = d.left === "unlimited" ? "🎉 Unlimited today!" : (d.left != null ? d.left + " left today" + (d.holder ? " (holder 💎)" : "") : "");
+        // 🏷 de generator verzint zelf een naam bij je foto (d.name). Die zetten we vast in het veld, zodat je
+        // niets hoeft te bedenken — overschrijven mag natuurlijk. Had je er al een getypt, dan blijft die staan.
+        if (d.name && !$("naam").value.trim()) $("naam").value = String(d.name).slice(0, 32);
       }
 
       async function maak() {
