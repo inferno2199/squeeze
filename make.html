@@ -48,6 +48,11 @@
     .kop { font-size: .78rem; letter-spacing: .14em; font-weight: 800; color: var(--muted); margin: 0 0 .6rem; text-align: left; }
     #mintrij { margin: 0 0 .9rem; }
     #seizoenuit { box-shadow: 0 0 0 3px rgba(255,146,43,.7), 0 0 40px rgba(255,146,43,.3); }
+    .rij { display: grid; grid-template-columns: repeat(3, 1fr); gap: .5rem; }
+    .rij figure { margin: 0; cursor: pointer; }
+    .rij img { width: 100%; aspect-ratio: 1; object-fit: cover; border-radius: 12px; display: block; border: 1px solid var(--line); }
+    .rij figcaption { font-size: .72rem; color: var(--muted); font-weight: 700; margin: .25rem 0 0; text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .rij .nft img { border-color: rgba(124,255,107,.55); box-shadow: 0 0 14px rgba(124,255,107,.25); }
   </style>
 </head>
 <body>
@@ -111,6 +116,13 @@
       <div class="knoppen" id="mintrij"><button id="mintknop">🥚 Mint it as an NFT</button></div>
     </div>
 
+    <!-- 🖼 Je octopussen. Hier en niet in de Me-tab, want van hieruit kun je er meteen mee verder. -->
+    <div class="kaart hidden" id="mijnbox">
+      <p class="kop">🖼 YOUR OCTOPUSES</p>
+      <div class="rij" id="mijnrij"></div>
+      <p class="sub" id="mijnuitleg"></p>
+    </div>
+
     <p class="msg" id="msg"></p>
     <p class="small">Minting, stickers and seasons live in the full generator for now: <a href="https://generator.squeezeocto.com" id="vol">open it →</a></p>
   </div></div>
@@ -139,6 +151,43 @@
       var nagekeken = null;        // 🥚 naam en tekst die de server goedkeurde, vlak voor het betalen
 
       function say(t, k) { $("msg").textContent = t || ""; $("msg").className = "msg" + (k ? " " + k : ""); }
+
+      // 💾 Wat je maakt bewaren OP JE TELEFOON (2026-11-28). Tot nu toe was je octopus weg zodra je de app
+      // sloot — in Telegram wordt hij 24 uur bewaard, dus de app was hierin slechter dan de bot. Bewust niet
+      // op onze server: dan heb je twee plekken die hetzelfde proberen te onthouden, met eigen regels over
+      // wat wanneer weggaat. Dit is alleen van jou en kost ons niets.
+      var BAK = "sqz-mijn";
+      var BEWAAR = 6; // meer past niet: een telefoon geeft een site ongeveer 5 MB, en elk plaatje is ±120 KB
+      function mijne() {
+        try { var l = JSON.parse(localStorage.getItem(BAK) || "[]"); return Array.isArray(l) ? l : []; } catch (e) { return []; }
+      }
+      // kleiner maken voordat we hem wegschrijven, anders is de ruimte na drie octopussen op
+      function kleiner(dataUrl) {
+        return new Promise(function (resolve) {
+          var img = new Image();
+          img.onload = function () {
+            var max = 1024, k = Math.min(1, max / Math.max(img.width, img.height));
+            var c = document.createElement("canvas");
+            c.width = Math.round(img.width * k); c.height = Math.round(img.height * k);
+            c.getContext("2d").drawImage(img, 0, 0, c.width, c.height);
+            resolve(c.toDataURL("image/jpeg", 0.82));
+          };
+          img.onerror = function () { resolve(null); };
+          img.src = dataUrl;
+        });
+      }
+      async function bewaar(dataUrl) {
+        if (!dataUrl || !/^data:image\//.test(dataUrl)) return; // een gemintte NFT staat al op de blockchain
+        var klein = await kleiner(dataUrl);
+        if (!klein) return;
+        var l = mijne().filter(function (x) { return x.img !== klein; });
+        l.unshift({ img: klein, at: Date.now() });
+        // 🧯 ruimte op? dan de oudste laten vallen tot het past, in plaats van stilletjes niets bewaren
+        while (l.length) {
+          try { localStorage.setItem(BAK, JSON.stringify(l.slice(0, BEWAAR))); return; }
+          catch (e) { l.pop(); }
+        }
+      }
       function toon(el, aan) { el.classList.toggle("hidden", !aan); }
       function knoppenUit(aan) {
         ["opnieuw", "wijzig", "fix", "pak", "deel", "wensok", "kies", "mintknop", "mcheck", "mbetaal", "seizoendeel"].forEach(function (id) { $(id).disabled = aan; });
@@ -202,6 +251,7 @@
         toon($("mintrij"), true);
         seizoenPlaatje = null;
         nagekeken = null;
+        bewaar(plaatje).then(galerij); // 💾 zodat hij er morgen nog is, ook als je de app sluit
         $("over").textContent = d.left === "unlimited" ? "🎉 Unlimited today!" : (d.left != null ? d.left + " left today" + (d.holder ? " (holder 💎)" : "") : "");
       }
 
@@ -262,6 +312,62 @@
         if (!foto) return say("Make an octopus from a photo first.", "err");
         bewerk({ outfit: foto }, "👕 Outfit matched!");
       };
+
+      // 🖼 De galerij: je NFT's (van de blockchain, want die bezit je al) en wat je op deze telefoon maakte.
+      // Eén plek, en van hieruit kun je meteen verder werken aan een octopus die nog geen NFT is.
+      var API = (C.WORKER_URL || "").replace(/\/$/, "");
+      function tegel(src, bijschrift, klik, isNft) {
+        var f = document.createElement("figure");
+        if (isNft) f.className = "nft";
+        var i = document.createElement("img");
+        i.src = src; i.alt = bijschrift || "";
+        i.loading = "lazy";
+        var c = document.createElement("figcaption");
+        c.textContent = bijschrift || "";
+        f.appendChild(i); f.appendChild(c);
+        f.onclick = klik;
+        return f;
+      }
+      async function galerij() {
+        var rij = $("mijnrij");
+        rij.innerHTML = "";
+        var eigen = mijne();
+        var token = null;
+        try { token = localStorage.getItem("sqz-jar-t") || sessionStorage.getItem("sqz-jar-t"); } catch (e) {}
+        var nfts = [];
+        if (token && API) {
+          try {
+            var d = await (await fetch(API + "/tg/me?what=nfts&t=" + encodeURIComponent(token), { cache: "no-store" })).json();
+            nfts = (d && d.nfts) || [];
+          } catch (e) { /* geen net of niet ingelogd: dan gewoon alleen wat op de telefoon staat */ }
+        }
+        nfts.forEach(function (n) {
+          rij.appendChild(tegel(n.image, "🥚 " + n.name, function () {
+            // een NFT staat op de blockchain en verandert nooit meer; je kunt hem wel bekijken en delen
+            plaatje = n.image; attrs = [];
+            $("uit").src = n.image;
+            toon($("start"), false); toon($("klaar"), true);
+            toon($("mintrij"), false); toon($("mintbox"), false); toon($("seizoenbox"), false);
+            say("🥚 " + n.name + " — this one is already an NFT, so it stays as it is.", "ok");
+            window.scrollTo({ top: 0, behavior: "smooth" });
+          }, true));
+        });
+        eigen.forEach(function (x, i) {
+          rij.appendChild(tegel(x.img, i === 0 ? "newest" : "", function () {
+            plaatje = x.img; attrs = [];
+            $("uit").src = x.img;
+            toon($("start"), false); toon($("klaar"), true);
+            toon($("mintrij"), true); toon($("mintbox"), false); toon($("seizoenbox"), false);
+            nagekeken = null; seizoenPlaatje = null;
+            say("Back to this one 🐙", "ok");
+            window.scrollTo({ top: 0, behavior: "smooth" });
+          }, false));
+        });
+        toon($("mijnbox"), rij.children.length > 0 || !token);
+        $("mijnuitleg").textContent = !token
+          ? "Sign in on the Me tab and your minted NFTs show up here too."
+          : (eigen.length ? "The last " + BEWAAR + " you make are kept on this phone. NFTs are yours forever." : "NFTs are yours forever. What you make is kept on this phone.");
+      }
 
       $("kies").onclick = function () { $("bestand").click(); };
       $("bestand").onchange = async function () {
@@ -386,6 +492,8 @@
       }
       $("deel").onclick = function () { deelPlaatje(plaatje); };
       $("seizoendeel").onclick = function () { deelPlaatje(seizoenPlaatje); };
+
+      galerij(); // meteen laten zien wat je al hebt, nog vóór je een foto kiest
     })();
   </script>
 </body>
