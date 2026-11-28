@@ -79,6 +79,9 @@
              wallet-app, en de app zelf blijft eronder staan wachten. -->
         <a class="go small-go" id="w-phantom" href="#">Open Phantom</a>
         <p class="uitlog"><a href="#" id="w-solflare">Solflare</a> &nbsp;·&nbsp; <a href="#" id="w-backpack">Backpack</a></p>
+        <!-- 🌍 Die drie zijn een gemak, geen regel: het koppelen werkt in ELKE wallet-browser, want de
+             pagina pakt vanzelf de wallet die daar zit. Dus voor de rest: link kopiëren en daar openen. -->
+        <p class="sub" id="anderewallet">Another wallet? <a href="#" id="w-kopie">Copy the link</a> and open it in your wallet's own browser — any Solana wallet works.</p>
         <p class="sub" id="wachttxt">Waiting for your wallet…</p>
       </div>
       <p class="uitlog"><a href="#" id="w-stop">Cancel</a></p>
@@ -384,6 +387,13 @@
           $("w-phantom").href = "https://phantom.app/ul/browse/" + doel + "?ref=" + ref;
           $("w-solflare").href = "https://solflare.com/ul/v1/browse/" + doel + "?ref=" + ref;
           $("w-backpack").href = "https://backpack.app/ul/v1/browse/" + doel + "?ref=" + ref;
+          // 🌍 elke andere wallet: de kale link, te openen in de browser van die wallet
+          var kaal = location.origin + "/me.html?pair=" + p.code;
+          $("w-kopie").onclick = async function (ev) {
+            ev.preventDefault();
+            try { await navigator.clipboard.writeText(kaal); say("Link copied — paste it in your wallet's browser.", "ok"); }
+            catch (e) { say(kaal, "ok"); } // geen toegang tot het klembord: dan maar laten zien om zelf te kopiëren
+          };
           $("uit").classList.add("hidden");
           $("wacht").classList.remove("hidden");
           wachtOpWallet(p.code, p.secret);
