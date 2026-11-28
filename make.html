@@ -88,7 +88,8 @@
           <button id="fix">✨ Fix it</button>
           <button id="pak">👕 Match outfit</button>
           <button id="deel">📤 Share</button>
-          <button id="naartg">📩 Save to my Telegram</button>
+          <!-- alleen nog nodig als je wallet NIET aan Telegram geknoopt is; met een koppeling doet 💾 Save het al -->
+          <button id="naartg" class="hidden">📩 Save to my Telegram</button>
         </div>
         <div class="knoppen" id="seizoenen"></div>
         <!-- 💾 2026-11-28: een naam geven en bewaren, zoals My Squeezes in Telegram. Zonder naam blijft hij
@@ -287,8 +288,10 @@
         toon($("mintrij"), true);
         seizoenPlaatje = null;
         nagekeken = null;
-        // 💾 meteen bewaren (zonder naam), zodat hij er morgen nog is ook als je de app sluit
-        bewaar(plaatje).then(function (k) { laatstKlein = k; galerij(); });
+        // 💾 Heb je een echte galerij (wallet aan Telegram geknoopt), dan hoort hij daar en nergens anders:
+        // anders staan er weer twee lijsten. Zonder koppeling bewaren we hem wel even op de telefoon, zodat
+        // je hem niet kwijt bent voordat je 💾 Save tikt.
+        (ticket ? Promise.resolve(null) : bewaar(plaatje)).then(function (k) { laatstKlein = k; galerij(); });
         $("over").textContent = d.left === "unlimited" ? "🎉 Unlimited today!" : (d.left != null ? d.left + " left today" + (d.holder ? " (holder 💎)" : "") : "");
         // 🏷 de generator verzint zelf een naam bij je foto (d.name). Die zetten we vast in het veld, zodat je
         // niets hoeft te bedenken — overschrijven mag natuurlijk. Had je er al een getypt, dan blijft die staan.
@@ -368,19 +371,76 @@
         f.onclick = klik;
         return f;
       }
+      // 🎟 Eén galerij (2026-11-28). Niet twee lijsten die ik synchroon houd, maar DEZELFDE lijst als in
+      // Telegram: My Squeezes. De app haalt bij de bot een bewijsje op en de generator kijkt daarmee in
+      // jouw galerij. Lukt dat niet (niet ingelogd, of je wallet is nog niet aan Telegram geknoopt), dan
+      // val je terug op wat er op deze telefoon staat — zodat je nooit met lege handen staat.
+      var ticket = null;
+      async function bewijsje() {
+        var token = null;
+        try { token = localStorage.getItem("sqz-jar-t") || sessionStorage.getItem("sqz-jar-t"); } catch (e) {}
+        if (!token || !API) return null;
+        try {
+          var d = await (await fetch(API + "/tg/me", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ t: token, action: "galticket" }) })).json();
+          return d && d.ticket ? d.ticket : null;
+        } catch (e) { return null; }
+      }
+      async function galerijVanTelegram() {
+        ticket = ticket || (await bewijsje());
+        if (!ticket) return null;
+        try {
+          var d = await (await fetch(GEN + "/api/ops?fn=gallery", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ ticket: ticket, op: "list" }) })).json();
+          if (d && d.login) { ticket = null; return null; }
+          return d && (d.kept || d.nfts) ? d : null;
+        } catch (e) { return null; }
+      }
+
+      // 🖼 de echte galerij: dezelfde lijst als My Squeezes in Telegram
+      function galerijTonen(d) {
+        var rij = $("mijnrij");
+        rij.innerHTML = "";
+        var img = function (x) { return GEN + "/api/ops?fn=galimg&t=" + encodeURIComponent(ticket) + "&id=" + encodeURIComponent(x.id); };
+        var open = function (x) {
+          return function () {
+            plaatje = img(x); attrs = []; laatstKlein = null;
+            $("uit").src = plaatje;
+            $("naam").value = x.name || "";
+            toon($("start"), false); toon($("klaar"), true);
+            toon($("mintrij"), !x.minted); toon($("mintbox"), false); toon($("seizoenbox"), false);
+            nagekeken = null; seizoenPlaatje = null;
+            say(x.minted ? "🥚 " + (x.name || "This one") + " is an NFT — it stays as it is." : (x.name ? "“" + x.name + "” 🐙" : "Back to this one 🐙"), "ok");
+            window.scrollTo({ top: 0, behavior: "smooth" });
+          };
+        };
+        (d.nfts || []).forEach(function (x) { rij.appendChild(tegel(img(x), "🥚 " + (x.name || "NFT"), open(x), true)); });
+        (d.kept || []).forEach(function (x) {
+          var f = tegel(img(x), x.name || "", open(x), false);
+          f.classList.add("bewaard");
+          var weg = document.createElement("button");
+          weg.className = "weg"; weg.textContent = "✕"; weg.title = "Remove";
+          weg.onclick = async function (ev) {
+            ev.stopPropagation();
+            if (!confirm("Remove " + (x.name ? "“" + x.name + "”" : "this one") + " from your gallery?")) return;
+            try { await fetch(GEN + "/api/ops?fn=gallery", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ ticket: ticket, op: "delete", id: x.id }) }); } catch (e) {}
+            await galerij();
+          };
+          f.appendChild(weg);
+          rij.appendChild(f);
+        });
+        toon($("mijnbox"), true);
+        $("mijnuitleg").textContent = "This is your gallery — the same one as 🖼 My Squeezes in Telegram. Saved: " +
+          (d.kept || []).length + "/" + (d.max || 15) + " · NFTs don't count and stay forever.";
+      }
+
       async function galerij() {
         var rij = $("mijnrij");
         rij.innerHTML = "";
+        var tg = await galerijVanTelegram();
+        if (tg) return galerijTonen(tg);
         var eigen = mijne();
         var token = null;
         try { token = localStorage.getItem("sqz-jar-t") || sessionStorage.getItem("sqz-jar-t"); } catch (e) {}
         var nfts = [];
-        if (token && API) {
-          try {
-            var d = await (await fetch(API + "/tg/me?what=nfts&t=" + encodeURIComponent(token), { cache: "no-store" })).json();
-            nfts = (d && d.nfts) || [];
-          } catch (e) { /* geen net of niet ingelogd: dan gewoon alleen wat op de telefoon staat */ }
-        }
         nfts.forEach(function (n) {
           rij.appendChild(tegel(n.image, "🥚 " + n.name, function () {
             // een NFT staat op de blockchain en verandert nooit meer; je kunt hem wel bekijken en delen
@@ -418,6 +478,8 @@
           f.appendChild(weg);
           rij.appendChild(f);
         });
+        // 📩 zonder koppeling is dit de enige weg naar Telegram; mét koppeling doet 💾 Save het al
+        toon($("naartg"), true);
         toon($("mijnbox"), rij.children.length > 0 || !token);
         $("mijnuitleg").textContent = !token
           ? "Sign in on the Me tab and your minted NFTs show up here too."
@@ -433,13 +495,33 @@
         var n = $("naam").value.trim().slice(0, 32);
         if (!n) return say("Type a name first, then tap Save.", "err");
         $("opslaan").disabled = true;
+        // 🎟 wallet aan Telegram geknoopt? Dan gaat hij in je ECHTE galerij, dezelfde als My Squeezes.
+        ticket = ticket || (await bewijsje());
+        if (ticket && /^data:image\//.test(plaatje)) {
+          try {
+            var r = await (await fetch(GEN + "/api/ops?fn=gallery", {
+              method: "POST", headers: { "content-type": "application/json" },
+              body: JSON.stringify({ ticket: ticket, op: "keep", image: plaatje, name: n, attributes: attrs }),
+            })).json();
+            $("opslaan").disabled = false;
+            if (r && r.ok) {
+              $("naam").value = "";
+              await galerij();
+              return say("Saved as “" + n + "” 🐙 He's in your gallery, here and in Telegram.", "ok");
+            }
+            if (r && r.openBot) return say(r.error, "err");
+            if (r && r.full) return say(r.error, "err");
+            if (r && r.login) { ticket = null; return say("Sign in again on the Me tab, then tap Save.", "err"); }
+            return say((r && r.error) || "Couldn't save that one. Try again in a minute.", "err");
+          } catch (e) { /* geen net: dan tenminste op de telefoon bewaren */ }
+        }
         var k = await bewaar(plaatje, n);
         $("opslaan").disabled = false;
         if (!k) return say("Couldn't save that one — your phone is out of room. Delete a few older ones first.", "err");
         laatstKlein = k;
         $("naam").value = "";
         await galerij();
-        say("Saved as “" + n + "” 🐙 It stays in 🖼 Your octopuses.", "ok");
+        say("Saved as “" + n + "” 🐙 On this phone. Link your wallet with /id to keep him in your real gallery.", "ok");
       };
       $("naam").onkeydown = function (e) { if (e.key === "Enter") $("opslaan").click(); };
 
