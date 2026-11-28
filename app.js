@@ -267,14 +267,18 @@
   }
 
   // Buy-knop, CA, socials
-  const buyUrl = C.BUY_URL || (MINT ? "https://pump.fun/coin/" + MINT : "");
+  // 🪐 2026-11-28: kopen gebeurt op onze eigen pagina (swap.html, Jupiter eronder) in plaats van weg te
+  // springen naar Pump.fun. Scheelt een sprong uit de app, en in een wallet-browser kan je meteen tekenen.
+  // Zet iemand BUY_URL zelf, dan gaat die voor en opent hij zoals vroeger in een nieuw tabblad.
+  const buyUrl = C.BUY_URL || (MINT ? "swap.html" : "");
   const buy = $("buy");
   if (buyUrl) {
     buy.href = buyUrl;
+    if (C.BUY_URL) { buy.target = "_blank"; buy.rel = "noopener"; }
   } else {
     buy.setAttribute("aria-disabled", "true");
     buy.removeAttribute("href");
-    buy.textContent = "Buy on Pump.fun (soon)";
+    buy.textContent = "Buy $SQUEEZE (soon)";
   }
   document.querySelectorAll("[data-ticker]").forEach((el) => (el.textContent = C.TICKER));
 

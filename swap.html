@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>Buy $SQUEEZE · Squeeze</title>
+  <meta name="description" content="Swap SOL for $SQUEEZE right here, straight from your own wallet. Powered by Jupiter." />
+  <meta name="theme-color" content="#143a37" />
+  <link rel="manifest" href="/manifest.json" />
+  <link rel="apple-touch-icon" href="/assets/pwa/icon-192.png" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="Squeeze" />
+  <script>if ("serviceWorker" in navigator) addEventListener("load", function () { navigator.serviceWorker.register("/sw.js").catch(function () {}); });</script>
+  <!-- 🪐 De swap zelf is van Jupiter: hun eigen widget, met hun eigen routes en hun eigen wallet-knop. Wij
+       bouwen die niet na. Zo staat er geen zelfgemaakte handtekening tussen iemands geld en de blockchain. -->
+  <script src="https://plugin.jup.ag/plugin-v1.js" data-preload defer></script>
+  <script src="/config.js?v=20261128a"></script>
+  <script src="/tabs.js?v=20261128b" defer></script>
+  <script src="/install.js?v=20261127a" defer></script>
+  <link rel="icon" href="assets/icon.png" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="play/play.css?v=20261127a" />
+  <style>
+    .mwrap { position: relative; z-index: 1; min-height: 100vh; padding: 18px 16px 56px; display: grid; justify-items: center; align-items: start; }
+    .min { width: min(560px, 100%); text-align: center; }
+    .back { color: var(--muted); text-decoration: none; font-weight: 700; display: inline-block; margin: 0 0 .6rem; }
+    h1 { margin: .2rem 0 .3rem; font-size: clamp(1.9rem, 7vw, 2.6rem); font-weight: 800; letter-spacing: -.02em; text-shadow: 0 2px 24px rgba(0,0,0,.6); }
+    .lead { color: #dfeee2; line-height: 1.5; margin: 0 auto 1.1rem; max-width: 30em; text-shadow: 0 1px 12px rgba(0,0,0,.8); }
+    .sub { color: var(--muted); font-size: .9rem; margin: .5rem 0 0; }
+    .sub a { color: var(--green); }
+    /* 🪟 het vak waar de widget in komt. Een vaste hoogte is nodig (Jupiter zegt dat zelf), anders klapt hij dicht. */
+    #jupiter-plugin { height: 420px; max-width: 100%; border-radius: 20px; overflow: hidden; background: rgba(4,16,10,.62); border: 1px solid var(--line); }
+    .wacht { display: grid; place-items: center; height: 100%; color: var(--muted); font-weight: 700; padding: 1rem; }
+    .go { font: 800 1.05rem var(--font); border: 0; border-radius: 999px; padding: .9rem 1.9rem; background: var(--green); color: #031006; box-shadow: 0 0 30px rgba(124,255,107,.4); display: inline-block; text-decoration: none; }
+    .kaart { background: rgba(4,16,10,.62); border: 1px solid var(--line); border-radius: 18px; padding: 1rem 1.1rem; margin: .9rem 0 0; text-align: left; }
+    .kaart p { margin: .35rem 0; color: #dfeee2; font-size: .93rem; line-height: 1.5; }
+    .kaart b { color: var(--green); }
+    .ca { font-family: ui-monospace, monospace; font-size: .8rem; word-break: break-all; color: var(--muted); }
+  </style>
+</head>
+<body class="play">
+  <div class="mwrap">
+    <div class="min">
+      <a class="back" href="index.html">← Squeeze</a>
+      <h1>Buy <span data-ticker>$SQUEEZE</span></h1>
+      <p class="lead" id="lead">Swap SOL for <span data-ticker>$SQUEEZE</span> straight from your own wallet. Jupiter finds the best route — we add no fee of our own.</p>
+
+      <div id="jupiter-plugin"><div class="wacht" id="wacht">Loading the swap…</div></div>
+
+      <p class="sub" id="valt-terug" hidden></p>
+
+      <div class="kaart">
+        <p>🔑 <b>Your coins stay yours.</b> You sign in your own wallet and the swap happens on-chain. We never see your keys and we hold nothing for you.</p>
+        <p>🎁 <b>Holding pays.</b> 3% of every trade goes back to holders in $PUMP, automatically — nothing to claim.</p>
+        <p>⚠️ <b>Not advice.</b> A memecoin can go to zero. Only spend what you can lose.</p>
+        <p class="sub">Contract: <span class="ca" id="ca">—</span></p>
+      </div>
+      <p class="sub"><a href="how.html">How Squeeze works</a> &nbsp;·&nbsp; <a href="games.html">Play for prizes</a></p>
+    </div>
+  </div>
+
+  <script>
+    (function () {
+      "use strict";
+      var C = window.SQUEEZE_CONFIG || {};
+      var SOL = "So11111111111111111111111111111111111111112";
+      var CA_RE = /^[1-9A-HJ-NP-Za-km-z]{32,44}$/;
+      var $ = function (id) { return document.getElementById(id); };
+
+      // het adres staat in de bot (één plek), dus als config.js het niet heeft, vragen we het daar even op.
+      async function mint() {
+        var m = String(C.MINT || "").trim();
+        if (CA_RE.test(m)) return m;
+        if (!C.WORKER_URL) return "";
+        try {
+          var r = await fetch(C.WORKER_URL.replace(/\/$/, "") + "/settings", { cache: "no-store" });
+          var d = await r.json();
+          return CA_RE.test(String(d.mint || "")) ? String(d.mint) : "";
+        } catch (e) { return ""; }
+      }
+
+      function geenToken() {
+        $("wacht").textContent = "The token isn't live yet — the swap opens the moment it launches.";
+        $("lead").textContent = "The swap opens the moment the token is live. Until then: make your octopus and play for prizes.";
+      }
+
+      // 🛟 vangnet: laadt hun widget niet (slecht netwerk, een wallet-browser die het script blokkeert), dan
+      // moet je niet naar een leeg vak staren maar gewoon door kunnen naar Jupiter zelf.
+      function terugval(ca) {
+        var p = $("valt-terug");
+        p.innerHTML = 'Swap not loading? Open it on <a href="https://jup.ag/swap/SOL-' + ca + '" target="_blank" rel="noopener">jup.ag</a> or <a href="https://pump.fun/coin/' + ca + '" target="_blank" rel="noopener">pump.fun</a> instead.';
+        p.hidden = false;
+      }
+
+      (async function () {
+        document.querySelectorAll("[data-ticker]").forEach(function (el) { el.textContent = C.TICKER || "$SQUEEZE"; });
+        var ca = await mint();
+        if (!ca) return geenToken();
+        $("ca").textContent = ca;
+
+        var klaar = false;
+        function start() {
+          if (klaar || !window.Jupiter || !window.Jupiter.init) return;
+          klaar = true;
+          $("wacht").remove();
+          window.Jupiter.init({
+            displayMode: "integrated",
+            integratedTargetId: "jupiter-plugin",
+            defaultExplorer: "Solscan",
+            formProps: {
+              initialInputMint: SOL,
+              initialOutputMint: ca,
+              fixedMint: ca, // 🔒 je kan alles kiezen om MEE te betalen, maar wat je koopt staat vast
+            },
+          });
+        }
+        // het script heeft "defer", dus het kan al klaar zijn of nog onderweg
+        start();
+        addEventListener("load", start);
+        var t = setInterval(function () { start(); if (klaar) clearInterval(t); }, 400);
+        setTimeout(function () { clearInterval(t); if (!klaar) { $("wacht").textContent = "The swap didn't load."; terugval(ca); } }, 12000);
+      })();
+    })();
+  </script>
+<!-- Cloudflare Web Analytics (bezoekers tellen, geen cookies) --><script type='module' src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "5b6397ad9cae4dcbad3dac16b14a5b70"}'></script><!-- End Cloudflare Web Analytics -->
+</body>
+</html>
